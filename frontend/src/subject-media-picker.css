@@ -1,0 +1,38 @@
+.subject-media-picker { min-height: 0; overflow-y: auto; padding: 18px 22px 8px; }
+.modal:has(> .subject-media-picker) { width: 760px; height: auto; }
+.subject-media-sources { display: flex; gap: 6px; padding: 4px; border: 1px solid #363b43; border-radius: 9px; background: #191c20; }
+.subject-media-sources button { flex: 1; display: flex; justify-content: center; align-items: center; gap: 7px; border: 0; border-radius: 6px; padding: 10px 8px; background: none; color: #939ca9; font-size: 12px; }
+.subject-media-sources button[aria-selected="true"] { color: #edf2e7; background: #353b40; }
+.subject-media-upload { min-height: 290px; margin-top: 18px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 16px; border: 1px dashed #4c5561; border-radius: 10px; text-align: center; padding: 25px; color: #a3adba; }
+.subject-media-upload.dragging { border-color: #b8d68e; background: #b8d68e0c; }
+.subject-media-upload strong { font-size: 14px; color: #dce2e9; font-weight: 500; }
+.subject-media-upload p,.subject-media-upload small { margin: 0; font-size: 11px; line-height: 1.7; }
+.subject-media-upload small { color: #848f9d; }
+.subject-media-search { display: flex; align-items: center; gap: 9px; margin: 16px 0; color: #8793a2; border: 1px solid #3b424d; border-radius: 7px; padding-left: 11px; background: #171a1f; }
+.subject-media-search input { flex: 1; min-width: 0; background: none; border: 0; padding: 10px 10px 10px 0; outline: none; color: #e5e9ef; }
+.subject-media-results { display: grid; gap: 12px; max-height: 390px; min-height: 220px; overflow-y: auto; align-content: start; }
+.subject-media-results.image { grid-template-columns: repeat(3,minmax(0,1fr)); }
+.subject-media-results.audio { grid-template-columns: 1fr; }
+.subject-media-empty { grid-column: 1/-1; min-height: 210px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 14px; color: #8894a3; font-size: 12px; }
+.subject-media-empty strong { color: #b8c1ce; font-weight: 500; }
+.subject-media-empty span { font-size: 11px; }
+.subject-media-item { min-width: 0; }
+.subject-media-image { position: relative; width: 100%; height: 150px; display: flex; flex-direction: column; padding: 0; overflow: hidden; border: 1px solid #3a414b; border-radius: 7px; background: #14171b; text-align: left; color: #dce2ea; }
+.subject-media-image img { flex: 1; min-height: 0; width: 100%; object-fit: contain; }
+.subject-media-image span { flex-shrink: 0; display: block; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 8px; font-size: 11px; background: #242930; }
+.subject-media-image > svg { display: none; position: absolute; top: 6px; right: 6px; padding: 3px; width: 24px; height: 24px; border-radius: 50%; background: #d1e8af; color: #203114; }
+.subject-media-image:hover:not(:disabled) { border-color: #b6cd9b; }
+.subject-media-image:hover:not(:disabled) > svg { display: block; }
+.subject-media-results.audio .subject-media-item { border: 1px solid #39414a; background: #1a1f25; padding: 12px; border-radius: 9px; }
+.subject-media-audio-heading { display: flex; align-items: center; gap: 11px; color: #afbdcf; }
+.subject-media-audio-heading > div { flex: 1; min-width: 0; }
+.subject-media-audio-heading strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #d9e0e9; font-weight: 500; font-size: 12px; }
+.subject-media-audio-heading small { display: block; margin-top: 5px; font-size: 10px; color: #8b97a7; }
+.subject-media-item audio { display: block; width: 100%; height: 34px; margin-top: 12px; color-scheme: dark; }
+.subject-media-pagination { display: flex; align-items: center; justify-content: space-between; color: #929eae; font-size: 11px; padding: 15px 0 8px; }
+.subject-media-pagination > div { display: flex; align-items: center; gap: 10px; }
+.subject-media-pagination button { display: flex; background: none; border: 0; color: #bdc8d6; padding: 4px; }
+.subject-media-error { display: flex; align-items: flex-start; gap: 8px; margin: 12px 0; color: #efb49c; font-size: 12px; line-height: 1.7; overflow-wrap: anywhere; }
+.subject-media-error svg { flex-shrink: 0; margin-top: 3px; }
+.subject-media-error button { border: 0; background: none; color: #f2c3ae; text-decoration: underline; margin-left: auto; flex-shrink: 0; }
+@media (max-width: 620px) { .subject-media-picker { padding: 15px; } .subject-media-results.image { grid-template-columns: repeat(2,minmax(0,1fr)); } .subject-media-upload { padding: 20px 12px; } }

@@ -1,0 +1,90 @@
+.canvas-context-menu {
+  position: fixed;
+  z-index: 1800;
+  width: 254px;
+  max-height: calc(100vh - 16px);
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: 6px;
+  border: 1px solid #45474d;
+  border-radius: 10px;
+  background: #292b30;
+  color: #d5d7de;
+  box-shadow:
+    0 16px 42px #0007,
+    0 2px 5px #0003;
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1.4;
+  scrollbar-width: thin;
+  scrollbar-color: #53565f transparent;
+}
+.canvas-context-menu > button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 34px;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  outline: none;
+}
+.canvas-context-menu > button:hover:not(:disabled),
+.canvas-context-menu > button:focus-visible,
+.canvas-context-menu > button.submenu-open {
+  background: #3d4048;
+  color: #f1f2f5;
+}
+.canvas-context-menu > button:disabled {
+  color: #747882;
+  cursor: default;
+}
+.canvas-context-menu > button.danger:not(:disabled) {
+  color: #e99c9c;
+}
+.canvas-context-icon {
+  width: 17px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  color: #acb1bd;
+}
+.canvas-context-icon > svg {
+  width: 15px;
+  height: 15px;
+  stroke-width: 1.7;
+}
+.canvas-context-menu > button:disabled .canvas-context-icon {
+  color: inherit;
+}
+.canvas-context-label {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+}
+.canvas-context-menu kbd {
+  margin-left: auto;
+  font-family: inherit;
+  font-size: 10px;
+  line-height: 1.4;
+  color: #9297a2;
+  white-space: nowrap;
+}
+.canvas-context-chevron {
+  color: #a6acb8;
+  flex-shrink: 0;
+}
+.canvas-context-separator {
+  height: 1px;
+  background: #44474e;
+  margin: 5px 5px;
+}
+.canvas-context-menu.opens-left .canvas-context-chevron {
+  transform: rotate(180deg);
+}
