@@ -291,6 +291,26 @@ def build_parser():
     create_lip=common(lips.add_parser('create'))
     create_lip.add_argument('--file',type=Path,required=True)
     create_lip.add_argument('--request-id')
+    share = common(commands.add_parser('share', help='分享画布到亦可'))
+    shares = share.add_subparsers(dest='action', required=True)
+    common(shares.add_parser('status'))
+    common(shares.add_parser('connect'))
+    connect_state = common(shares.add_parser('connect-state'))
+    connect_state.add_argument('request_id')
+    common(shares.add_parser('disconnect'))
+    common(shares.add_parser('list'))
+    publish = common(shares.add_parser('publish'))
+    publish.add_argument('project_id')
+    publish.add_argument('--title')
+    publish.add_argument('--visibility', choices=['link', 'login'], default='link')
+    publish.add_argument('--quality', choices=['preview', 'full'], default='preview')
+    publish.add_argument('--wait', action='store_true')
+    publish.add_argument('--interval', type=float, default=1.0)
+    publish.add_argument('--max-wait', type=float, default=900)
+    show_share = common(shares.add_parser('show'))
+    show_share.add_argument('project_id')
+    delete_share = common(shares.add_parser('delete'))
+    delete_share.add_argument('project_id')
     return parser
 
 
@@ -315,6 +335,8 @@ def normalize_arguments(args):
         required = ["project_id"]
         if args.action == "add-asset" and not args.asset_id and not args.version_id:
             raise CliError("添加卡片需要资产 ID 或 --asset-version VERSION_ID。")
+    elif args.command == "share" and args.action in ("publish", "show", "delete"):
+        required = ["project_id"]
     for name in required:
         if getattr(args, name, None) is None:
             raise CliError(f"缺少必要参数 {name}。")
@@ -448,9 +470,46 @@ def canvas_command(client, args):
     return request(client, "PUT", path, json=canvas)
 
 
+def share_command(client, args):
+    if args.action == "status":
+        return request(client, "GET", "/api/share/status")
+    if args.action == "connect":
+        return request(client, "POST", "/api/share/connect")
+    if args.action == "connect-state":
+        return request(client, "GET", f"/api/share/connect/{args.request_id}")
+    if args.action == "disconnect":
+        return request(client, "POST", "/api/share/disconnect")
+    if args.action == "list":
+        return request(client, "GET", "/api/shares")
+    if args.action == "show":
+        return request(client, "GET", f"/api/projects/{args.project_id}/share")
+    if args.action == "delete":
+        return request(client, "DELETE", f"/api/projects/{args.project_id}/share")
+    project = request(client, "GET", f"/api/projects/{args.project_id}")
+    started = request(client, "POST", f"/api/projects/{args.project_id}/share", json={
+        "request_id": uuid.uuid4().hex,
+        "title": args.title or project["name"],
+        "visibility": args.visibility,
+        "quality": args.quality,
+        "canvas_revision": project["revision"],
+    })
+    if not args.wait:
+        return started
+    deadline = time.time() + args.max_wait
+    while time.time() < deadline:
+        state = request(client, "GET", f"/api/projects/{args.project_id}/share")
+        job = state.get("job")
+        if job and job.get("state") != "running":
+            return state
+        time.sleep(max(0.2, args.interval))
+    raise CliError("分享等待超时，可稍后用 manju share show 查看状态。", "share_timeout")
+
+
 def run_command(client, args):
     if args.command == "doctor":
         return {"health": request(client, "GET", "/api/health"), "storage": request(client, "GET", "/api/settings/storage")}
+    if args.command == "share":
+        return share_command(client, args)
     if args.command == "project":
         return project_command(client, args)
     if args.command == "asset":

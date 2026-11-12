@@ -30,6 +30,7 @@ from .production_batch import generate_shots
 from .frames import render_frame
 from .openai_images import PREFIX as OPENAI_PREFIX, estimate_cost
 from .screenplay import get_screenplay, save_screenplay
+from .share import ShareService
 from .workflows import WorkflowService
 from .store import DomainError, Store, new_id
 from .transfers import cancel_migration, export_project, import_project, migrate_storage, recover_migration_state, resume_migration, storage_status
@@ -116,9 +117,11 @@ def create_app(data_dir: str | Path | None = None, config_file: str | Path | Non
         application.state.generations.start()
         application.state.production.start()
         application.state.orchestration.start()
+        application.state.share = ShareService(store)
         try:
             yield
         finally:
+            application.state.share.close()
             application.state.orchestration.close()
             application.state.production.close()
             application.state.generations.close()
@@ -499,6 +502,40 @@ def create_app(data_dir: str | Path | None = None, config_file: str | Path | Non
         path = export_project(store, project_id)
         name = re.sub(r'[<>:"/\\|?*\x00-\x1f]', "_", store.project(project_id)["name"])
         return FileResponse(path, media_type="application/zip", filename=name + ".manju", background=BackgroundTask(path.unlink, missing_ok=True))
+
+    # 亦可画布分享：连接本地应用、发布只读快照、查看与删除分享。
+
+    @application.get("/api/share/status")
+    def share_status(request: Request):
+        return request.app.state.share.status()
+
+    @application.post("/api/share/connect")
+    def share_connect(request: Request):
+        return request.app.state.share.start_connect()
+
+    @application.get("/api/share/connect/{request_id}")
+    def share_connect_state(request: Request, request_id: str):
+        return request.app.state.share.connect_state(request_id)
+
+    @application.post("/api/share/disconnect")
+    def share_disconnect(request: Request):
+        return request.app.state.share.disconnect()
+
+    @application.post("/api/projects/{project_id}/share", status_code=202)
+    def share_project(request: Request, project_id: str, body: dict = Body(...)):
+        return request.app.state.share.start_publish(project_id, body)
+
+    @application.get("/api/projects/{project_id}/share")
+    def project_share(request: Request, project_id: str):
+        return request.app.state.share.project_share(project_id)
+
+    @application.delete("/api/projects/{project_id}/share")
+    def delete_project_share(request: Request, project_id: str):
+        return request.app.state.share.delete_share(project_id)
+
+    @application.get("/api/shares")
+    def share_registry(request: Request):
+        return request.app.state.share.list_all()
 
     @application.get("/api/subjects")
     def subjects(request: Request, search: str = "", offset: int = Query(0, ge=0), limit: int = Query(60, ge=1, le=500), kind: str | None = None):

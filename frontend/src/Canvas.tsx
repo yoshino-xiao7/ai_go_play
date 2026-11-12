@@ -72,6 +72,7 @@ import {
   Plus,
   Redo2,
   Search,
+  Share2,
   Scaling,
   ListChecks,
   Sparkles,
@@ -122,6 +123,7 @@ import SubjectNodeView from "./SubjectNodeView";
 import SaveToCanvasDialog, { cloneCanvasSelection, mergeCanvasSelection } from "./SaveToCanvasDialog";
 import DraftRecovery from "./DraftRecovery";
 import CanvasProjectMenu from "./CanvasProjectMenu";
+import SharePanel from "./SharePanel";
 import type { RecoverableCanvas } from "./DraftRecovery";
 import ProductionPanel from "./ProductionPanel";
 import ScreenplayWorkspace from "./ScreenplayWorkspace";
@@ -866,6 +868,7 @@ function CanvasEditor({
   const [showInspector, setShowInspector] = useState(false);
   const [showMore, setShowMore] = useState(false);
   const [showScreenplay, setShowScreenplay] = useState(false);
+  const [showShare, setShowShare] = useState(false);
   const [showProduction, setShowProduction] = useState(false);
   const [showCanvasRun, setShowCanvasRun] = useState(false);
   const [showTimeline, setShowTimeline] = useState(false);
@@ -3585,6 +3588,7 @@ function CanvasEditor({
               </button>
             )}
             <button className="canvas-small-button" aria-haspopup="dialog" onClick={() => setShowScreenplay(true)}><BookOpen size={15}/><span>剧本</span></button>
+            <button className="canvas-small-button" onClick={()=>void flushCanvas().then(()=>setShowShare(true)).catch(error=>setNotice(errorText(error)))}><Share2 size={15}/><span>分享</span></button>
             <button className="canvas-small-button canvas-production-button" onClick={()=>void flushCanvas().then(()=>setShowProduction(true)).catch(error=>setNotice(errorText(error)))}><Video size={15}/><span>分镜成片</span></button>
             <button className="canvas-small-button" onClick={()=>void flushCanvas().then(()=>setShowCanvasRun(true)).catch(error=>setNotice(errorText(error)))}>自动编排</button>
             <button className="canvas-small-button" onClick={()=>void flushCanvas().then(()=>setShowTimeline(true)).catch(error=>setNotice(errorText(error)))}>多轨剪辑</button>
@@ -4929,6 +4933,7 @@ function CanvasEditor({
       )}
       {showDrafts && <DraftRecovery projectId={project.id} draftPrefix={draftPrefix} onClose={()=>setShowDrafts(false)} onRestore={restoreDraft}/>}
       {showScreenplay && <ScreenplayWorkspace projectId={project.id} onClose={() => setShowScreenplay(false)}/>}
+      {showShare && <SharePanel project={project} onFlush={flushCanvas} getViewport={()=>flow.getViewport()} onClose={()=>setShowShare(false)} onNotice={setNotice}/>}
       {showProduction && <ProductionPanel projectId={project.id} onClose={()=>setShowProduction(false)} onChanged={()=>{void loadCanvas(false);void reloadAssets();onAssetsChange();}} onLocate={(id:string)=>{setShowProduction(false);locateNode(id);}}/>}
       {showCanvasRun && <CanvasRunPanel projectId={project.id} selectedNodeIds={selected.map(node=>node.id)} onClose={()=>setShowCanvasRun(false)} onChanged={()=>{void loadCanvas(false);void reloadAssets();onAssetsChange();}} onLocate={(id:string)=>{setShowCanvasRun(false);locateNode(id);}}/>}
       {showTimeline && <TimelineEditor projectId={project.id} onClose={()=>setShowTimeline(false)} onChanged={()=>{void loadCanvas(false);void reloadAssets();onAssetsChange();}}/>}

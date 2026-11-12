@@ -147,8 +147,12 @@ def _portable_canvas(canvas: dict) -> dict:
     return result
 
 
-def export_project(store, project_id: str) -> Path:
-    """Hold the read/write lock until a complete immutable archive exists."""
+def project_snapshot(store, project_id: str) -> dict:
+    """Read-only project snapshot shared by archive export and canvas sharing.
+
+    Validates that every referenced blob exists and matches its hash, and strips
+    live-service state exactly like the portable archive manifest.
+    """
     with store.lock:
         project = store.project(project_id)
         canvas = _portable_canvas(store.canvas(project_id))
@@ -171,7 +175,6 @@ def export_project(store, project_id: str) -> Path:
                 version_ids.add(asset_row[0])
 
         versions = []
-        blobs = {}
         for version_id in sorted(version_ids):
             row = store.conn.execute("SELECT * FROM versions WHERE id = ?", (version_id,)).fetchone()
             if row is None:
@@ -184,7 +187,6 @@ def export_project(store, project_id: str) -> Path:
             version.pop("preview_error", None)
             version.pop("missing", None)
             versions.append(version)
-            blobs[version["blob_hash"]] = path
             member_ids.add(version["asset_id"])
 
         assets = []
@@ -198,18 +200,40 @@ def export_project(store, project_id: str) -> Path:
                 asset["current_version_id"] = candidates[-1] if candidates else None
             assets.append(asset)
 
-        manifest = {
-            "format": ARCHIVE_FORMAT,
-            "exported_at": now(),
+        screenplay = get_screenplay(store, project_id, include_deleted=True)["document"]
+        return {
             "project": project,
             "canvas": canvas,
             "assets": assets,
             "versions": versions,
             "project_assets": sorted(member_ids),
+            "screenplay": screenplay,
         }
-        screenplay = get_screenplay(store, project_id, include_deleted=True)["document"]
-        if screenplay is not None:
-            manifest["screenplay"] = screenplay
+
+
+def export_project(store, project_id: str) -> Path:
+    """Hold the read/write lock until a complete immutable archive exists."""
+    with store.lock:
+        snapshot = project_snapshot(store, project_id)
+        blobs = {}
+        for version in snapshot["versions"]:
+            path = store.blob_path(version["blob_hash"])
+            if not path.is_file() or _hash_file(path) != version["blob_hash"]:
+                raise DomainError(409, "项目原件缺失或校验失败，请先修复",
+                                  "missing_media", version_id=version["id"])
+            blobs[version["blob_hash"]] = path
+
+        manifest = {
+            "format": ARCHIVE_FORMAT,
+            "exported_at": now(),
+            "project": snapshot["project"],
+            "canvas": snapshot["canvas"],
+            "assets": snapshot["assets"],
+            "versions": snapshot["versions"],
+            "project_assets": snapshot["project_assets"],
+        }
+        if snapshot["screenplay"] is not None:
+            manifest["screenplay"] = snapshot["screenplay"]
         export_dir = store.root / "temp"
         export_dir.mkdir(parents=True, exist_ok=True)
         target = export_dir / f"export-{new_id()}.manju"
