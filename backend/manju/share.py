@@ -10,18 +10,22 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
+import logging
 import os
+import re
 import secrets
 import threading
 import time
 import webbrowser
 from pathlib import Path
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlsplit
 
 import httpx
 
 from .store import DomainError, Store, now
 from .transfers import project_snapshot
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_API_BASE = "https://api.yukiryou.icu"
 DEFAULT_WEB_BASE = "https://yk.yukiryou.icu"
@@ -463,15 +467,63 @@ class ShareService:
                         )
                     if response.status_code in (200, 201, 204):
                         return
+                    code, message = self._oss_error(response)
+                    self._log_upload_failure(target["url"], response.status_code, code, message)
                     if response.status_code in (401, 403):
-                        raise DomainError(502, "对象存储拒绝了上传，请稍后重试。", "share_upload_rejected")
-                    last_error = f"HTTP {response.status_code}"
+                        raise DomainError(502, self._upload_rejection_message(
+                            response.status_code, code, message), "share_upload_rejected",
+                            oss_status=response.status_code, oss_code=code or None)
+                    last_error = f"HTTP {response.status_code}" + (f" {code}" if code else "")
                 except httpx.HTTPError as error:
                     last_error = str(error)
                 time.sleep(1.5 * (attempt + 1))
         finally:
             client.close()
         raise DomainError(502, f"媒体上传失败（{last_error}），请检查网络后重试。", "share_upload_failed")
+
+    @staticmethod
+    def _oss_error(response) -> tuple[str, str]:
+        """提取 OSS XML 错误码；代理返回的 HTML 不会命中。"""
+        text = ""
+        try:
+            text = response.text or ""
+        except Exception:
+            return "", ""
+        code = re.search(r"<Code>([^<]{1,80})</Code>", text)
+        message = re.search(r"<Message>([^<]{1,300})</Message>", text)
+        return (code.group(1).strip() if code else "",
+                message.group(1).strip() if message else "")
+
+    @staticmethod
+    def _log_upload_failure(url: str, status: int, code: str, message: str) -> None:
+        try:
+            parts = urlsplit(url)
+            location = f"{parts.scheme}://{parts.netloc}{parts.path}"
+        except Exception:
+            location = "unknown"
+        logger.warning(
+            "画布分享上传被对象存储拒绝: status=%s code=%s message=%s url=%s",
+            status, code or "-", message or "-", location,
+        )
+
+    @staticmethod
+    def _upload_rejection_message(status: int, code: str, message: str) -> str:
+        hints = {
+            "AccessDenied": "请检查 OSS 账号是否拥有写入该 Bucket 的权限。",
+            "SignatureDoesNotMatch": "预签名地址校验失败，请重启亦可后端后重试。",
+            "RequestTimeTooSkewed": "服务器与 OSS 的时间不一致，请校准服务器时间。",
+            "InvalidAccessKeyId": "OSS AccessKey 无效或已被禁用。",
+            "NoSuchBucket": "OSS Bucket 不存在，请检查后端配置。",
+            "SecondLevelDomainForbidden": "OSS Endpoint 配置不正确。",
+            "EntityTooLarge": "文件超过了对象存储的大小限制。",
+        }
+        if code:
+            detail = f"{code}{('：' + message) if message else ''}"
+            hint = hints.get(code, "请稍后重试或检查 OSS 配置。")
+            return f"对象存储拒绝了上传（{detail}）。{hint}"
+        if message:
+            return f"对象存储拒绝了上传（HTTP {status}）：{message}"
+        return f"对象存储拒绝了上传（HTTP {status}，返回内容不是 OSS 错误，可能被网络代理拦截）。"
 
     def _save_share(self, project_id: str, prepared: dict, result: dict, plan: dict, payload: dict) -> None:
         with self.store.tx():
