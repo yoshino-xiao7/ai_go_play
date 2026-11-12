@@ -82,6 +82,7 @@ def test_build_plan_carries_cards_prompts_edges_and_media(client, png_bytes):
     assert media["kind"] == "image"
     expected_hash = hashlib.sha256(png_bytes()).hexdigest()
     assert media["variants"]["view"]["hash"] == expected_hash
+    assert media["variants"]["view"]["variant"] == "ORIGINAL"
     assert media["degraded"] is True  # 缩略图尚未生成时降级但不缺失
     assert plan["visibility"] == "LINK"
     assert plan["quality"] == "preview"

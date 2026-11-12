@@ -635,7 +635,7 @@ class ShareService:
                 "variants": {},
             }
             for role, spec in variants.items():
-                entry["variants"][role.lower()] = {"hash": spec["hash"]}
+                entry["variants"][role.lower()] = {"hash": spec["hash"], "variant": spec["variant"]}
                 paths[spec["hash"]] = spec["path"]
                 if spec["hash"] not in unique_hashes:
                     unique_hashes.add(spec["hash"])
