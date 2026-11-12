@@ -509,8 +509,8 @@ class ShareService:
     @staticmethod
     def _upload_rejection_message(status: int, code: str, message: str) -> str:
         hints = {
-            "AccessDenied": "请检查 OSS 账号是否拥有写入该 Bucket 的权限。",
-            "SignatureDoesNotMatch": "预签名地址校验失败，请重启亦可后端后重试。",
+            "AccessDenied": "OSS 账号没有写入该 Bucket/前缀的权限，需要为 RAM 用户授予 oss:PutObject（以及 oss:GetObject）。",
+            "SignatureDoesNotMatch": "预签名地址校验失败，请确认后端与本地应用都已更新到最新版本。",
             "RequestTimeTooSkewed": "服务器与 OSS 的时间不一致，请校准服务器时间。",
             "InvalidAccessKeyId": "OSS AccessKey 无效或已被禁用。",
             "NoSuchBucket": "OSS Bucket 不存在，请检查后端配置。",
