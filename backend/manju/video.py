@@ -1,14 +1,20 @@
 """Local H3 profiles and deterministic multimodal graph compilation."""
 from copy import deepcopy
 from pathlib import Path
-import json, math
+import json
 from .store import DomainError, encode, now
-from .video_inputs import VIDEO_OPTIONS, normalize_options, normalize_inputs, has_audio
+from .video_inputs import (
+    VIDEO_OPTIONS, FIRST_FRAME_COUNT, FRAME_COUNT_STEP, MAX_FRAME_COUNT, MAX_GUIDES, FPS,
+    frame_count, guide_file_key, has_audio, normalize_guides, normalize_inputs, normalize_options,
+)
+from .camera_motion import compile_camera_motion, normalize_camera_motion
+from . import video_turbo
 
 MODES = ("text", "frames", "reference")
 PROFILE_ID = "builtin-h3-local"
 DEFAULTS = {"width":864,"height":480,"steps":20,"cfg":1,"seed":-1,"duration":4,"audio":True}
 DIRECTOR_NODES = ["MiniMaxH3Director", "MiniMaxH3DirectorGroupReferenceToVideo", "MiniMaxH3DirectorGroupImageToVideo"]
+GUIDE_NODE = "MiniMaxH3AddGuide"
 MODEL_FIELDS = {"fl2va": ("UNETLoader", "unet_name"), "ref2va": ("UNETLoader", "unet_name"),
                 "clip": ("CLIPLoader", "clip_name"), "video_vae": ("VAELoader", "vae_name"), "audio_vae": ("VAELoader", "vae_name")}
 REQUIRED = ["UNETLoader","CLIPLoader","VAELoader","MiniMaxH3ImageToVideo","MiniMaxH3ReferenceToVideo","MiniMaxH3SigmaShift","KSampler","ConditioningZeroOut","LTXVSeparateAVLatent","VAEDecodeTiled","VAEDecodeAudio","CreateVideo","SaveVideo","LoadImage","LoadAudio","LoadVideo","GetVideoComponents","ImageScaleToMaxDimension"]
@@ -39,9 +45,18 @@ def normalize_video(payload, base):
     if not isinstance(payload.get("audio", True), bool):
         raise DomainError(422,"声音选项须为布尔值。","video_parameters_invalid")
     request.update(kind="video",video_mode=mode,duration=duration,audio=payload.get("audio",True))
+    if "camera_motion" in payload:
+        motion = payload["camera_motion"]
+        request["camera_motion"] = normalize_camera_motion(motion) if motion is not None else None
     request["video_options"] = normalize_options(payload.get("video_options", {}))
+    normalize_guides(payload, request)
+    turbo = request["video_options"]["engine"] == "turbo"
+    if turbo and mode != "reference":
+        raise DomainError(422, "Turbo 8 步使用全参考模式。", "video_turbo_requires_reference")
     defaults = {"width":864,"height":480,"steps":20,"cfg":1,"seed":-1,"denoise":1}
     defaults.update(request["parameters"])
+    if turbo:
+        defaults.update(video_turbo.PARAMETERS)
     if any(not 256 <= defaults[k] <= 1344 or defaults[k]%32 for k in ("width","height")) or defaults["width"]*defaults["height"] > 1344*768:
         raise DomainError(422,"本地 H3 尺寸须为 32 的倍数，范围 256–1344，面积不超过 1344×768。","video_dimensions_invalid")
     if not 1 <= defaults["steps"] <= 100 or not 0 <= defaults["cfg"] <= 20 or defaults["denoise"] != 1:
@@ -131,17 +146,23 @@ class H3Adapter:
         errors=[f"缺少节点：{name}" for name in REQUIRED if name not in catalog]
         errors.extend(f"缺少模型或用途不匹配：{key}" for key in MODEL_FIELDS if models[key] not in options[key] or not compatible_model(key,models[key]))
         director_errors=[f"缺少节点：{name}" for name in DIRECTOR_NODES if name not in catalog]
+        turbo_errors=video_turbo.environment_errors(catalog,video_turbo.MODELS,MODEL_FIELDS)
         return {**saved,"models":models,"catalog":options,"ready":not errors,"errors":errors,"profile_id":PROFILE_ID,
-                "video_options":VIDEO_OPTIONS,"pipeline_revision":2,"engines":{"native":{"ready":not errors,"errors":errors},"director":{"ready":not errors and not director_errors,"errors":errors+director_errors}},
-                "modes":list(MODES),"limits":{"images":9,"videos":3,"audios":3,"total":12,"duration_min":4,"duration_max":15,"fps":24}}
+                "video_options":VIDEO_OPTIONS,"pipeline_revision":2,"engines":{"native":{"ready":not errors,"errors":errors},"director":{"ready":not errors and not director_errors,"errors":errors+director_errors},"turbo":{"ready":not turbo_errors,"errors":turbo_errors}},
+                "h3_guides_ready":GUIDE_NODE in catalog,
+                "modes":list(MODES),"limits":{"images":9,"videos":3,"audios":3,"total":12,"duration_min":4,"duration_max":15,
+                                            "fps":FPS,"guides":MAX_GUIDES,"frame_count_min":FIRST_FRAME_COUNT,
+                                            "frame_count_max":MAX_FRAME_COUNT,"frame_count_step":FRAME_COUNT_STEP}}
 
     def snapshot(self,options=None):
         status=self.status()
-        if not status["ready"]: raise DomainError(422,"本地 H3 尚未就绪。","video_not_ready",errors=status["errors"])
         options=normalize_options(options or {})
-        if not status["engines"][options["engine"]]["ready"]:
-            raise DomainError(422,"所选 H3 流程尚未就绪。","video_not_ready",errors=status["engines"][options["engine"]]["errors"])
-        return {"id":PROFILE_ID,"name":"MiniMax H3 · 本地音视频","mode":"video","models":status["models"],"revision":status["revision"],"pipeline_revision":2,"video_options":options,"defaults":status["defaults"],"bindings":{"seed":[{}]},"capabilities":{"min_images":0,"max_images":12},"output_nodes":["save"],"kind":"video"}
+        engine=status.get("engines",{}).get(options["engine"],status)
+        if not engine["ready"]:
+            raise DomainError(422,"所选 H3 流程尚未就绪。","video_not_ready",errors=engine["errors"])
+        turbo=options["engine"]=="turbo"
+        models=dict(video_turbo.MODELS) if turbo else status["models"]
+        return {"id":PROFILE_ID,"name":"MiniMax H3 · Turbo 8 步" if turbo else "MiniMax H3 · 本地音视频","mode":"video","models":models,"revision":status["revision"],"pipeline_revision":2,"video_options":options,"defaults":status["defaults"],"h3_guides_ready":status.get("h3_guides_ready",False),"bindings":{"seed":[{}]},"capabilities":{"min_images":1 if turbo else 0,"max_images":12},"output_nodes":["save"],"kind":"video"}
 
     def library_entry(self):
         return {**self.status(),"id":PROFILE_ID,"name":"MiniMax H3 · 本地音视频","kind":"video","mode":"video","builtin":True}
@@ -149,15 +170,18 @@ class H3Adapter:
     def template(self,mode,engine="native"):
         if mode not in MODES:
             raise DomainError(422,"未知的视频模式。","video_parameters_invalid")
+        options=normalize_options({"engine":engine})
+        if engine=="turbo" and mode!="reference":
+            raise DomainError(422,"Turbo 8 步使用全参考模式。","video_turbo_requires_reference")
         profile=self.status()
-        models={key:profile["models"].get(key) or f"<请选择 {key} 模型>" for key in MODEL_FIELDS}
+        models=dict(video_turbo.MODELS) if engine=="turbo" else {key:profile["models"].get(key) or f"<请选择 {key} 模型>" for key in MODEL_FIELDS}
         refs=[]
         if mode=="frames":
             refs=[{"version_id":role,"media_type":"image","role":role} for role in ("first_frame","last_frame")]
         elif mode=="reference":
             refs=[{"version_id":kind,"media_type":kind,"role":"reference"} for kind in ("image","video","audio")]
         defaults=profile["defaults"]
-        request={"video_mode":mode,"video_options":normalize_options({"engine":engine}),"compiled_prompt":"在此输入视频描述","duration":defaults["duration"],"audio":defaults["audio"],
+        request={"video_mode":mode,"video_options":options,"compiled_prompt":"在此输入视频描述","duration":defaults["duration"],"audio":defaults["audio"],
                  "parameters":{k:defaults[k] for k in ("width","height","steps","cfg","seed")},"references":refs}
         request["parameters"]["seed"]=max(0,request["parameters"]["seed"])
         files={ref["version_id"]:"REPLACE_"+ref["version_id"]+{"image":".png","video":".mp4","audio":".wav"}[ref["media_type"]] for ref in refs}
@@ -178,6 +202,8 @@ class H3Adapter:
         counters={"image":0,"video":0,"audio":0};seconds={"video":0,"audio":0};slots={}
         for ref in request["references"]:
             v=self.input_version(ref["version_id"]);kind=v["mime"].split("/")[0]
+            if ref.get("purpose") == "camera" and kind != "video":
+                raise DomainError(422, "仅参考运镜须使用视频片段。", "video_camera_reference_type")
             if request["video_mode"]=="frames" and kind!="image":
                 raise DomainError(422,"首尾帧只接受图片。","video_reference_type")
             counters[kind]+=1
@@ -191,7 +217,7 @@ class H3Adapter:
                 if start>=end or end>total+.05 or not 2<=duration<=15.05:
                     raise DomainError(422,"请选择原素材范围内的 2–15 秒片段。","video_reference_duration")
                 # Native H3 truncates videos at output frame count; require an explicit shorter selection instead.
-                frame_duration=(math.ceil((request["duration"]*24-5)/17)*17+5)/24
+                frame_duration=frame_count(request)/FPS
                 if kind=="video" and duration>frame_duration+.05:
                     raise DomainError(422,"参考视频片段比生成时长更长，请缩短片段或增加生成时长。","video_reference_clip_too_long")
                 ref["clip_end"]=end
@@ -218,6 +244,7 @@ class H3Adapter:
         else:prompt="".join(p["text"] if p["type"]=="text" else slots[p["reference_id"]] for p in parts)
         settings=[slots[r["id"]]+" 的设定："+r["description"] for r in request["references"] if r.get("use_description") and r.get("description")]
         intents={"identity":"只参考人物外貌、服装与身份；画面中是同一个角色，不复制参考图的多视图排版或背景。", "composition":"参考构图和场景布局。", "motion":"参考动作节奏和镜头运动。", "voice":"Use this audio only for speaker identity and vocal timbre. Speak the NEW dialogue specified in the current scene. Emotion, pace, pauses and delivery must follow the current scene. Do not copy the reference words, rhythm, performance or background sound."}
+        intents["camera"] = "只参考这段视频的摄影机移动方向、节奏与构图变化，沿用当前镜头描述中的人物、动作和场景。"
         settings.extend(slots[r["id"]]+"："+intents[r["purpose"]] for r in request["references"] if r.get("purpose") in intents)
         for ref in request["references"]:
             if ref.get("purpose") == "voice" and ref["media_type"] == "audio" and ref.get("node_id"):
@@ -225,11 +252,19 @@ class H3Adapter:
                 if portrait:
                     settings.append(slots[ref["id"]] + " provides the voice identity of the character shown in " + slots[portrait["id"]] + ".")
         request["reference_slots"]=slots
+        prompt = compile_camera_motion(prompt, request.get("camera_motion"))
         return prompt+("\n"+"\n".join(settings) if settings else "")
 
     def prepare(self,job,files):
-        r=job["request"];m=job["workflow_snapshot"]["models"];p=r["parameters"]
+        r=job["request"];m=job["workflow_snapshot"]["models"]
         catalog=self.workflows.object_info()
+        if r.get("h3_guides") and GUIDE_NODE not in catalog:
+            raise DomainError(422, "ComfyUI 缺少 H3 定帧引导节点。", "video_guide_unavailable")
+        if r.get("video_options",{}).get("engine")=="turbo":
+            errors=video_turbo.environment_errors(catalog,m,MODEL_FIELDS)
+            if errors:
+                raise DomainError(422,"任务快照中的 Turbo 节点或模型已不可用。","video_not_ready",errors=errors)
+            return self.build_graph(job,files)
         for key,(node,field) in MODEL_FIELDS.items():
             if key=="ref2va" and r["video_mode"]!="reference" or key=="fl2va" and r["video_mode"]=="reference":continue
             if m[key] not in catalog.get(node,{}).get("input",{}).get("required",{}).get(field,[[]])[0]:
@@ -240,10 +275,13 @@ class H3Adapter:
     def build_graph(job,files):
         r=job["request"];m=job["workflow_snapshot"]["models"];p=r["parameters"]
         options=normalize_options(r.get("video_options",{}))
-        length=math.ceil((r["duration"]*24-5)/17)*17+5
+        turbo=options["engine"]=="turbo"
+        if turbo:
+            p={**p,**video_turbo.PARAMETERS}
+        length=frame_count(r)
         def node(kind,**inputs):return {"class_type":kind,"inputs":inputs}
         graph={
-          "model":node("UNETLoader",unet_name=m["ref2va" if r["video_mode"]=="reference" else "fl2va"],weight_dtype="default"),
+          "model":node("UNETLoader",unet_name=m["ref2va" if r["video_mode"]=="reference" and not turbo else "fl2va"],weight_dtype="default"),
           "clip":node("CLIPLoader",clip_name=m["clip"],type="minimax",device="default"),
           "vvae":node("VAELoader",vae_name=m["video_vae"]),
           "avae":node("VAELoader",vae_name=m["audio_vae"]),
@@ -278,7 +316,67 @@ class H3Adapter:
             if r["video_mode"]=="frames":
                 graph["condition"]["inputs"][ref["role"]]=link
             else:graph["condition"]["inputs"][f"ref_{'images' if kind=='image' else 'videos' if kind=='video' else 'audios'}.ref_{kind}_{n}"]=link
-        if options["engine"]=="director":
+        if turbo:
+            video_turbo.apply_sampling(graph,node,m,p["seed"])
+        elif options["engine"]=="director":
             from .video_director import director_graph
             graph=director_graph(graph,r,options,length)
+        if r.get("h3_guides"):
+            conditioning = ["condition", 0]
+            loaders = {}
+            guides = r["h3_guides"]
+            at_frame = {}
+            for index, guide in enumerate(guides):
+                at_frame.setdefault(guide["frame_idx"], []).append(index)
+            paired_audio = {}
+            for indices in at_frame.values():
+                if len(indices) != 2:
+                    continue
+                a, b = indices
+                if guides[a]["media_type"] == "audio":
+                    a, b = b, a
+                if (guides[b]["media_type"] == "audio" and guides[a]["media_type"] != "audio"
+                        and not guides[a]["use_audio"]):
+                    paired_audio[a] = b
+
+            def load_guide(index):
+                guide = guides[index]
+                kind = guide["media_type"]
+                filename = files[guide_file_key(index)]
+                loader = loaders.get((kind, filename))
+                if loader is None:
+                    loader = f"h3_guide_{index + 1}_source"
+                    if kind == "image":
+                        graph[loader] = node("LoadImage", image=filename)
+                    elif kind == "audio":
+                        graph[loader] = node("LoadAudio", audio=filename)
+                    else:
+                        graph[loader] = node("LoadVideo", file=filename)
+                        graph[loader + "_parts"] = node("GetVideoComponents", video=[loader, 0])
+                        loader += "_parts"
+                    loaders[kind, filename] = loader
+                return loader
+
+            for index, guide in enumerate(guides):
+                if index in paired_audio.values():
+                    continue
+                key = f"h3_guide_{index + 1}"
+                kind = guide["media_type"]
+                loader = load_guide(index)
+                inputs = {"positive": conditioning, "latent": ["condition", 1], "frame_idx": guide["frame_idx"]}
+                if kind == "audio":
+                    inputs.update(audio_vae=["avae", 0], audio=[loader, 0])
+                else:
+                    inputs.update(vae=["vvae", 0], image=[loader, 0])
+                    if kind == "video" and guide.get("use_audio"):
+                        inputs.update(audio_vae=["avae", 0], audio=[loader, 1])
+                    elif index in paired_audio:
+                        inputs.update(audio_vae=["avae", 0], audio=[load_guide(paired_audio[index]), 0])
+                graph[key] = node(GUIDE_NODE, **inputs)
+                conditioning = [key, 0]
+            if turbo:
+                graph["guider"]["inputs"]["conditioning"] = conditioning
+            else:
+                graph["sample"]["inputs"]["positive"] = conditioning
+                graph["negative"]["inputs"]["conditioning"] = conditioning
         return {"api_graph":graph,"parameters":{**p,**options,"frame_count":length,"fps":24,"actual_duration":length/24},"output_nodes":["save"]}

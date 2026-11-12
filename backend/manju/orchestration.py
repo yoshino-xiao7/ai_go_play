@@ -11,6 +11,9 @@ import logging
 import threading
 
 from .store import DomainError, encode, fingerprint, new_id, now
+from .camera_motion import linked_camera_motion
+from .video import PROFILE_ID as H3_PROFILE
+from .video_enhance import PROFILES as ENHANCEMENT_PROFILES
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS canvas_runs (
@@ -40,7 +43,7 @@ DONE = {'succeeded', 'reused'}
 BAD = {'failed', 'blocked', 'cancelled'}
 FIELDS = {'workflow_id', 'prompt', 'prompt_parts', 'parameters', 'negative_prompt', 'mask_version_id',
           'provider', 'model', 'quality', 'video_options', 'video_mode', 'duration', 'audio',
-          'speech_options', 'subject_node_id', 'lip_sync_options'}
+          'speech_options', 'subject_node_id', 'lip_sync_options', 'enhance_options', 'h3_guides', 'frame_count'}
 
 
 class OrchestrationService:
@@ -85,7 +88,12 @@ class OrchestrationService:
     def _request(self, project_id, node, nodes, edges, executable):
         data, kind = node['data'], self._kind(node)
         draft = data.get('generation', {})
-        request = {k: copy.deepcopy(v) for k, v in draft.items() if k in FIELDS}
+        workflow_id = draft.get('workflow_id')
+        fields = FIELDS
+        if kind == 'video' and isinstance(workflow_id, str) and workflow_id in ENHANCEMENT_PROFILES:
+            # Older video editors saved H3 defaults on video enhancement cards.
+            fields = fields - {'parameters', 'video_options', 'video_mode', 'duration', 'audio', 'h3_guides', 'frame_count'}
+        request = {k: copy.deepcopy(v) for k, v in draft.items() if k in fields}
         request.update(project_id=project_id, source_node_id=node['id'], result_policy='review')
         if kind != 'image':
             request['kind'] = kind
@@ -109,7 +117,7 @@ class OrchestrationService:
             references.append({'id': 'edge-' + edge['id'], 'node_id': source['id'], 'edge_id': edge['id'], 'source': 'connection',
                                'version_id': source_data.get('subject', {}).get('voice_version_id') if voice else source_data.get('asset_version_id'),
                                'title': source_data.get('title', source['id']), 'media_type': 'audio' if voice else source_data.get('kind', 'image'),
-                               'role': source_data.get('kind') if draft.get('workflow_id') == 'builtin-latentsync15-local' else edge.get('data', {}).get('reference_role', 'first_frame' if draft.get('video_mode') == 'frames' and not references else 'last_frame' if draft.get('video_mode') == 'frames' else 'reference')})
+                               'role': source_data.get('kind') if draft.get('workflow_id') == 'builtin-latentsync15-local' else edge.get('data', {}).get('reference_role', 'first_frame' if request.get('video_mode') == 'frames' and not references else 'last_frame' if request.get('video_mode') == 'frames' else 'reference')})
         dependencies, bindings = set(), []
         for index, ref in enumerate(references):
             source_id = ref.get('node_id')
@@ -137,6 +145,8 @@ class OrchestrationService:
         request['references'] = references
         if not request.get('workflow_id') and kind in ('image', 'audio', 'video'):
             request['workflow_id'] = 'builtin-h3-local' if kind == 'video' else 'builtin-indextts25-local' if kind == 'audio' else 'builtin-qwen21-' + draft.get('mode', 'text_to_image')
+        if kind == 'video' and request['workflow_id'] == H3_PROFILE:
+            request['camera_motion'] = linked_camera_motion(nodes, edges, node['id'])
         # Negative prompts are stored in the image form's parameters.
         params = request.setdefault('parameters', {})
         if 'negative_prompt' in params:
@@ -173,8 +183,10 @@ class OrchestrationService:
                 if not isinstance(seeds, list) or not seeds or any(not isinstance(i, str) or i not in nodes for i in seeds):
                     raise DomainError(422, '请选择仍存在的起点节点。', 'canvas_run_selection')
                 reached = set(seeds)
+                camera_edges = [edge for edge in canvas['edges'] if edge.get('data', {}).get('role') == 'camera_motion']
                 while True:
                     expanded = reached | {i for i, spec in specs.items() if set(spec['dependencies']) & reached or any(r.get('node_id') in reached for r in spec['request'].get('references', []))}
+                    expanded.update(edge['target'] for edge in camera_edges if edge['source'] in reached)
                     if expanded == reached:
                         break
                     reached = expanded
@@ -213,6 +225,8 @@ class OrchestrationService:
                                 workflow = self.generations.openai.snapshot(request['workflow_id'].removeprefix('builtin-openai-'))
                             elif request['workflow_id'] == 'builtin-latentsync15-local':
                                 workflow = self.generations.lipsync.snapshot()
+                            elif request['workflow_id'] in ENHANCEMENT_PROFILES:
+                                workflow = self.generations.video_adapter(request).snapshot()
                             elif spec['kind'] == 'video':
                                 workflow = self.generations.video.snapshot(request.get('video_options'))
                             elif spec['kind'] == 'audio':
@@ -239,6 +253,14 @@ class OrchestrationService:
                     for ref in request['references']:
                         if not ref['version_id'].startswith('pending:') and not self._present(ref['version_id'], 'image' if spec['kind'] == 'image' else 'audio' if spec['kind'] == 'audio' else ref.get('media_type')):
                             raise DomainError(422, '固定参考素材缺失、已删除或类型不符。', 'canvas_run_input_missing')
+                    guides = request.get('h3_guides', [])
+                    if not isinstance(guides, list) or any(
+                        not isinstance(guide, dict) or not isinstance(guide.get('version_id'), str)
+                        or guide.get('media_type') not in ('image', 'video', 'audio')
+                        or not self._present(guide['version_id'], guide['media_type'])
+                        for guide in guides
+                    ):
+                        raise DomainError(422, 'H3 定帧引导素材缺失、已删除或类型不符。', 'canvas_run_input_missing')
                     if request.get('mask_version_id') and not self._present(request['mask_version_id'], 'image'):
                         raise DomainError(422, '蒙版原件缺失。', 'canvas_run_input_missing')
                     for binding in spec['bindings']:
@@ -256,6 +278,8 @@ class OrchestrationService:
 
     def _signature(self, spec, request):
         canonical = self.generations._validate_request(request) if self.handlers[spec['kind']] is self.generations else request
+        if spec['kind'] == 'video' and canonical.get('camera_motion') is None and 'camera_motion' in canonical:
+            canonical = {key: value for key, value in canonical.items() if key != 'camera_motion'}
         return fingerprint({'kind': spec['kind'], 'workflow': spec.get('workflow_signature'), 'request': canonical})
 
     def create(self, project_id, payload):
@@ -282,6 +306,7 @@ class OrchestrationService:
                     raise DomainError(409, '节点已有未结束的生成，请先等待或核对。', 'generation_source_busy', node_id=spec['node_id'], job_id=active['id'])
             run_id, timestamp = new_id(), now()
             versions = {r['version_id'] for s in plan['nodes'] for r in s['request']['references'] if not r['version_id'].startswith('pending:')}
+            versions.update(g['version_id'] for s in plan['nodes'] for g in s['request'].get('h3_guides', []))
             versions.update(s['request']['mask_version_id'] for s in plan['nodes'] if s['request'].get('mask_version_id'))
             versions.update(s['cached_version_id'] for s in plan['nodes'] if s.get('cached_version_id'))
             with self.store.tx():

@@ -1,13 +1,48 @@
-.candidate-review { position:absolute; top:calc(100% + 7px); left:0; width:100%; padding:8px; border:1px solid #444852; border-radius:10px; background:#24262c; box-shadow:0 6px 20px #0006; z-index:8; }
-.candidate-thumbnails { display:flex; gap:6px; overflow:auto; }
-.candidate-thumbnails button { flex:0 0 55px; height:60px; padding:2px; position:relative; border:1px solid #464952; border-radius:6px; background:#17191c; }
-.candidate-thumbnails button.active { border-color:#9ebfe8; }
-.candidate-thumbnails img { width:100%;height:100%;object-fit:contain; }
-.candidate-thumbnails span { position:absolute;bottom:1px;left:1px;background:#252a34dc;font-size:9px;color:#e2e7f0;padding:2px 4px; }
-.candidate-actions { display:flex; flex-wrap:wrap; gap:5px; margin-top:7px; }
-.candidate-actions button,.candidate-return { border:0;border-radius:5px;background:#353b48;color:#d8e1ee;padding:5px 7px;font-size:10px;cursor:pointer; }
-.candidate-actions button:disabled { opacity:.35; }
-.candidate-return { width:100%;margin-top:5px;background:transparent;color:#9cadc8; }
+.candidate-review {
+  flex-shrink: 0;
+  min-width: 0;
+  padding: 8px 16px 12px;
+  border-top: 1px solid #3b424f;
+  background: #24262c;
+}
+.candidate-thumbnails {
+  display: flex;
+  gap: 8px;
+  overflow: auto hidden;
+  overscroll-behavior-inline: contain;
+  padding: 3px 2px 8px;
+  user-select: none;
+}
+.candidate-thumbnails button {
+  display: grid;
+  gap: 4px;
+  flex: 0 0 100px;
+  padding: 4px;
+  border: 1px solid #464952;
+  border-radius: 7px;
+  background: #17191c;
+  color: #d8e1ee;
+  cursor: pointer;
+}
+.candidate-thumbnails button[aria-pressed="true"] {
+  border-color: #9ebfe8;
+  background: #26364a;
+}
+.candidate-thumbnails button:focus-visible { outline: 2px solid #9ebfe8; outline-offset: 1px; }
+.candidate-thumbnails img { width: 100%; height: 51px; object-fit: contain; pointer-events: none; }
+.candidate-thumbnails span { display: flex; justify-content: space-between; gap: 8px; font-size: 11px; }
+.candidate-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 7px; margin-top: 5px; }
+.candidate-actions button {
+  border: 1px solid #495363;
+  border-radius: 6px;
+  background: #303641;
+  color: #d8e1ee;
+  padding: 6px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.candidate-actions .candidate-adopt:not(:disabled) { background: #345b84; border-color: #6e98c4; color: #fff; }
+.candidate-actions button:disabled { opacity: .45; cursor: default; }
 .reference-compare { display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:20px; }
 .reference-compare figure { margin:0;min-width:0;text-align:center;color:#bfc7d5;font-size:12px; }
 .reference-compare img { width:100%;height:320px;object-fit:contain;background:#14161a;border-radius:8px; }

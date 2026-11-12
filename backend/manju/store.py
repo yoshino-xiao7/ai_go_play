@@ -79,7 +79,7 @@ class Store:
                 self._index_subject_media(row["id"], images, row["voice_version_id"])
             # Older builds saved @ references without project membership. Repair
             # that index on open so existing drafts receive deletion protection.
-            for canvas in self.conn.execute("SELECT project_id,nodes FROM canvases WHERE instr(nodes, '\"generation\"') > 0 OR instr(nodes, '\"image_history\"') > 0 OR instr(nodes, '\"subject\"') > 0 OR instr(nodes, '\"shot\"') > 0 OR instr(nodes, '\"production_settings\"') > 0 OR instr(nodes, '\"composite\"') > 0 OR instr(nodes, '\"timeline\"') > 0").fetchall():
+            for canvas in self.conn.execute("SELECT project_id,nodes FROM canvases WHERE instr(nodes, '\"generation\"') > 0 OR instr(nodes, '\"image_history\"') > 0 OR instr(nodes, '\"previous_image_version_id\"') > 0 OR instr(nodes, '\"subject\"') > 0 OR instr(nodes, '\"shot\"') > 0 OR instr(nodes, '\"production_settings\"') > 0 OR instr(nodes, '\"composite\"') > 0 OR instr(nodes, '\"timeline\"') > 0").fetchall():
                 for node in json.loads(canvas["nodes"]):
                     for version_id in self.node_version_ids(node, strict=False):
                         self.conn.execute("INSERT OR IGNORE INTO project_assets(project_id,asset_id,added_at) SELECT ?,asset_id,? FROM versions WHERE id=?", (canvas["project_id"], now(), version_id))
@@ -215,6 +215,7 @@ class Store:
             self.conn.execute("INSERT INTO projects(id,name,aspect_ratio,created_at,updated_at,cover_version_id) VALUES(?,?,?,?,?,?)", (duplicate_id, project["name"][:247] + " 副本", project["aspect_ratio"], timestamp, timestamp, project["cover_version_id"]))
             self.conn.execute("INSERT INTO canvases VALUES(?,?,?,?)", (duplicate_id, encode(canvas["nodes"]), encode(canvas["edges"]), encode(canvas["viewport"])))
             self.conn.execute("INSERT INTO project_assets SELECT ?,asset_id,? FROM project_assets WHERE project_id=?", (duplicate_id, timestamp, project_id))
+            self.conn.execute("INSERT INTO screenplays(project_id,document) SELECT ?,document FROM screenplays WHERE project_id=?", (duplicate_id, project_id))
             self.emit("project.created", {"project_id": duplicate_id})
         return self.project(duplicate_id)
 
@@ -310,8 +311,9 @@ class Store:
         if not isinstance(data, dict):
             invalid("node data")
             return identifiers
-        if data.get("asset_version_id") is not None:
-            add(data["asset_version_id"])
+        for key in ("asset_version_id", "previous_image_version_id"):
+            if data.get(key) is not None:
+                add(data[key])
         composite = data.get("composite")
         if composite is not None:
             if not isinstance(composite, dict) or not isinstance(composite.get("input_versions", []), list):
@@ -384,15 +386,16 @@ class Store:
             else:
                 invalid("pending generation submission")
         for payload in inputs:
-            references = payload.get("references", [])
-            if not isinstance(references, list):
-                invalid("generation references")
-                references = []
-            for reference in references:
-                if not isinstance(reference, dict):
-                    invalid("generation reference")
+            for key, label in (("references", "generation reference"), ("h3_guides", "H3 guide")):
+                references = payload.get(key, [])
+                if not isinstance(references, list):
+                    invalid(label + " list")
                     continue
-                add(reference.get("version_id"))
+                for reference in references:
+                    if not isinstance(reference, dict):
+                        invalid(label)
+                        continue
+                    add(reference.get("version_id"))
             if payload.get("edit_base_version_id") is not None:
                 add(payload["edit_base_version_id"])
             if payload.get("mask_version_id") is not None:
@@ -401,6 +404,8 @@ class Store:
 
     @staticmethod
     def validate_canvas(payload: dict) -> tuple:
+        from .camera_motion import normalize_camera_motion
+
         nodes, edges = payload.get("nodes", []), payload.get("edges", [])
         viewport = payload.get("viewport", {"x": 0, "y": 0, "zoom": 1})
         if not isinstance(nodes, list) or not isinstance(edges, list) or len(nodes) > 20000 or len(edges) > 50000:
@@ -411,10 +416,12 @@ class Store:
             if len(identifiers) != len(nodes) or any(not isinstance(identifier, str) or not identifier for identifier in identifiers):
                 raise ValueError("duplicate node id")
             for node in nodes:
-                if node.get("type", "media") not in ("media", "text", "group", "frame", "subject"):
+                if node.get("type", "media") not in ("media", "text", "group", "frame", "subject", "camera_motion"):
                     raise ValueError("node type")
                 if not isinstance(node.get("data", {}), dict):
                     raise ValueError("node data")
+                if node.get("type") == "camera_motion":
+                    normalize_camera_motion(node["data"].get("camera_motion"))
                 Store.node_version_ids(node)
                 position = node["position"]
                 if any(not math.isfinite(float(position[key])) for key in ("x", "y")):
@@ -426,10 +433,19 @@ class Store:
                         raise ValueError("parent cycle")
                     visited.add(parent)
                     parent = nodes_by_id[parent].get("parentId")
+            camera_targets = set()
             for edge in edges:
                 role = edge.get("data", {}).get("role", "pending")
-                if role not in ("pending", "reference", "relation"):
+                if role not in ("pending", "reference", "relation", "camera_motion"):
                     raise ValueError("edge role")
+                if role == "camera_motion":
+                    source, target = nodes_by_id[edge["source"]], nodes_by_id[edge["target"]]
+                    data = target.get("data", {})
+                    if (source.get("type") != "camera_motion" or target.get("type") != "media"
+                        or data.get("kind") != "video" or (data.get("generation") or {}).get("workflow_id") not in (None, "builtin-h3-local")
+                        or target["id"] in camera_targets):
+                        raise DomainError(422, "每个 H3 视频节点只能连接一张运镜卡。", "camera_motion_edge_invalid")
+                    camera_targets.add(target["id"])
                 if role == "reference":
                     source = nodes_by_id[edge["source"]]
                     target = nodes_by_id[edge["target"]]

@@ -54,15 +54,20 @@ def compile_prompt(request, workflow):
             versions.append(ref["version_id"])
         slots[ref["id"]] = versions.index(ref["version_id"]) + 1
     has_mentions = any(p["type"] == "reference" for p in parts)
-    numbered = workflow.get("capabilities", {}).get("reference_mapping") == "numbered"
+    mapping = workflow.get("capabilities", {}).get("reference_mapping")
     # The built-in Qwen encoder numbers images in exactly the supplied order.
-    numbered = numbered or workflow.get("id", "").startswith("builtin-qwen21-")
+    numbered = mapping in ("numbered", "picture") or workflow.get("id", "").startswith("builtin-qwen21-")
     if has_mentions and not numbered:
         raise DomainError(422, "此工作流尚未适配主体名称映射，请在工作流中配置后使用 @ 引用。", "reference_mapping_unsupported")
-    result = "".join(p["text"] if p["type"] == "text" else f"参考图{slots[p['reference_id']]}中的主体" for p in parts)
+    def image_label(reference_id):
+        index = slots[reference_id]
+        return f"<Picture {index}>" if mapping == "picture" else f"参考图{index}"
+
+    subject_suffix = "" if mapping == "picture" else "中的主体"
+    result = "".join(p["text"] if p["type"] == "text" else image_label(p["reference_id"]) + subject_suffix for p in parts)
     settings = []
     for ref in refs:
         description = ref.get("description") if ref.get("use_description") else ""
         if description:
-            settings.append(f"参考图{slots[ref['id']]}的主体设定：{description}")
+            settings.append(f"{image_label(ref['id'])}的主体设定：{description}")
     return result + ("\n" + "\n".join(settings) if settings else "")

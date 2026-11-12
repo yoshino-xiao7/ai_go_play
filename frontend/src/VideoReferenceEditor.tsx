@@ -38,7 +38,7 @@ export default function VideoReferenceEditor({reference,width,height,onSave,onCl
   return createPortal(<Modal title={`参考素材 · ${reference.title}`} onClose={onClose} className="video-reference-editor">
     <div className="video-reference-editor-body">
       <label>参考用途<StudioSelect aria-label="参考用途" value={value.purpose} onChange={e=>setValue({...value,purpose:e.target.value as ImageReference["purpose"]})}>
-        <option value="general">一般参考</option>{kind==="image"&&<><option value="identity">人物外貌与身份</option><option value="composition">场景与构图</option></>}{kind==="video"&&<option value="motion">动作与运镜</option>}{kind==="audio"&&<option value="voice">音色身份（按镜头重新演绎）</option>}
+        <option value="general">一般参考</option>{kind==="image"&&<><option value="identity">人物外貌与身份</option><option value="composition">场景与构图</option></>}{kind==="video"&&<><option value="motion">动作与运镜</option><option value="camera">仅参考运镜</option></>}{kind==="audio"&&<option value="voice">音色身份（按镜头重新演绎）</option>}
       </StudioSelect></label>
       {kind==="image"?<><div className="video-reference-crop-preview"><canvas ref={canvas} aria-label="实际输入构图预览"/></div>
         <div className="video-crop-presets">{[["完整图片",whole],["左侧人物",{x:0,y:0,width:1/3,height:1}],["中间人物",{x:1/3,y:0,width:1/3,height:1}],["右侧人物",{x:2/3,y:0,width:1/3,height:1}]].map(([label,region])=><button key={String(label)} onClick={()=>setValue({...value,crop:region as typeof whole})}>{String(label)}</button>)}</div>

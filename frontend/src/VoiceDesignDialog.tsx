@@ -77,7 +77,7 @@ export default function VoiceDesignDialog({ projectId, subjectId, subject, onClo
         {subject.image_version_ids.length > 0 && <label><input type="checkbox" checked={usePortrait} onChange={event => setUsePortrait(event.target.checked)} />参考角色外形</label>}
         <button className="button primary" disabled={busy || running || !profile?.ready || !description.trim() || text.trim().length < 4} onClick={() => void generate()}>{busy ? <LoaderCircle size={15} className="spin" /> : <AudioLines size={15} />}生成音色候选</button>
       </div>
-      <small>本地 H3 联合采样，约 8 秒试听；耗时与原生视频采样接近。候选自动保存为音频资产，关闭窗口后任务继续。绑定固定参考音频，跨镜头一致性仍需试听验证。</small>
+      <small>候选自动保存到资产库，可在这里试听和绑定。关闭窗口后任务继续。每段试听约 8 秒，生成耗时接近原生视频采样。跨镜头的音色一致性仍需试听确认。</small>
       {profile && !profile.ready && <div role="alert" className="voice-design-error">{profile.errors.join("；")}</div>}
       {error && <div role="alert" className="voice-design-error">{error}</div>}
       <div className="voice-design-candidates" aria-label="音色候选">

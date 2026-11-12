@@ -4,6 +4,7 @@ from types import SimpleNamespace
 import pytest
 
 from manju.store import DomainError, Store
+from manju.reference_contract import compile_prompt
 from manju.workflows import WorkflowService, builtin_workflows
 
 
@@ -11,10 +12,44 @@ def catalog():
     def node(inputs, outputs, optional=None, **extra):
         return {"input": {"required": inputs, "optional": optional or {}}, "output": outputs, **extra}
     return {
-        "UNETLoader": node({"unet_name": [["qwen_image_2.1_turbo_int8_convrot.safetensors"]], "weight_dtype": [["default"]]}, ["MODEL"]),
-        "CLIPLoader": node({"clip_name": [["qwen3vl_8b_int8_convrot.safetensors"]], "type": [["qwen_image"]]}, ["CLIP"], {"device": [["default", "cpu"]]}),
-        "VAELoader": node({"vae_name": [["qwen_image_2.1_vae_bf16.safetensors"]]}, ["VAE"]),
+        "UNETLoader": node({"unet_name": [["qwen_image_2.1_turbo_int8_convrot.safetensors", "minimax_h3_image_pruned_int8_convrot.safetensors"]], "weight_dtype": [["default"]]}, ["MODEL"]),
+        "CLIPLoader": node({"clip_name": [["qwen3vl_8b_int8_convrot.safetensors", "qwen3vl_32b_minimax_h3_int8_convrot.safetensors", "qwen3.5_9b_w4a8_gptq.safetensors"]], "type": [["qwen_image", "minimax"]]}, ["CLIP"], {"device": [["default", "cpu"]]}),
+        "VAELoader": node({"vae_name": [["qwen_image_2.1_vae_bf16.safetensors", "minimax_h3_image_vae_fp16.safetensors"]]}, ["VAE"]),
         "TextEncodeQwenImage21GH": node({"clip": ["CLIP"], "prompt": ["STRING"], "negative_prompt": ["STRING"], "latent_width": ["INT", {"min": 32, "max": 4096, "step": 32}], "latent_height": ["INT", {"min": 32, "max": 4096, "step": 32}], "mode": [["填充", "裁剪"]], "ref_image_size": [["自动"]]}, ["CONDITIONING", "CONDITIONING", "LATENT", "INFO"], {"vae": ["VAE"], "mask": ["MASK"], **{f"image_{n:02d}": ["IMAGE"] for n in range(1, 4)}}),
+        "MiniMaxH3ImageConditioning": node(
+            {"clip": ["CLIP"], "prompt": ["STRING"], "width": ["INT", {"min": 0, "step": 32}], "height": ["INT", {"min": 0, "step": 32}]},
+            ["CONDITIONING", "LATENT"], {"vae": ["VAE"], "images": ["COMFY_AUTOGROW_V3", {}]},
+        ),
+        "ConditioningZeroOut": node({"conditioning": ["CONDITIONING"]}, ["CONDITIONING"]),
+        "PrimitiveStringMultiline": node({"value": ["STRING"]}, ["STRING"]),
+        "PrimitiveBoolean": node({"value": ["BOOLEAN"]}, ["BOOLEAN"]),
+        "StringReplace": node({"string": ["STRING"], "find": ["STRING"], "replace": ["STRING"]}, ["STRING"]),
+        "JsonExtractString": node({"json_string": ["STRING"], "key": ["STRING"]}, ["STRING"]),
+        "ComfySwitchNode": node({"switch": ["BOOLEAN"]}, ["COMFY_MATCHTYPE_V3"], {
+            "on_false": ["COMFY_MATCHTYPE_V3"], "on_true": ["COMFY_MATCHTYPE_V3"],
+        }),
+        "PreviewAny": node({"source": ["*"]}, ["STRING"]),
+        "TextGenerateV2": node({
+            "clip": ["CLIP"], "prompt": ["STRING"], "max_length": ["INT"],
+            "sampling_mode": ["COMFY_DYNAMICCOMBO_V3", {"options": [
+                {"key": "on", "inputs": {"required": {
+                    key: [kind] for key, kind in {
+                        "temperature": "FLOAT", "top_k": "INT", "top_p": "FLOAT",
+                        "min_p": "FLOAT", "repetition_penalty": "FLOAT", "presence_penalty": "FLOAT", "seed": "INT",
+                    }.items()
+                }}},
+            ]}],
+        }, ["STRING", "STRING"], {
+            "images": ["COMFY_AUTOGROW_V3", {}], "thinking": ["BOOLEAN"], "use_default_template": ["BOOLEAN"],
+            "mtp": [["auto"]], "system_prompt": ["STRING"],
+        }),
+        "ResizeImageMaskNode": node({
+            "input": ["COMFY_MATCHTYPE_V3"], "scale_method": [["area"]],
+            "resize_type": ["COMFY_DYNAMICCOMBO_V3", {"options": [
+                {"key": "scale to multiple", "inputs": {"required": {"multiple": ["INT"]}}},
+                {"key": "scale total pixels", "inputs": {"required": {"megapixels": ["FLOAT"]}}},
+            ]}],
+        }, ["COMFY_MATCHTYPE_V3"]),
         "KSampler": node({"model": ["MODEL"], "seed": ["INT", {"min": 0, "max": 2**64-1}], "steps": ["INT", {"min": 1, "max": 10000}], "cfg": ["FLOAT", {"min": 0, "max": 100}], "sampler_name": [["euler"]], "scheduler": [["simple"]], "positive": ["CONDITIONING"], "negative": ["CONDITIONING"], "latent_image": ["LATENT"], "denoise": ["FLOAT", {"min": 0, "max": 1}]}, ["LATENT"]),
         "VAEDecode": node({"samples": ["LATENT"], "vae": ["VAE"]}, ["IMAGE"]),
         "VAEEncode": node({"pixels": ["IMAGE"], "vae": ["VAE"]}, ["LATENT"]),
@@ -34,8 +69,9 @@ def workflows(tmp_path, monkeypatch):
 
 def test_builtin_catalog_models_and_modes(workflows):
     assert {w["mode"] for w in workflows.list()} == {"text_to_image", "reference", "edit"}
+    revisions = {workflow["id"]: workflow.get("revision", 1) for workflow in builtin_workflows()}
     for value in workflows.list():
-        assert value["read_only"] and value["revision"] == 1
+        assert value["read_only"] and value["revision"] == revisions[value["id"]]
         assert workflows.validate(value["id"])["valid"]
         assert workflows.get(value["id"])["ready"] is True
     with pytest.raises(DomainError, match="只读"):
@@ -57,7 +93,33 @@ def test_crud_revision_snapshot_and_persistence(workflows):
     prepared = workflows.prepare(copy, "不受随后修改影响", parameters={"seed": 123})
     assert prepared["workflow"]["revision"] == 1
     assert prepared["api_graph"]["8"]["inputs"]["prompt"] == "不受随后修改影响"
-    assert len(WorkflowService(workflows.store, workflows.comfy).list()) == 3
+    assert len(WorkflowService(workflows.store, workflows.comfy).list()) == len(builtin_workflows())
+
+
+def test_h3_image_reference_slots_and_prompt_mapping(workflows):
+    workflow = workflows.get("builtin-minimax-h3-image-reference")
+    prompt = compile_prompt({
+        "references": [
+            {"id": "scene", "version_id": "v1"},
+            {"id": "actor", "version_id": "v2", "description": "短发", "use_description": True},
+        ],
+        "prompt_parts": [{"type": "reference", "reference_id": "actor"}, {"type": "text", "text": "站在门口"}],
+    }, workflow)
+    assert prompt == "<Picture 2>站在门口\n<Picture 2>的主体设定：短发"
+    graph = workflows.prepare(workflow, prompt, reference_images=["scene.png", "actor.png"])["api_graph"]
+    conditioning = graph["32"]["inputs"]
+    enhancer = graph["34"]["inputs"]
+    assert conditioning["images.image_1"] == enhancer["images.image1"] == ["48", 0]
+    assert conditioning["images.image_2"] == enhancer["images.image2"] == ["102", 0]
+    assert "images.image_3" not in conditioning
+    assert "images.image3" not in enhancer
+    assert conditioning["vae"] == ["31", 0]
+    assert graph["45"]["inputs"]["image"] == "scene.png"
+    assert graph["102"]["inputs"]["image"] == "actor.png"
+    assert graph["43"]["inputs"]["value"] == prompt
+    assert graph["61"]["inputs"]["value"] is True
+    assert graph["38"]["inputs"]["steps"] == 6
+    assert graph["38"]["inputs"]["cfg"] == 1.0
 
 
 def test_import_api_format_and_inferred_bindings(workflows):

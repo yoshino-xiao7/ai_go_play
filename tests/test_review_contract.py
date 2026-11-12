@@ -17,6 +17,7 @@ def test_review_delivery_preserves_adopted_and_pins_candidate(client,generation,
     assert len(canvas["nodes"])==1
     data=canvas["nodes"][0]["data"]
     assert data["asset_version_id"]==original
+    assert "previous_image_version_id" not in data
     assert all(entry["candidate"] for entry in data["image_history"][1:])
     assert result["outputs"][0]["version_id"] in service.store.node_version_ids(canvas["nodes"][0])
     service._append_results(service.get(job["id"]),result["outputs"])
@@ -43,10 +44,12 @@ def test_candidate_and_edit_base_survive_archive(client,generation,png_bytes):
     current=upload(client,png_bytes("red"))["current_version_id"]
     candidate=upload(client,png_bytes("blue"))["current_version_id"]
     base=upload(client,png_bytes("green"))["current_version_id"]
+    previous=upload(client,png_bytes("yellow"))["current_version_id"]
     image_card(client,item["id"],current)
     canvas=service.store.canvas(item["id"])
     data=canvas["nodes"][0]["data"]
     data["image_history"]=[{"version_id":current},{"version_id":candidate,"candidate":True}]
+    data["previous_image_version_id"]=previous
     data["generation"]={"mode":"edit","prompt":"修改","references":[],"edit_base_version_id":base}
     service.store.save_canvas(item["id"],canvas)
     assert base in service.store.node_version_ids(canvas["nodes"][0])
@@ -56,6 +59,7 @@ def test_candidate_and_edit_base_survive_archive(client,generation,png_bytes):
     restored=service.store.canvas(imported.json()["id"])["nodes"][0]["data"]
     assert restored["image_history"][1]["candidate"]
     assert client.get('/api/media/'+restored['generation']['edit_base_version_id']).content==png_bytes("green")
+    assert client.get('/api/media/'+restored['previous_image_version_id']).content==png_bytes("yellow")
 
 def test_reference_survives_deleted_source_and_compiles_aliases(client,generation,png_bytes):
     service,peer=generation

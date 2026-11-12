@@ -8,7 +8,7 @@ from __future__ import annotations
 from copy import deepcopy
 import json
 import math
-from pathlib import PurePosixPath
+from pathlib import Path, PurePosixPath
 import re
 import secrets
 from typing import Any
@@ -27,6 +27,47 @@ LIMITS = {"seed": (0, 2**53 - 1), "width": (32, 16384), "height": (32, 16384), "
 
 def _binding(node_id: str, input_name: str) -> dict:
     return {"node_id": node_id, "input_name": input_name}
+
+
+def _minimax_h3_image_workflow(mode: str, title: str, instructions: str) -> dict:
+    with_images = mode != "text_to_image"
+    max_images = 16 if with_images else 0
+    template = "edit" if with_images else "t2i"
+    # Comfy-Org workflow_templates, exported through ComfyUI's API-format exporter.
+    # Manju supplies output dimensions and uploaded inputs in place of demo widgets.
+    path = Path(__file__).with_name("workflow_templates") / f"h3_image_{template}.json"
+    graph = json.loads(path.read_text(encoding="utf-8"))
+    prompt_id, conditioning_id, sampler_id = ("43", "32", "38") if with_images else ("23:24", "23:5", "23:7")
+    bindings = {key: [] for key in SCALARS}
+    bindings.update(
+        prompt=[_binding(prompt_id, "value")],
+        width=[_binding(conditioning_id, "width")],
+        height=[_binding(conditioning_id, "height")],
+        seed=[_binding(sampler_id, "seed")],
+        images=[_binding("45", "image")] if with_images else [],
+        mask=None,
+    )
+    # Preserve the official resize for the first image. All additional images
+    # reach both the prompt enhancer and the diffusion model in the same order.
+    for index in range(2, max_images + 1):
+        node_id = str(100 + index)
+        graph[node_id] = {"class_type": "LoadImage", "inputs": {"image": f"manju_reference_{index}.png"}}
+        graph[conditioning_id]["inputs"][f"images.image_{index}"] = [node_id, 0]
+        graph["34"]["inputs"][f"images.image{index}"] = [node_id, 0]
+        bindings["images"].append(_binding(node_id, "image"))
+    return {
+        "id": f"builtin-minimax-h3-image-{mode}", "name": f"MiniMax H3 Image · {title}", "mode": mode,
+        "revision": 3,
+        "description": f"ComfyUI 官方模板 · INT8 · 提示词增强开启。{instructions}固定 6 步 / CFG 1，生成结果回到原卡片。",
+        "api_graph": graph, "bindings": bindings, "output_nodes": ["9"],
+        "defaults": {"width": 2048, "height": 2048, "seed": -1},
+        "capabilities": {
+            "min_images": int(bool(max_images)), "max_images": max_images,
+            "supports_mask": False, "requires_mask": False,
+            "reference_kind": "image_conditioning" if max_images else "none",
+            "reference_mapping": "picture" if max_images else "unsupported",
+        },
+    }
 
 
 def builtin_workflows() -> list[dict]:
@@ -63,6 +104,11 @@ def builtin_workflows() -> list[dict]:
             "capabilities": {"min_images": int(mode != "text_to_image"), "max_images": 0 if mode == "text_to_image" else 3, "requires_mask": False, "supports_mask": mode == "edit", "reference_kind": "none" if mode == "text_to_image" else "image_conditioning"},
             "defaults": {"seed": 0, "width": 1024, "height": 1024, "steps": 8, "cfg": 1.0, "denoise": 1.0, "negative_prompt": ""}, "output_nodes": ["11"],
         })
+    result.extend([
+        _minimax_h3_image_workflow("text_to_image", "文生图", "先扩写画面描述，再生成。"),
+        _minimax_h3_image_workflow("reference", "参考生图", "沿用官方多图编辑链路重组参考素材。@ 或连线素材按顺序对应 <Picture 1> 至 <Picture 16>。"),
+        _minimax_h3_image_workflow("edit", "图像编辑", "第一张为编辑底图，可再加 15 张参考图。通过 @ 指定素材或在提示词中使用 <Picture 1> 等编号。"),
+    ])
     return result
 
 
@@ -122,7 +168,15 @@ class WorkflowService:
                 updated_at TEXT NOT NULL, deleted_at TEXT, validation TEXT)""")
             for value in builtin_workflows():
                 timestamp = now()
-                store.conn.execute("INSERT OR IGNORE INTO workflows(id,name,mode,definition,builtin,created_at,updated_at) VALUES(?,?,?,?,1,?,?)", (value["id"], value["name"], value["mode"], encode(value), timestamp, timestamp))
+                store.conn.execute(
+                    """INSERT INTO workflows(id,name,mode,definition,revision,builtin,created_at,updated_at)
+                    VALUES(?,?,?,?,?,1,?,?)
+                    ON CONFLICT(id) DO UPDATE SET name=excluded.name, mode=excluded.mode,
+                        definition=excluded.definition, revision=excluded.revision,
+                        updated_at=excluded.updated_at, validation=NULL
+                    WHERE workflows.builtin=1 AND workflows.revision<excluded.revision""",
+                    (value["id"], value["name"], value["mode"], encode(value), value.get("revision", 1), timestamp, timestamp),
+                )
 
     @staticmethod
     def _row(row) -> dict:
@@ -173,13 +227,13 @@ class WorkflowService:
             raise DomainError(422, "输入映射须为 JSON 对象。", "workflow_bindings_invalid")
         value["bindings"] = {key: bindings.get(key, [] if key != "mask" else None) for key in (*SCALARS, "images", "mask")}
         count = len(value["bindings"]["images"]) if isinstance(value["bindings"]["images"], list) else 0
-        is_conditioning = any(isinstance(node, dict) and any(part in node.get("class_type", "") for part in ("QwenImage", "IPAdapter", "CLIPVision", "ReferenceLatent")) for node in graph.values())
+        is_conditioning = any(isinstance(node, dict) and any(part in node.get("class_type", "") for part in ("QwenImage", "IPAdapter", "CLIPVision", "ReferenceLatent", "MiniMaxH3ImageConditioning")) for node in graph.values())
         default_caps = {"min_images": int(value["mode"] != "text_to_image"), "max_images": count, "supports_mask": value["bindings"]["mask"] is not None, "requires_mask": False, "reference_kind": "image_conditioning" if is_conditioning and count else "img2img" if count else "none"}
         capabilities = value.get("capabilities", {})
         if not isinstance(capabilities, dict):
             raise DomainError(422, "工作流能力须为 JSON 对象。", "workflow_capabilities_invalid")
         value["capabilities"] = {**default_caps, **capabilities}
-        if value["capabilities"].get("reference_mapping", "unsupported") not in ("numbered", "unsupported"):
+        if value["capabilities"].get("reference_mapping", "unsupported") not in ("numbered", "picture", "unsupported"):
             raise DomainError(422, "主体名称映射方式无效。", "workflow_capabilities_invalid")
         if any(node.get("class_type") == "TextEncodeQwenImage21GH" for node in graph.values()):
             value["capabilities"].setdefault("reference_mapping", "numbered")
@@ -409,7 +463,16 @@ class WorkflowService:
             if spec.get("api_node") or "comfy_api_nodes" in spec.get("python_module", "") or "/api" in spec.get("category", "").lower():
                 issue("workflow_remote_node", "本地工作流不接受云 API 节点。", node_id)
             sections = spec.get("input", {})
-            required, optional = sections.get("required", {}), sections.get("optional", {})
+            required = dict(sections.get("required", {}))
+            optional = dict(sections.get("optional", {}))
+            for name, field in {**required, **optional}.items():
+                if not field or field[0] != "COMFY_DYNAMICCOMBO_V3":
+                    continue
+                choices = field[1]["options"]
+                selected = next((choice for choice in choices if choice["key"] == inputs.get(name)), None)
+                if selected:
+                    for section, fields in (("required", required), ("optional", optional)):
+                        fields.update({f"{name}.{key}": value for key, value in selected.get("inputs", {}).get(section, {}).items()})
             for name in required:
                 if name not in inputs:
                     issue("workflow_input_required", "节点缺少必填输入。", node_id, name)
@@ -423,13 +486,15 @@ class WorkflowService:
                 expected = field[0] if field else None
                 options = field[1] if len(field) > 1 and isinstance(field[1], dict) else {}
                 choices = expected if isinstance(expected, list) else options.get("options") if expected == "COMBO" else None
+                if expected == "COMFY_DYNAMICCOMBO_V3":
+                    choices = [choice["key"] for choice in options["options"]]
                 if _link(item):
                     source = graph.get(item[0], {})
                     source_spec = catalog.get(source.get("class_type"), {}) if isinstance(source, dict) else {}
                     source_outputs = source_spec.get("output", [])
                     if source_spec and item[1] >= len(source_outputs):
                         issue("workflow_output_index_invalid", "连接输出序号超出节点输出数量。", node_id, name)
-                    elif source_spec and isinstance(expected, str) and expected != "*" and source_outputs[item[1]] not in (expected, "*"):
+                    elif source_spec and isinstance(expected, str) and expected not in ("*", "COMFY_MATCHTYPE_V3") and source_outputs[item[1]] not in (expected, "*", "COMFY_MATCHTYPE_V3"):
                         issue("workflow_link_type_invalid", f"连接类型 {source_outputs[item[1]]} 与 {expected} 不匹配。", node_id, name)
                 elif choices is not None and (node_id, name) not in file_targets and item not in choices:
                     issue("workflow_choice_unavailable", f"本机不存在所选模型或选项：{item}", node_id, name)

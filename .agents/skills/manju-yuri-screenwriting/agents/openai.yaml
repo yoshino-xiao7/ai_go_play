@@ -1,0 +1,4 @@
+interface:
+  display_name: "Manju 轻百合短剧编剧"
+  short_description: "从故事访谈和创作预设出发，设计分集、创作和精修轻百合群像或双女主剧本"
+  default_prompt: "用 $manju-yuri-screenwriting 跟我一起构思一部轻百合短剧。我想写两位旧同事重新熟起来，先和我聊故事方向、集数和单集时长，再给我几个预设。"

@@ -19,7 +19,7 @@ manju = "manju.cli:main"
 where = ["backend"]
 
 [tool.setuptools.package-data]
-manju = ["schema.sql"]
+manju = ["schema.sql", "workflow_templates/*.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

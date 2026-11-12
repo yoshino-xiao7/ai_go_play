@@ -182,7 +182,7 @@ def build_parser():
     generate.add_argument("--emotion", choices=("reference","neutral","happy","angry","sad","afraid","disgusted","melancholic","surprised","calm"))
     generate.add_argument("--emotion-intensity", type=float)
     generate.add_argument("--video-mode", choices=("text","frames","reference"))
-    generate.add_argument("--video-engine", choices=("native","director"), help="H3 原生流程或 Director 镜头组")
+    generate.add_argument("--video-engine", choices=("native","director","turbo"), help="H3 原生流程、Director 镜头组或 Turbo 8 步全参考")
     generate.add_argument("--ref-image-size", choices=("match","1024","1280","1536","max"), help="独立参考图处理分辨率")
     generate.add_argument("--duration", type=int)
     generate.add_argument("--silent", action="store_true", help="视频不包含音轨")

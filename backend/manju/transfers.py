@@ -16,7 +16,8 @@ import tempfile
 import time
 import zipfile
 
-from .store import DomainError, Store, new_id, now
+from .screenplay import encode_screenplay, get_screenplay
+from .store import DomainError, Store, encode, new_id, now
 
 
 ARCHIVE_FORMAT = 1
@@ -89,8 +90,9 @@ def _canvas_version_ids(canvas: dict) -> set[str]:
                 identifiers.update(Store.node_version_ids(node))
             except DomainError as error:
                 raise ValueError(error.detail["message"]) from error
-        if data.get("asset_version_id") is not None:
-            add(data["asset_version_id"])
+        for key in ("asset_version_id", "previous_image_version_id"):
+            if data.get(key) is not None:
+                add(data[key])
         history = data.get("image_history", [])
         if not isinstance(history, list):
             raise ValueError("invalid image history")
@@ -101,12 +103,16 @@ def _canvas_version_ids(canvas: dict) -> set[str]:
         draft = data.get("generation")
         if draft is None:
             continue
-        if not isinstance(draft, dict) or not isinstance(draft.get("references", []), list):
-            raise ValueError("invalid generation draft references")
-        for reference in draft.get("references", []):
-            if not isinstance(reference, dict):
-                raise ValueError("invalid generation reference")
-            add(reference.get("version_id"))
+        if not isinstance(draft, dict):
+            raise ValueError("invalid generation draft")
+        for key in ("references", "h3_guides"):
+            inputs = draft.get(key, [])
+            if not isinstance(inputs, list):
+                raise ValueError(f"invalid generation draft {key}")
+            for item in inputs:
+                if not isinstance(item, dict):
+                    raise ValueError(f"invalid generation draft {key} entry")
+                add(item.get("version_id"))
         if draft.get("edit_base_version_id") is not None:
             add(draft["edit_base_version_id"])
         if draft.get("mask_version_id") is not None:
@@ -201,6 +207,9 @@ def export_project(store, project_id: str) -> Path:
             "versions": versions,
             "project_assets": sorted(member_ids),
         }
+        screenplay = get_screenplay(store, project_id, include_deleted=True)["document"]
+        if screenplay is not None:
+            manifest["screenplay"] = screenplay
         export_dir = store.root / "temp"
         export_dir.mkdir(parents=True, exist_ok=True)
         target = export_dir / f"export-{new_id()}.manju"
@@ -267,6 +276,8 @@ def _manifest(archive: zipfile.ZipFile, entries: dict) -> dict:
             raise ValueError("invalid canvas")
         if not isinstance(canvas.get("viewport"), dict):
             raise ValueError("invalid viewport")
+        if "screenplay" in manifest:
+            manifest["screenplay"] = json.loads(encode_screenplay(manifest["screenplay"]))
         asset_ids = {asset["id"] for asset in assets}
         version_ids = {version["id"] for version in versions}
         if any(not isinstance(identifier, str) or not identifier for identifier in asset_ids | version_ids):
@@ -404,9 +415,9 @@ def _commit_import_records(store, manifest: dict, staging: Path, installed: list
     has_workflows = store.conn.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='workflows'").fetchone()
     for node in canvas["nodes"]:
         data = node.get("data", {})
-        reference = data.get("asset_version_id")
-        if reference:
-            data["asset_version_id"] = version_map[reference]
+        for key in ("asset_version_id", "previous_image_version_id"):
+            if data.get(key):
+                data[key] = version_map[data[key]]
         composite = data.get("composite")
         if isinstance(composite, dict):
             composite["input_versions"] = [version_map[value] for value in composite.get("input_versions", [])]
@@ -436,6 +447,8 @@ def _commit_import_records(store, manifest: dict, staging: Path, installed: list
             continue
         for reference in draft.get("references", []):
             reference["version_id"] = version_map[reference["version_id"]]
+        for guide in draft.get("h3_guides", []):
+            guide["version_id"] = version_map[guide["version_id"]]
         if draft.get("edit_base_version_id"):
             draft["edit_base_version_id"] = version_map[draft["edit_base_version_id"]]
         if draft.get("mask_version_id"):
@@ -491,6 +504,8 @@ def _commit_import_records(store, manifest: dict, staging: Path, installed: list
             (project_id, json.dumps(canvas["nodes"], ensure_ascii=False), json.dumps(canvas["edges"], ensure_ascii=False),
              json.dumps(canvas["viewport"], ensure_ascii=False)),
         )
+        if "screenplay" in manifest:
+            store.conn.execute("INSERT INTO screenplays(project_id,document) VALUES(?,?)", (project_id, encode(manifest["screenplay"])))
         for asset_id in manifest["project_assets"]:
             store.conn.execute(
                 "INSERT INTO project_assets(project_id,asset_id,added_at) VALUES(?,?,?)",

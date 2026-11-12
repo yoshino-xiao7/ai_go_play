@@ -44,7 +44,7 @@
 .canvas-project-info-dialog h4 span{font-size:11px;color:var(--canvas-muted)}
 .canvas-project-stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px}
 .canvas-project-stats>div{display:flex;flex-direction:column;gap:12px;padding:16px;border-radius:8px;background:var(--canvas-bg);border:1px solid transparent}
-.canvas-project-stats>div:first-child{background:var(--accent-soft,#b9e38612);border-color:var(--canvas-accent)}
+.canvas-project-stats>div:first-child{background:var(--accent-soft);border-color:var(--canvas-accent)}
 .canvas-project-stats span{font-size:12px;color:var(--canvas-muted)}
 .canvas-project-stats strong{font-size:22px;font-weight:500}
 .canvas-project-name-field{display:flex;flex-direction:column;gap:10px;font-size:13px}

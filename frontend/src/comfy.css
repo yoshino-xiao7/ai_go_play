@@ -48,9 +48,9 @@
   height: 57px;
   flex-shrink: 0;
   border-radius: 13px;
-  border: 1px solid #71865a52;
-  background: #b9e38613;
-  color: #bcdf9e;
+  border: 1px solid var(--border-light);
+  background: var(--accent-soft);
+  color: var(--accent);
 }
 .comfy-service-name {
   display: flex;
@@ -93,14 +93,14 @@
 }
 .comfy-state.running,
 .comfy-state.external {
-  color: #c4e8a6;
-  background: #b9e3860b;
-  border-color: #91ba693c;
+  color: var(--status-ok);
+  background: #ffffff06;
+  border-color: var(--border-light);
 }
 .comfy-state.running i,
 .comfy-state.external i,
 .comfy-service-meta > span > i.managed {
-  background: #b9e386;
+  background: var(--status-ok);
 }
 .comfy-state.starting,
 .comfy-state.stopping {
@@ -142,13 +142,13 @@
   cursor: pointer;
 }
 .comfy-button.primary {
-  background: #b9e386;
-  border-color: #b9e386;
-  color: #23341b;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
 }
 .comfy-button.primary:hover:not(:disabled) {
-  background: #c8ee9e;
-  border-color: #c8ee9e;
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
 }
 .comfy-button.secondary {
   color: #bfcab9;
@@ -308,7 +308,7 @@
   text-overflow: ellipsis;
 }
 .comfy-installation-check {
-  color: #b9e386;
+  color: var(--accent);
   flex-shrink: 0;
   display: grid;
   place-items: center;
@@ -385,7 +385,7 @@
 }
 .comfy-panel input:focus {
   border-color: #95b97b;
-  box-shadow: 0 0 0 2px #b9e3860c;
+  box-shadow: 0 0 0 2px var(--accent-soft);
 }
 .comfy-panel input:disabled {
   color: #87917f;

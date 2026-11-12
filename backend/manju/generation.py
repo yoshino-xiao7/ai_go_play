@@ -17,9 +17,12 @@ from PIL import Image, ImageOps
 
 from .media import probe_media, find_binary, run_process
 from .video import H3Adapter, normalize_video
+from .video_inputs import frame_count, guide_file_key, validate_guide
+from .camera_motion import linked_camera_motion
 from .speech import SpeechAdapter, normalize_speech
 from .voice_design import VoiceDesignAdapter, normalize_voice_design, PROFILE_ID as VOICE_DESIGN_PROFILE
 from .lipsync import LipSyncAdapter, normalize_lipsync, PROFILE_ID as LIPSYNC_PROFILE
+from .video_enhance import PROFILES as ENHANCEMENT_PROFILES, VideoEnhanceAdapter, normalize_enhancement
 from .store import DomainError, encode, fingerprint, new_id, now
 from .reference_contract import normalize_references, compile_prompt
 from .generation_progress import GenerationProgress
@@ -56,6 +59,7 @@ class GenerationService:
         self.speech = SpeechAdapter(store, workflows)
         self.voice_design = VoiceDesignAdapter(self.video)
         self.lipsync = LipSyncAdapter(store, workflows)
+        self.video_enhancement = {key: VideoEnhanceAdapter(store, workflows, key) for key in ENHANCEMENT_PROFILES}
         self.openai = OpenAIImages(store, transport=openai_transport, **({"key_loader": openai_key_loader} if openai_key_loader else {}))
         self.external_executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="manju-openai")
         self.external_jobs = {}
@@ -126,11 +130,16 @@ class GenerationService:
     def audio_adapter(self, request):
         return self.voice_design if request.get("workflow_id") == VOICE_DESIGN_PROFILE else self.speech
 
+    def video_adapter(self, request):
+        workflow_id = request.get("workflow_id")
+        if workflow_id == LIPSYNC_PROFILE:
+            return self.lipsync
+        return self.video_enhancement.get(workflow_id, self.video)
+
     def create(self, payload, request_id=None, *, workflow_snapshot=None, parent_job_id=None, recover_local_response=False):
         request = self._validate_request(payload)
         video = request.get("kind") == "video"
-        lip_sync = request.get("workflow_id") == LIPSYNC_PROFILE
-        video_adapter = self.lipsync if lip_sync else self.video
+        video_adapter = self.video_adapter(request)
         speech = request.get("kind") == "audio"
         audio_adapter = self.audio_adapter(request)
         external = request.get("provider") == "openai"
@@ -165,7 +174,7 @@ class GenerationService:
                     request.update(self.openai.validate_request(request))
                 request["cost_estimate"] = estimate_cost(request)
             workflow = copy.deepcopy(workflow_snapshot or (self.openai.snapshot(request["workflow_id"].removeprefix(OPENAI_PREFIX)) if external else video_adapter.snapshot(request.get("video_options")) if video else audio_adapter.snapshot() if speech else self.workflows.get(request["workflow_id"])))
-            if video and not lip_sync:
+            if video and video_adapter is self.video:
                 defaults=workflow.get("defaults",{})
                 # Apply saved defaults after the idempotency check. A retry keeps
                 # its resolved request and snapshot, even if global settings change.
@@ -173,6 +182,10 @@ class GenerationService:
                     "duration":payload.get("duration",defaults.get("duration",4)),
                     "audio":payload.get("audio",defaults.get("audio",True)),
                     "parameters":{**{k:v for k,v in defaults.items() if k not in ("duration","audio")},**payload.get("parameters",{})}})
+                if source and parent_job_id is None and "camera_motion" not in request:
+                    motion = linked_camera_motion(nodes, canvas["edges"], source)
+                    if motion is not None:
+                        request["camera_motion"] = motion
             report = {"valid":True} if video or speech or external else self.workflows.validate(workflow, online=False)
             if speech:
                 audio_adapter.configure(request, payload, workflow)
@@ -197,6 +210,14 @@ class GenerationService:
                 # A node is provenance, not ownership of an immutable image version.
                 versions[version["id"]] = version
                 reference["snapshot"] = self._version_snapshot(version)
+            guides = request.get("h3_guides", [])
+            if guides and not workflow.get("h3_guides_ready"):
+                raise DomainError(422, "ComfyUI 缺少 H3 定帧引导节点。", "video_guide_unavailable")
+            for guide in guides:
+                version = self.video.input_version(guide["version_id"])
+                validate_guide(guide, version, frame_count(request))
+                versions[version["id"]] = version
+                guide["snapshot"] = self._version_snapshot(version)
             if mask_id:
                 mask = self._input_version(mask_id)
                 if not references:
@@ -226,6 +247,8 @@ class GenerationService:
         if payload.get("kind") == "video":
             if payload.get("workflow_id") == LIPSYNC_PROFILE:
                 return normalize_lipsync(payload, GenerationService._validate_request)
+            if isinstance(payload.get("workflow_id"), str) and payload["workflow_id"] in ENHANCEMENT_PROFILES:
+                return normalize_enhancement(payload, GenerationService._validate_request)
             return normalize_video(payload, GenerationService._validate_request)
         if payload.get("kind") == "audio":
             if payload.get("workflow_id") == VOICE_DESIGN_PROFILE:
@@ -479,7 +502,8 @@ class GenerationService:
         temporary = None
         try:
             extension = Path(version["filename"]).suffix or ".png"
-            if reference is not None and job['request'].get('workflow_id') == LIPSYNC_PROFILE:
+            workflow_id = job['request'].get('workflow_id')
+            if reference is not None and (workflow_id == LIPSYNC_PROFILE or workflow_id in ENHANCEMENT_PROFILES):
                 token=hashlib.sha256(encode(reference).encode()).hexdigest()[:16]
             elif reference is not None:
                 from .video_inputs import prepare_reference
@@ -527,8 +551,16 @@ class GenerationService:
         request = job["request"]
         files = ({ref["id"]:self._upload_image(job,ref["version_id"],reference=ref) for ref in request["references"]} if request.get("kind")=="video"
                  else {version:self._upload_image(job,version) for version in dict.fromkeys(item["version_id"] for item in request["references"])})
+        prepared_guides = {}
+        for index, guide in enumerate(request.get("h3_guides", [])):
+            media = {key: value for key, value in guide.items()
+                     if key not in ("frame_idx", "id", "title", "node_id", "snapshot")}
+            signature = fingerprint(media)
+            if signature not in prepared_guides:
+                prepared_guides[signature] = self._upload_image(job, guide["version_id"], reference=media)
+            files[guide_file_key(index)] = prepared_guides[signature]
         mask = self._upload_image(job, request["mask_version_id"], mask=True) if request.get("mask_version_id") else None
-        video_adapter = self.lipsync if request.get('workflow_id') == LIPSYNC_PROFILE else self.video
+        video_adapter = self.video_adapter(request)
         prepared = video_adapter.prepare(job,files) if request.get("kind") == "video" else self.audio_adapter(request).prepare(job,files) if request.get("kind") == "audio" else self.workflows.prepare(job["workflow_snapshot"], request.get("compiled_prompt", request["prompt"]), negative_prompt=request["negative_prompt"], reference_images=list(files.values()), mask_image=mask, parameters=request["parameters"], output_prefix="Manju/" + job["id"])
         if job["backend_url"] != f"http://127.0.0.1:{self.comfy.port}":
             raise DomainError(409, "准备图片期间 ComfyUI 地址发生变化，请确认安装后重试。", "comfy_backend_changed")
@@ -613,7 +645,14 @@ class GenerationService:
             self._update(job["id"], status="unknown", message="ComfyUI 暂未返回此任务，保留任务标识等待恢复。")
 
     def _collect(self, job, result):
-        video = job["request"].get("kind") == "video"
+        request = job["request"]
+        video = request.get("kind") == "video"
+        voice_audition = (
+            request.get("workflow_id") == VOICE_DESIGN_PROFILE
+            and bool(request.get("subject_node_id"))
+            and not job["source_node_id"]
+        )
+        canvas_node_id = None if voice_audition else job["source_node_id"] or f"generation-{job['id']}-0"
         self._update(job["id"], status="collecting", message="正在校验并保存生成媒体。", progress=0.8)
         descriptors = []
         for node_id in job["workflow_snapshot"]["output_nodes"]:
@@ -643,12 +682,16 @@ class GenerationService:
                 if metadata["type"] != job["request"].get("kind", "image"):
                     raise DomainError(422, "输出媒体类型与任务不符。", "generation_output_invalid")
                 asset = self.store.ingest(path, filename, metadata, digest.hexdigest(), project_id=job["project_id"], request_id=f"generation:{job['id']}:{index}", source="comfyui")
-                outputs.append({"asset_id": asset["id"], "version_id": asset["imported_version_id"], "node_id": job["source_node_id"] or f"generation-{job['id']}-0", "comfy_output": descriptor})
+                outputs.append({"asset_id": asset["id"], "version_id": asset["imported_version_id"], "node_id": canvas_node_id, "comfy_output": descriptor})
                 self._update(job["id"], outputs_json=encode(outputs))
             finally:
                 path.unlink(missing_ok=True)
-        self._append_results(job, outputs)
-        self._update(job["id"], status="succeeded", message="生成结果已保存，可在原卡片内查看候选。", progress=1, outputs_json=encode(outputs), error_json=None)
+        if voice_audition:
+            message = "音色候选已保存，可在角色的音色设计窗口试听并绑定。"
+        else:
+            self._append_results(job, outputs)
+            message = "生成结果已保存，可在原卡片内查看候选。"
+        self._update(job["id"], status="succeeded", message=message, progress=1, outputs_json=encode(outputs), error_json=None)
 
     def _append_results(self, job, outputs):
         kind = job["request"].get("kind", "image")
@@ -697,6 +740,8 @@ class GenerationService:
                     seen.add(output["version_id"])
             data.update(kind=kind, image_history=history)
             if not current or job["request"].get("result_policy") != "review":
+                if kind == "image" and current and current != outputs[0]["version_id"]:
+                    data["previous_image_version_id"] = current
                 data.update(asset_version_id=outputs[0]["version_id"], generation_id=job["id"])
             canvas["request_id"] = f"generation-result:{job['id']}:{canvas['revision']}"
             self.store.save_canvas(job["project_id"], canvas, event_details={"reason": "generation_result", "job_id": job["id"], "updated_node_ids": [target["id"]]}, generation_delivery={"job_id": job["id"], "version_ids": version_ids, "node_id": target["id"]})

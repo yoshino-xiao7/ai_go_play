@@ -34,7 +34,6 @@
 .canvas-stage.is-overview .subject-node-description,.canvas-stage.is-overview .subject-image-strip,.canvas-stage.is-overview .subject-voice-strip,.canvas-stage.is-overview .subject-node-meta {display:none}
 .canvas-stage.is-overview .react-flow__node.selected .subject-node-description {display:-webkit-box}
 .canvas-stage.is-overview .react-flow__node.selected .subject-image-strip,.canvas-stage.is-overview .react-flow__node.selected .subject-voice-strip,.canvas-stage.is-overview .react-flow__node.selected .subject-node-meta {display:flex}
-.candidate-review {top:auto;bottom:0;box-sizing:border-box;border-radius:0 0 10px 10px;background:#24262cf5}
 
 .canvas-stage.right-button-panning, .canvas-stage.right-button-panning * { cursor: grabbing !important; }
 

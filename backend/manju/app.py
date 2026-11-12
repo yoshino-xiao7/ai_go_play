@@ -29,6 +29,7 @@ from .orchestration import OrchestrationService
 from .production_batch import generate_shots
 from .frames import render_frame
 from .openai_images import PREFIX as OPENAI_PREFIX, estimate_cost
+from .screenplay import get_screenplay, save_screenplay
 from .workflows import WorkflowService
 from .store import DomainError, Store, new_id
 from .transfers import cancel_migration, export_project, import_project, migrate_storage, recover_migration_state, resume_migration, storage_status
@@ -218,6 +219,7 @@ def create_app(data_dir: str | Path | None = None, config_file: str | Path | Non
         items.extend(request.app.state.generations.openai.workflows(mode))
         if include_video and mode in (None,"video"):
             items.append(request.app.state.generations.video.library_entry())
+            items.extend(adapter.status() for adapter in request.app.state.generations.video_enhancement.values())
         if include_audio and mode in (None,"audio"):
             items.append(request.app.state.generations.speech.status())
         return {"items":items}
@@ -232,6 +234,9 @@ def create_app(data_dir: str | Path | None = None, config_file: str | Path | Non
 
     @application.get("/api/workflows/{workflow_id}")
     def workflow(request: Request, workflow_id: str):
+        enhancement = request.app.state.generations.video_enhancement.get(workflow_id)
+        if enhancement:
+            return enhancement.status()
         if workflow_id == "builtin-indextts25-local":
             speech = request.app.state.generations.speech
             return {**speech.status(), **speech.template(), "read_only": True}
@@ -255,6 +260,12 @@ def create_app(data_dir: str | Path | None = None, config_file: str | Path | Non
 
     @application.post("/api/workflows/{workflow_id}/validate")
     def validate_workflow(request: Request, workflow_id: str):
+        enhancement = request.app.state.generations.video_enhancement.get(workflow_id)
+        if enhancement:
+            status = enhancement.status()
+            return {"valid": status["ready"], "online": status["ready"],
+                    "errors": [{"code": "video_enhance_not_ready", "message": error} for error in status["errors"]],
+                    "warnings": [], "output_nodes": ["enhance"]}
         if workflow_id == "builtin-indextts25-local":
             status = request.app.state.generations.speech.status()
             return {"valid": status["ready"], "online": status["ready"], "errors": [{"code":"speech_unavailable","message":e} for e in status["errors"]], "warnings": [], "output_nodes": ["save"]}
@@ -465,6 +476,14 @@ def create_app(data_dir: str | Path | None = None, config_file: str | Path | Non
     @application.put("/api/projects/{project_id}/canvas")
     def update_canvas(request: Request, project_id: str, body: dict = Body(...)):
         return get_store(request).save_canvas(project_id, body)
+
+    @application.get("/api/projects/{project_id}/screenplay")
+    def screenplay(request: Request, project_id: str):
+        return get_screenplay(get_store(request), project_id)
+
+    @application.put("/api/projects/{project_id}/screenplay")
+    def update_screenplay(request: Request, project_id: str, body: dict = Body(...)):
+        return save_screenplay(get_store(request), project_id, body)
 
     @application.post("/api/projects/{project_id}/assets")
     def link_asset(request: Request, project_id: str, body: dict = Body(...)):

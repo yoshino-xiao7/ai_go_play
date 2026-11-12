@@ -4,6 +4,7 @@ import {
   Suspense,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
 } from "react";
@@ -15,6 +16,7 @@ import {
   CheckCircle2,
   Clapperboard,
   CircuitBoard,
+  Clock3,
   Film,
   Folder,
   FolderOpen,
@@ -213,13 +215,15 @@ export default function App() {
   return (
     <div className={`app-shell ${projectId ? "app-shell-canvas" : ""}`}>
       {!projectId && <nav className="app-rail" aria-label="主导航">
-        <a className="brand" href="#/projects" title="Manju 本地创作工作台">
-          <Layers2 size={26} strokeWidth={1.8} />
+        <a className="brand" href="#/projects" aria-label="Manju 本地创作工作台">
+          <img src="/icon.svg" width="34" height="34" alt="" />
+          <span>Manju<small>本地创作工作台</small></span>
         </a>
         <div className="rail-links">
           <a
             className={`rail-link ${currentSection === "projects" ? "active" : ""}`}
             href="#/projects"
+            aria-current={currentSection === "projects" ? "page" : undefined}
           >
             <LayoutDashboard size={21} />
             <span>项目</span>
@@ -227,6 +231,7 @@ export default function App() {
           <a
             className={`rail-link ${currentSection === "assets" ? "active" : ""}`}
             href="#/assets"
+            aria-current={currentSection === "assets" ? "page" : undefined}
           >
             <Grid2X2 size={21} />
             <span>资产库</span>
@@ -235,24 +240,26 @@ export default function App() {
             className={`rail-link ${comfyOpen ? "active" : ""}`}
             onClick={openComfy}
             aria-label="打开 ComfyUI 管理"
+            aria-expanded={comfyOpen}
             title="ComfyUI 本地服务"
           >
             <CircuitBoard size={21} />
             <span>ComfyUI</span>
           </button>
-          <a className={`rail-link ${currentSection === "workflows" ? "active" : ""}`} href="#/workflows">
+          <a className={`rail-link ${currentSection === "workflows" ? "active" : ""}`} href="#/workflows" aria-current={currentSection === "workflows" ? "page" : undefined}>
             <GitBranch size={21} />
             <span>工作流</span>
           </a>
         </div>
         <div className="rail-bottom">
-          <button className="rail-link" onClick={() => setTasksOpen(true)}>
+          <button className="rail-link" onClick={() => setTasksOpen(true)} aria-expanded={tasksOpen}>
             <ListChecks size={20} />
             <span>任务</span>
           </button>
           <a
             className={`rail-link ${currentSection === "trash" ? "active" : ""}`}
             href="#/trash"
+            aria-current={currentSection === "trash" ? "page" : undefined}
           >
             <Trash2 size={20} />
             <span>回收站</span>
@@ -260,14 +267,15 @@ export default function App() {
           <a
             className={`rail-link ${currentSection === "settings" ? "active" : ""}`}
             href="#/settings"
+            aria-current={currentSection === "settings" ? "page" : undefined}
           >
             <Settings2 size={21} />
             <span>设置</span>
           </a>
-          <span
-            className={`connection-dot ${connected ? "online" : ""}`}
-            title={connected ? "本机服务已连接" : "正在连接本机服务"}
-          />
+        </div>
+        <div className="rail-status" role="status">
+          <span className={`connection-dot ${connected ? "online" : ""}`} />
+          {connected ? "本机服务已连接" : "正在连接本机服务"}
         </div>
       </nav>}
       <main className={`app-content ${projectId ? "canvas-content" : ""}`}>
@@ -452,6 +460,8 @@ function Projects({
   const [menu, setMenu] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<Project | null>(null);
   const importRef = useRef<HTMLInputElement>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
+  const [eagerCoverCount, setEagerCoverCount] = useState(0);
   useEffect(() => {
     let active = true;
     api<Project[]>("/api/projects")
@@ -531,11 +541,35 @@ function Projects({
   const filtered = projects.filter((item) =>
     item.name.toLowerCase().includes(search.toLowerCase()),
   );
+
+  useLayoutEffect(() => {
+    const grid = gridRef.current;
+    const scrollport = grid?.closest("main");
+    if (!grid || !scrollport) return;
+
+    const measure = () => {
+      // Keep the fold anchored to the top of the project list when it is scrolled.
+      const fold = scrollport.getBoundingClientRect().bottom - scrollport.scrollTop;
+      let count = 0;
+      for (const card of grid.children) {
+        if (card.getBoundingClientRect().top >= fold) break;
+        count += 1;
+      }
+      setEagerCoverCount(count);
+    };
+
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(grid);
+    observer.observe(scrollport);
+    return () => observer.disconnect();
+  }, [error, filtered.length, loading]);
+
   return (
-    <div className="page projects-page">
+    <div className="page wrap projects-page">
       <div className="page-topline">
-        <span className="wordmark">
-          MANJU <span>创作工作台</span>
+        <span className="breadcrumb">
+          工作台 <span>/</span> 项目
         </span>
         <span className="local-label">
           <HardDrive size={14} />
@@ -545,20 +579,20 @@ function Projects({
       <header className="page-heading">
         <div>
           <h1>
-            项目<span className="count">{projects.length}</span>
+            项目
           </h1>
           <p>创建画布，整理素材、参考与分镜。</p>
         </div>
         <div className="button-row">
           <button
-            className="button secondary"
+            className="button secondary btn"
             disabled={busy}
             onClick={() => importRef.current?.click()}
           >
             <PackageOpen size={17} />
             导入项目
           </button>
-          <button className="button primary" onClick={() => startEdit("new")}>
+          <button className="button primary btn" onClick={() => startEdit("new")}>
             <Plus size={18} />
             新建画布
           </button>
@@ -571,17 +605,20 @@ function Projects({
         hidden
         onChange={(e) => importProject(e.target.files?.[0])}
       />
-      <div className="section-toolbar">
-        <div className="search-field">
-          <Search size={17} />
-          <input
-            placeholder="搜索项目"
-            aria-label="搜索项目"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+      <div className="section-toolbar project-toolbar">
+        <h2>最近项目 <span className="count">{search ? filtered.length : projects.length}</span></h2>
+        <div className="project-tools">
+          <span className="project-sort"><Clock3 size={15} />最近编辑</span>
+          <div className="search-field">
+            <Search size={17} />
+            <input
+              placeholder="搜索项目"
+              aria-label="搜索项目"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
         </div>
-        <span className="muted small">按最近编辑排序</span>
       </div>
       {error && (
         <div className="error-banner">
@@ -592,31 +629,43 @@ function Projects({
       )}
       {loading ? (
         <Loading />
+      ) : filtered.length === 0 ? (
+        error ? null : (
+          <EmptyState
+            icon={search ? <Search size={27} /> : <Layers2 size={30} strokeWidth={1.5} />}
+            title={search ? "没有匹配的项目" : "还没有项目"}
+            description={search ? `找不到包含“${search}”的项目。` : "新建一张画布，或导入已有的 Manju 项目包。"}
+            action={search ? (
+              <button className="button secondary btn" onClick={() => setSearch("")}>清除搜索</button>
+            ) : (
+              <button className="button primary btn" onClick={() => startEdit("new")}>
+                <Plus size={18} />
+                新建画布
+              </button>
+            )}
+          />
+        )
       ) : (
-        <div className="project-grid">
-          <button className="new-project-card" onClick={() => startEdit("new")}>
-            <span className="new-project-plus">
-              <Plus size={25} strokeWidth={1.5} />
-            </span>
-            <strong>创建一张画布</strong>
-            <span>整理素材、构思分镜</span>
-          </button>
-          {filtered.map((project) => (
-            <article className="project-card" key={project.id}>
+        <div className="project-grid" ref={gridRef}>
+          {filtered.map((project, index) => (
+            <article className="project-card card" key={project.id}>
               <button
-                className="project-cover"
+                className="project-cover m-zoom"
                 onClick={() => navigate(`/canvas/${project.id}`)}
                 aria-label={`打开 ${project.name}`}
               >
-                {project.cover_version_id ? (
-                  <img src={mediaUrl(project.cover_version_id)} alt="" />
-                ) : (
-                  <div className="blank-canvas-preview">
-                    <span />
-                    <span />
-                    <span />
-                    <Layers2 size={32} strokeWidth={1.2} />
-                  </div>
+                <span className="blank-canvas-preview" aria-hidden="true">
+                  <Layers2 size={34} strokeWidth={1.3} />
+                </span>
+                {project.cover_version_id && (
+                  <img
+                    key={project.cover_version_id}
+                    src={mediaUrl(project.cover_version_id)}
+                    alt=""
+                    loading={index < eagerCoverCount ? "eager" : "lazy"}
+                    decoding="async"
+                    onError={(e) => { e.currentTarget.hidden = true; }}
+                  />
                 )}
                 <span className="open-project">
                   <ArrowRight size={20} />
@@ -628,6 +677,7 @@ function Projects({
               <div className="project-caption">
                 <button
                   className="project-name"
+                  title={project.name}
                   onClick={() => navigate(`/canvas/${project.id}`)}
                 >
                   <strong>{project.name}</strong>
@@ -637,6 +687,7 @@ function Projects({
                   <button
                     className="icon-button"
                     aria-label={`${project.name} 操作`}
+                    aria-expanded={menu === project.id}
                     onClick={() =>
                       setMenu(menu === project.id ? null : project.id)
                     }
@@ -673,17 +724,6 @@ function Projects({
             </article>
           ))}
         </div>
-      )}
-      {projects.length === 0 && !loading && (
-        <div className="onboarding-note">
-          <FolderOpen size={18} />
-          <span>
-            把电脑中的图片、视频和音频拖进画布，即可保存到统一资产库。
-          </span>
-        </div>
-      )}
-      {search && filtered.length === 0 && (
-        <p className="muted">没有匹配“{search}”的项目。</p>
       )}
       {editing && (
         <Modal
@@ -858,7 +898,7 @@ function Library({
           <p>统一保存素材，在每一张画布中自由引用。</p>
         </div>
         <button
-          className="button primary"
+          className="button primary btn"
           onClick={() => input.current?.click()}
         >
           <Upload size={17} />
@@ -983,7 +1023,7 @@ function Library({
         <div className="asset-grid">
           {assets.map((asset) => (
             <article
-              className="asset-card"
+              className="asset-card card"
               key={asset.id}
               draggable
               onDragStart={(e) =>
@@ -994,7 +1034,7 @@ function Library({
               }
             >
               <button
-                className={`asset-cover ${asset.type}`}
+                className={`asset-cover m-zoom ${asset.type}`}
                 onClick={() => onPreview(asset.current_version_id)}
                 aria-label={`预览 ${asset.name}`}
               >

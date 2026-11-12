@@ -204,6 +204,24 @@ def test_cas_idempotency_and_reference_only_inputs(graph):
         service.create(pid, {**payload, 'force': True})
 
 
+def test_canvas_run_pins_timed_guide_and_preserves_exact_frame_count(graph):
+    service, jobs, pid, versions = graph
+    guide = {'version_id': versions['image'], 'media_type': 'image', 'frame_idx': 12}
+    put(service, pid, [card('timed', 'video', video_mode='reference', frame_count=73, h3_guides=[guide],
+                            references=[{'version_id': versions['video'], 'media_type': 'video'}])])
+    plan = service.plan(pid, {})
+    assert plan['valid'], plan['errors']
+    request = plan['nodes'][0]['request']
+    assert request['h3_guides'] == [guide]
+    assert request['frame_count'] == 73
+    run = service.create(pid, {'request_id': 'timed-guide'})
+    pinned = service.store.conn.execute('SELECT version_id FROM canvas_run_inputs WHERE run_id=?', (run['id'],)).fetchall()
+    assert {row['version_id'] for row in pinned} == {versions['image'], versions['video']}
+    service.tick()
+    assert jobs.requests[0]['h3_guides'] == [guide]
+    assert jobs.requests[0]['frame_count'] == 73
+
+
 def test_real_generation_protocol_image_to_video_and_result_archive(client, generation, av_bytes, monkeypatch, tmp_path):
     from manju.transfers import export_project, import_project
     generations, peer = generation
@@ -277,6 +295,43 @@ def test_lipsync_accepts_waiting_video_and_audio_roles(graph):
     jobs.finish('job-2', versions['video'])
     service.tick()
     assert service.get(run['id'])['status'] == 'succeeded'
+
+
+@pytest.mark.parametrize(('workflow_id', 'options'), [
+    ('builtin-video-interpolate-local', {'method': 'hold', 'fps': 48, 'cuts': []}),
+    ('builtin-video-upscale-local', {'method': 'remacri', 'width': 1024, 'height': 576}),
+])
+def test_video_enhancement_reads_legacy_canvas_draft(graph, workflow_id, options):
+    service, jobs, pid, versions = graph
+    jobs.video_adapter = lambda request: SimpleNamespace(
+        snapshot=lambda: {'revision': 2, 'capabilities': {'min_images': 1, 'max_images': 1}}
+    )
+    legacy = {'parameters': {'width': 864, 'height': 480, 'steps': 20},
+              'video_options': {'engine': 'native'}, 'video_mode': 'frames', 'duration': 4, 'audio': True,
+              'h3_guides': [{'version_id': versions['image'], 'media_type': 'image', 'frame_idx': 0}], 'frame_count': 90}
+    source = {'id': 'clip', 'type': 'media', 'position': {'x': 0, 'y': 0},
+              'data': {'kind': 'video', 'asset_version_id': versions['video']}}
+    put(service, pid, [source, card('post', 'video', workflow_id=workflow_id, enhance_options=options, **legacy)],
+        [edge('clip', 'post')])
+
+    plan = service.plan(pid, {})
+    assert plan['valid'], plan['errors']
+    request = plan['nodes'][0]['request']
+    assert request['parameters'] == {}
+    assert not (legacy.keys() - {'parameters'}) & request.keys()
+    assert request['enhance_options'] == options
+    assert [(ref['version_id'], ref['edge_id'], ref['role']) for ref in request['references']] == [
+        (versions['video'], 'clip-post', 'reference')
+    ]
+    with pytest.raises(DomainError) as error:
+        GenerationService._validate_request({**request, **legacy})
+    assert error.value.detail['code'] == 'video_enhance_parameters'
+
+    service.create(pid, {})
+    service.tick()
+    assert jobs.requests[-1]['enhance_options'] == options
+    persisted = service.store.canvas(pid)['nodes'][1]['data']['generation']
+    assert {key: persisted[key] for key in legacy} == legacy
 
 
 def test_pending_run_guards_fixed_inputs_and_project(graph):

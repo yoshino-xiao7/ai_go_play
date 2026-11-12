@@ -6,8 +6,11 @@
 .image-viewer-toolbar output {min-width:45px;text-align:center}
 .image-viewer-surface {position:relative;flex:1;min-height:0;overflow:hidden;background:#101216;touch-action:none;cursor:grab;user-select:none}
 .image-viewer-surface:active {cursor:grabbing}
+.image-viewer-compare {display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;flex:1;min-height:0;padding:12px;background:#101216}
+.image-viewer-compare figure {display:grid;grid-template-rows:minmax(0,1fr) auto;gap:8px;min-height:0;margin:0;text-align:center;color:#cbd2dd;font-size:12px}
+.image-viewer-compare img {width:100%;height:100%;object-fit:contain;background:#171a20;border-radius:6px;pointer-events:none}
 .image-viewer-original {position:absolute;max-width:none!important;max-height:none!important;object-fit:fill;transform-origin:center;pointer-events:none}
 .image-viewer-message {position:absolute;inset:0;display:grid;place-items:center;color:#aab4c3}
 .image-viewer-footer {display:flex;justify-content:space-between;gap:12px;padding:9px 16px;color:#a1abba;font-size:12px;flex-shrink:0}
 .media-open-image {position:absolute;right:10px;top:10px;z-index:5;border:1px solid #65738a;background:#202734e8;color:#e9f1fc;border-radius:6px;padding:6px 10px;cursor:pointer;opacity:0}
-.media-node:hover .media-open-image,.media-node.is-selected .media-open-image,.media-open-image:focus-visible {opacity:1}
+.media-node:hover .media-open-image,.media-node.is-selected .media-open-image,.media-open-image.has-versions,.media-open-image:focus-visible {opacity:1}

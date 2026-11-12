@@ -56,6 +56,7 @@ def test_batches_and_repeated_generations_use_one_card_without_edges(client, gen
     assert current["data"]["generation"] == card["data"]["generation"]
     assert {output["node_id"] for output in result["outputs"]} == {card["id"]}
     assert current["data"]["asset_version_id"] == result["outputs"][0]["version_id"]
+    assert current["data"]["previous_image_version_id"] == original_version
     assert [entry["version_id"] for entry in current["data"]["image_history"]] == [original_version, result["outputs"][0]["version_id"], result["outputs"][1]["version_id"]]
     second = submit(client, item["id"], source_node_id=card["id"])
     again = finish(service, peer, second, png_bytes, ["yellow"])
@@ -63,6 +64,7 @@ def test_batches_and_repeated_generations_use_one_card_without_edges(client, gen
     assert len(canvas["nodes"]) == 1 and canvas["edges"] == []
     assert len(canvas["nodes"][0]["data"]["image_history"]) == 4
     assert canvas["nodes"][0]["data"]["generation_id"] == again["id"]
+    assert canvas["nodes"][0]["data"]["previous_image_version_id"] == result["outputs"][0]["version_id"]
     event = [event for event in service.store.events(0) if event["type"] == "canvas.updated"][-1]
     assert event["data"]["reason"] == "generation_result"
     assert event["data"]["updated_node_ids"] == [card["id"]]
@@ -142,6 +144,7 @@ def test_identical_output_new_job_displays_once_then_respects_history_choice(cli
     canvas = service.store.canvas(item["id"])
     assert len(canvas["nodes"][0]["data"]["image_history"]) == 2
     assert canvas["nodes"][0]["data"]["generation_id"] == second["id"]
+    assert canvas["nodes"][0]["data"]["previous_image_version_id"] == original["current_version_id"]
     canvas["nodes"][0]["data"]["asset_version_id"] = original["current_version_id"]
     canvas["nodes"][0]["data"].pop("generation_id")
     expected = service.store.save_canvas(item["id"], canvas)

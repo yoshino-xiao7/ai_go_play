@@ -4,7 +4,7 @@ import pytest
 from conftest import project, upload
 from test_generation import generation
 from test_video import h3_catalog
-from test_speech import voice_bytes
+from test_speech import advanced_catalog, voice_bytes
 from manju.generation import GenerationService
 from manju.store import DomainError
 from manju.voice_design import PROFILE_ID, AUDITION_TEXT
@@ -75,6 +75,52 @@ def test_portrait_frozen_retry_and_existing_binding_unchanged(client, designer, 
     assert retry['request']['parameters'] == job['request']['parameters']
     assert retry['workflow_snapshot']['models'] == job['workflow_snapshot']['models']
     assert retry['request']['references'][0]['version_id'] == portrait
+
+
+def test_character_auditions_stay_in_assets_and_can_be_bound_for_speech(client, designer, monkeypatch):
+    service, peer = designer
+    p = project(client)
+    project_id = p["id"]
+    original_voice = upload(client, voice_bytes(), "original.wav")["current_version_id"]
+    canvas = service.store.canvas(project_id)
+    canvas["nodes"] = [{"id": "character", "type": "subject", "position": {"x": 0, "y": 0}, "data": {
+        "kind": "image",
+        "subject": {"kind": "character", "name": "小雨", "image_version_ids": [], "voice_version_id": original_voice},
+    }}]
+    before = service.store.save_canvas(project_id, canvas)
+    job = service.create(request(project_id, subject_node_id="character"))
+    peer.image = voice_bytes(8, 2000)
+    result = {"outputs": {"save": {"audio": [{"filename": "candidate.wav", "type": "output"}]}}}
+    service._collect(job, result)
+    delivered = service.get(job["id"])
+    output = delivered["outputs"][0]
+    assert delivered["status"] == "succeeded"
+    assert output["node_id"] is None
+    assert service.store.canvas(project_id) == before
+
+    service._collect(job, result)
+    assert service.get(job["id"])["outputs"] == delivered["outputs"]
+    assert service.store.canvas(project_id) == before
+    assert client.get(f"/api/media/{output['version_id']}").content == peer.image
+    assets = client.get("/api/assets", params={"project_id": project_id, "type": "audio"}).json()["items"]
+    assert output["asset_id"] in {asset["id"] for asset in assets}
+
+    canvas = service.store.canvas(project_id)
+    canvas["nodes"][0]["data"]["subject"].update(
+        voice_version_id=output["version_id"], voice_name="小雨 · 专属音色", voice_transcript=AUDITION_TEXT,
+    )
+    saved = client.put(f"/api/projects/{project_id}/canvas", json=canvas)
+    assert saved.status_code == 200, saved.text
+    assert client.delete(f"/api/assets/{output['asset_id']}").status_code == 409
+
+    monkeypatch.setattr(service.workflows, "object_info", advanced_catalog)
+    speech = service.create({
+        "kind": "audio", "project_id": project_id, "subject_node_id": "character", "prompt": "明天我们再见。",
+    })
+    assert speech["request"]["references"][0]["version_id"] == output["version_id"]
+    service.tick()
+    assert service.get(speech["id"])["status"] == "queued"
+    assert peer.uploads[-1]["content"] == peer.image
 
 
 @pytest.mark.parametrize('changes', [

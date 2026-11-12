@@ -1,11 +1,35 @@
 import type { Edge, Node } from "@xyflow/react";
+import { isVideoEnhanceWorkflow } from "./generationTypes";
 import type { GenerationDraft, ImageReference } from "./generationTypes";
 import type { SubjectSnapshot } from "./subjectTypes";
 
 export type ReferenceNode = Node<{kind?: string; title?: string; locked?: boolean; asset_version_id?: string; subject?: SubjectSnapshot; generation?: GenerationDraft} & Record<string, unknown>>;
 export const edgeRole = (edge: Edge) => String(edge.data?.role || "pending");
 export const edgeLocked = (edge: Edge, nodes: ReferenceNode[]) => nodes.some(node => (node.id === edge.source || node.id === edge.target) && node.data.locked);
-export const canReference = (source?: ReferenceNode, target?: ReferenceNode) => target?.data.generation?.workflow_id === "builtin-latentsync15-local" ? !!(target.type === "media" && source?.type === "media" && ["video","audio"].includes(source.data.kind||"") && (source.data.asset_version_id || source.data.generation)) : target?.data.kind === "audio" ? !!(source?.type === "subject" ? source.data.subject?.voice_version_id : source?.data.kind === "audio" && (source.data.asset_version_id || source.data.generation)) && target.type === "media" : !!(source?.data.asset_version_id || source?.data.generation) && target?.type === "media" && (target.data.kind === "video" && (source!.type === "subject" || source!.type === "media" && ["image","video","audio"].includes(source!.data.kind||"")) || target.data.kind === "image" && (source!.type === "subject" || source!.type === "media" && source!.data.kind === "image"));
+export const cameraMotionRole = "camera_motion";
+export const canConnectCameraMotion = (source: ReferenceNode, target: ReferenceNode, edges: Edge[], replacingId?: string) =>
+  source.type === cameraMotionRole && target.type === "media" && target.data.kind === "video" &&
+  (!target.data.generation?.workflow_id || target.data.generation.workflow_id === "builtin-h3-local") &&
+  !edges.some(edge => edge.id !== replacingId && edge.target === target.id && edgeRole(edge) === cameraMotionRole);
+export const canReference = (source?: ReferenceNode, target?: ReferenceNode) => {
+  if (isVideoEnhanceWorkflow(target?.data.generation?.workflow_id)) {
+    return target?.type === "media" && source?.type === "media" && source.data.kind === "video" && !!(source.data.asset_version_id || source.data.generation);
+  }
+  return target?.data.generation?.workflow_id === "builtin-latentsync15-local" ? !!(target.type === "media" && source?.type === "media" && ["video","audio"].includes(source.data.kind||"") && (source.data.asset_version_id || source.data.generation)) : target?.data.kind === "audio" ? !!(source?.type === "subject" ? source.data.subject?.voice_version_id : source?.data.kind === "audio" && (source.data.asset_version_id || source.data.generation)) && target.type === "media" : !!(source?.data.asset_version_id || source?.data.generation) && target?.type === "media" && (target.data.kind === "video" && (source!.type === "subject" || source!.type === "media" && ["image","video","audio"].includes(source!.data.kind||"")) || target.data.kind === "image" && (source!.type === "subject" || source!.type === "media" && source!.data.kind === "image"));
+};
+
+export function resolveVideoEnhanceInput(nodes: ReferenceNode[], edges: Edge[], targetId: string): ImageReference | undefined {
+  const incoming = edges.filter(edge => edge.target === targetId && edgeRole(edge) === "reference");
+  if (incoming.length !== 1) return;
+  const edge = incoming[0];
+  const source = nodes.find(node => node.id === edge.source);
+  if (source?.type !== "media" || source.data.kind !== "video" || !source.data.asset_version_id) return;
+  return {
+    id: `edge-${edge.id}`, edge_id: edge.id, node_id: source.id,
+    version_id: source.data.asset_version_id, title: source.data.title || "上游视频",
+    source: "connection", role: "reference", media_type: "video",
+  };
+}
 
 export function reconcileReferences<T extends ReferenceNode>(nodes: T[], edges: Edge[]): T[] {
   const nodesById = new Map(nodes.map(node => [node.id, node]));
@@ -40,6 +64,6 @@ export function reconcileReferences<T extends ReferenceNode>(nodes: T[], edges: 
       refs=[...refs,ref];
     }
     if (draft && JSON.stringify(refs) === JSON.stringify(draft.references)) return node;
-    return {...node,data:{...node.data,generation:{mode:"text_to_image",prompt:"",parameters:{},...(node.data.kind==="audio"?{kind:"audio" as const,workflow_id:"builtin-indextts25-local"}:{}),...(node.data.kind==="video"?{kind:"video" as const,video_mode:"reference" as const,workflow_id:"builtin-h3-local"}:{}),...draft,references:refs}}};
+    return {...node,data:{...node.data,generation:{mode:"text_to_image",prompt:"",parameters:{},...(node.data.kind==="audio"?{kind:"audio" as const,workflow_id:"builtin-indextts25-local"}:{}),...(node.data.kind==="video" && !isVideoEnhanceWorkflow(draft?.workflow_id)?{kind:"video" as const,video_mode:"reference" as const,workflow_id:"builtin-h3-local"}:{}),...draft,references:refs}}};
   });
 }

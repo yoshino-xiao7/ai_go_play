@@ -35,7 +35,7 @@ export type Workflow = {
   api_graph: WorkflowGraph;
   bindings: WorkflowBindings;
   capabilities: {
-    reference_mapping?: "numbered" | "unsupported";
+    reference_mapping?: "numbered" | "picture" | "unsupported";
     min_images: number;
     max_images: number;
     requires_mask: boolean;

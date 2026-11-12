@@ -253,6 +253,13 @@ export default function GenerationComposer({
         availableWorkflows[0]
       : undefined);
   const isOpenAI = selectedWorkflow?.provider === "openai";
+  const workflowForMode = (mode: GenerationDraft["mode"]) => {
+    if (isOpenAI) return `builtin-openai-${mode}`;
+    if (selectedWorkflow?.id.startsWith("builtin-minimax-h3-image-")) {
+      return workflows.find(workflow => workflow.id === `builtin-minimax-h3-image-${mode}`)?.id;
+    }
+    return undefined;
+  };
   const openaiOptions = {
     model: draft.model || "gpt-image-2.6-flare",
     quality: draft.quality || "high",
@@ -381,7 +388,7 @@ export default function GenerationComposer({
       prompt = `${prompt.slice(0, range.start)}@${reference.title} ${prompt.slice(range.end)}`;
     updateDraft({
       prompt,
-      ...(current.mode === "text_to_image" ? { mode: "reference" as const, workflow_id: isOpenAI ? "builtin-openai-reference" : undefined, workflow_import_warning: undefined, use_current_image: false } : {}),
+      ...(current.mode === "text_to_image" ? { mode: "reference" as const, workflow_id: workflowForMode("reference"), workflow_import_warning: undefined, use_current_image: false } : {}),
       references: nextRefs.some(
         (item) => item.version_id === reference.version_id,
       )
@@ -453,7 +460,7 @@ export default function GenerationComposer({
           .join("；") || "工作流校验未通过，请先在工作流库修复。"
       );
     const limits = selectedWorkflow.capabilities;
-    if (promptParts(draft.prompt,references).some(part=>part.type==="reference") && limits.reference_mapping!=="numbered" && !selectedWorkflow.id.startsWith("builtin-qwen21-")) return "工作流未适配 @ 名称映射，请在工作流库配置。";
+    if (promptParts(draft.prompt,references).some(part=>part.type==="reference") && limits.reference_mapping!=="numbered" && limits.reference_mapping!=="picture" && !selectedWorkflow.id.startsWith("builtin-qwen21-")) return "工作流未适配 @ 名称映射，请在工作流库配置。";
     if (references.length < limits.min_images)
       return `此工作流至少需要 ${limits.min_images} 张图片，当前有 ${references.length} 张。`;
     if (references.length > limits.max_images)
@@ -486,6 +493,7 @@ export default function GenerationComposer({
     isOpenAI, openai.issue,
   ]);
   const active = !!job && activeGenerationStates.has(job.status);
+  const resultNodeId = job?.outputs[0]?.node_id;
   const pendingSubmission = draft.pending_submission;
   const disabledEditing = !!locked || submitting || !!pendingSubmission;
   const canSubmit =
@@ -498,7 +506,7 @@ export default function GenerationComposer({
   const changeMode = (mode: WorkflowMode) => {
     if (disabledEditing) return;
     onBeginEdit();
-    updateDraft({ mode, workflow_id: isOpenAI ? `builtin-openai-${mode}` : undefined, workflow_import_warning: undefined, ...(mode !== "edit" ? {edit_base_version_id:undefined} : {}), ...(mode === "reference" ? { use_current_image: false } : {}) });
+    updateDraft({ mode, workflow_id: workflowForMode(mode), workflow_import_warning: undefined, ...(mode !== "edit" ? {edit_base_version_id:undefined} : {}), ...(mode === "reference" ? { use_current_image: false } : {}) });
     setShowMaskTools(false);
     setError("");
   };
@@ -604,7 +612,7 @@ export default function GenerationComposer({
       workflow_id: selectedWorkflow!.id,
       prompt: draft.prompt,
       prompt_parts:promptParts(draft.prompt,references),
-      result_policy:"review",
+      result_policy:"replace",
       negative_prompt: String(
         draft.parameters.negative_prompt ??
           selectedWorkflow!.defaults.negative_prompt ??
@@ -1027,7 +1035,7 @@ export default function GenerationComposer({
               {active && <button disabled={jobAction || job.can_cancel === false} onClick={() => void jobOperation("cancel")}><CircleStop size={12} />取消</button>}
               {(job.status === "failed" || job.status === "cancelled") && <button disabled={jobAction || submitting || job.can_retry === false} onClick={() => void jobOperation("retry")}><RefreshCw size={12} />重试</button>}
               {job.status === "unknown" && <><button disabled={jobAction} onClick={() => void refreshJob()}>核对状态</button>{<button disabled={jobAction} onClick={()=>void jobOperation("cancel")}>结束跟踪</button>}</>}
-              {job.status === "succeeded" && job.outputs[0] && <button onClick={() => onReveal(job.outputs[0].node_id)}><Maximize2 size={12} />查看结果</button>}
+              {job.status === "succeeded" && resultNodeId && <button onClick={() => onReveal(resultNodeId)}><Maximize2 size={12} />查看结果</button>}
               <button title="生成任务详情" aria-expanded={showJobDetails} onClick={() => setShowJobDetails(value => !value)}><ChevronDown size={13} /></button>
             </div>
           </div>

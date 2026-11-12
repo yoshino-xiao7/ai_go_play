@@ -10,7 +10,7 @@ export type ImageHistoryItem = {
 export type ImageReference = {
   fit?: "contain" | "cover";
   crop?: {x:number;y:number;width:number;height:number};
-  purpose?: "general" | "identity" | "composition" | "motion" | "voice";
+  purpose?: "general" | "identity" | "composition" | "motion" | "camera" | "voice";
   use_audio?: boolean;
   clip_start?: number;
   clip_end?: number | null;
@@ -31,6 +31,7 @@ export type ImageReference = {
 export type GenerationDraft = {
   lip_sync_options?: LipSyncOptions;
   video_options?: VideoOptions;
+  enhance_options?: VideoEnhanceOptions;
   model?: string;
   quality?: string;
   kind?: "video" | "audio";
@@ -38,6 +39,8 @@ export type GenerationDraft = {
   subject_node_id?: string;
   video_mode?: "text" | "frames" | "reference";
   duration?: number;
+  frame_count?: number;
+  h3_guides?: H3Guide[];
   audio?: boolean;
   edit_base_version_id?: string;
   prompt_parts?: PromptPart[];
@@ -60,6 +63,7 @@ export type GenerationDraft = {
 export type GenerationRequest = {
   lip_sync_options?: LipSyncOptions;
   video_options?: VideoOptions;
+  enhance_options?: VideoEnhanceOptions;
   provider?: "openai";
   model?: string;
   quality?: string;
@@ -68,22 +72,42 @@ export type GenerationRequest = {
   subject_node_id?: string;
   video_mode?: "text" | "frames" | "reference";
   duration?: number;
+  frame_count?: number;
+  h3_guides?: H3Guide[];
   audio?: boolean;
   prompt_parts?: PromptPart[];
   result_policy?: "review" | "replace";
   project_id: string;
   source_node_id: string;
   workflow_id: string;
+  mode?: WorkflowMode;
   prompt: string;
   negative_prompt?: string;
-  references: { id?: string; title?: string; description?: string; use_description?: boolean; version_id: string; node_id?: string; role?: "reference" | "first_frame" | "last_frame" | "voice" | "emotion" | "video" | "audio"; media_type?: "image" | "video" | "audio" }[];
+  references: (Pick<ImageReference, "id" | "description" | "use_description" | "version_id" | "node_id" | "edge_id" | "role" | "media_type"> & Partial<Pick<ImageReference, "title" | "source">>)[];
   mask_version_id?: string;
   parameters: Record<string, number | string>;
   placement: { x: number; y: number };
   request_id: string;
 };
 
-export type VideoOptions = {engine?:"native"|"director";sampler?:"res_multistep"|"euler";scheduler?:"simple"|"beta"|"normal";ref_image_size?:"match"|"1024"|"1280"|"1536"|"max"};
+export type VideoEngine = "native"|"director"|"turbo";
+export type VideoOptions = {engine?:VideoEngine;sampler?:"res_multistep"|"euler";scheduler?:"simple"|"beta"|"normal";ref_image_size?:"match"|"1024"|"1280"|"1536"|"max"};
+export const VIDEO_INTERPOLATE_WORKFLOW = "builtin-video-interpolate-local";
+export const VIDEO_UPSCALE_WORKFLOW = "builtin-video-upscale-local";
+export type VideoEnhanceWorkflow = typeof VIDEO_INTERPOLATE_WORKFLOW | typeof VIDEO_UPSCALE_WORKFLOW;
+export const isVideoEnhanceWorkflow = (id?: string): id is VideoEnhanceWorkflow => id === VIDEO_INTERPOLATE_WORKFLOW || id === VIDEO_UPSCALE_WORKFLOW;
+export type VideoEnhanceMethod = "rife" | "hold" | "anime6b" | "remacri";
+export type VideoEnhanceOptions = {method?: VideoEnhanceMethod; fps?: number; width?: number; height?: number; cuts?: number[]};
+export type H3Guide = {
+  id?: string;
+  title?: string;
+  version_id: string;
+  media_type: "image" | "video" | "audio";
+  frame_idx: number;
+  use_audio?: boolean;
+  clip_start?: number;
+  clip_end?: number | null;
+};
 export type LipSyncOptions = {audio_offset?:number;video_start?:number;duration?:number|null;face_mode?:"auto"|"manual";face_box?:number[]|null};
 
 export type PromptPart = { type: "text"; text: string } | { type: "reference"; reference_id: string };
@@ -116,7 +140,7 @@ export type GenerationJob = {
   can_cancel?: boolean;
   can_retry?: boolean;
   request?: Record<string, unknown>;
-  outputs: { asset_id: string; version_id: string; node_id: string }[];
+  outputs: { asset_id: string; version_id: string; node_id: string | null }[];
   created_at: string;
   updated_at: string;
 };

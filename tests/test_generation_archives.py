@@ -34,6 +34,33 @@ def save_draft(client, project_id, draft, base_version=None):
     return response.json()
 
 
+def test_h3_timed_guide_is_pinned_and_remapped_with_exact_length(client, png_bytes, tmp_path):
+    pid = project(client)["id"]
+    pinned = upload(client, png_bytes("blue"))["current_version_id"]
+    path = f"/api/projects/{pid}/canvas"
+    canvas = client.get(path).json()
+    guide = {"version_id": pinned, "frame_idx": 17, "media_type": "image"}
+    canvas["nodes"] = [{"id": "timed", "type": "media", "position": {"x": 0, "y": 0}, "data": {
+        "kind": "video", "generation": {"kind": "video", "workflow_id": "builtin-h3-local",
+        "prompt": "沿用画面", "references": [], "frame_count": 73, "h3_guides": [guide]}}}]
+    response = client.put(path, json=canvas)
+    assert response.status_code == 200, response.text
+    archive = client.get(f"/api/projects/{pid}/export")
+    assert archive.status_code == 200, archive.text
+
+    app = create_app(data_dir=tmp_path / "guide-import", config_file=tmp_path / "guide-import.json")
+    with TestClient(app, base_url="http://127.0.0.1") as target:
+        app.state.worker.stop()
+        imported = target.post("/api/projects/import", files={"file": ("timed.manju", archive.content)})
+        assert imported.status_code == 201, imported.text
+        restored = target.get(f"/api/projects/{imported.json()['id']}/canvas").json()["nodes"][0]["data"]["generation"]
+        assert restored["frame_count"] == 73
+        restored_guide = restored["h3_guides"][0]
+        assert restored_guide == {**guide, "version_id": restored_guide["version_id"]}
+        assert restored_guide["version_id"] != pinned
+        assert target.get(f"/api/media/{restored_guide['version_id']}").content == png_bytes("blue")
+
+
 def test_generation_archive_cross_library_pins_draft_inputs_and_clears_job_state(client, png_bytes, tmp_path):
     item = project(client)
     base = upload(client, png_bytes("red"))
