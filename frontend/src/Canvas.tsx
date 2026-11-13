@@ -76,6 +76,7 @@ import {
   Scaling,
   ListChecks,
   Sparkles,
+  Stamp,
   SlidersHorizontal,
   Trash2,
   Type,
@@ -140,7 +141,7 @@ import VideoViewer from "./VideoViewer";
 import CanvasVideoPlayer from "./CanvasVideoPlayer";
 import CanvasConnectionEdge from "./CanvasConnectionEdge";
 import {GenerationProgress, useGenerationJob} from "./GenerationProgress";
-import { isVideoEnhanceWorkflow, VIDEO_INTERPOLATE_WORKFLOW, VIDEO_UPSCALE_WORKFLOW } from "./generationTypes";
+import { isVideoEnhanceWorkflow, VIDEO_INTERPOLATE_WORKFLOW, VIDEO_UPSCALE_WORKFLOW, VIDEO_WATERMARK_WORKFLOW } from "./generationTypes";
 import type {
   GenerationDraft,
   ImageHistoryItem,
@@ -175,16 +176,19 @@ type CanvasNode = Node<CanvasData>;
 const videoEnhanceTools = [
   { workflowId: VIDEO_INTERPOLATE_WORKFLOW, Icon: FastForward },
   { workflowId: VIDEO_UPSCALE_WORKFLOW, Icon: Scaling },
+  { workflowId: VIDEO_WATERMARK_WORKFLOW, Icon: Stamp },
 ] as const;
 
-function canConnectCanvasNodes(source: CanvasNode | undefined, target: CanvasNode | undefined, edges: Edge[], replacing?: Edge | null) {
+function canConnectCanvasNodes(source: CanvasNode | undefined, target: CanvasNode | undefined, edges: Edge[], nodes: CanvasNode[], replacing?: Edge | null) {
   if (!source || !target || source.id === target.id || source.data.locked || target.data.locked || target.type === cameraMotionRole) return false;
   if (source.type === cameraMotionRole || (replacing && edgeRole(replacing) === cameraMotionRole)) {
     return (!replacing || edgeRole(replacing) === cameraMotionRole) && canConnectCameraMotion(source, target, edges, replacing?.id);
   }
   if (isVideoEnhanceWorkflow(target.data.generation?.workflow_id)) {
+    const watermark = target.data.generation?.workflow_id === VIDEO_WATERMARK_WORKFLOW;
     return (!replacing || edgeRole(replacing) === "reference") && canReference(source, target) &&
-      !edges.some(edge => edge.id !== replacing?.id && edge.target === target.id && edgeRole(edge) === "reference");
+      !edges.some(edge => edge.id !== replacing?.id && edge.target === target.id && edgeRole(edge) === "reference" &&
+        (!watermark || nodes.find(node => node.id === edge.source)?.data.kind === source.data.kind));
   }
   return !replacing || edgeRole(replacing) !== "reference" || canReference(source, target);
 }
@@ -2003,7 +2007,7 @@ function CanvasEditor({
       id: uid(), type: "media", position, style: { width: 380, height: 240 }, selected: true,
       data: { title: videoEnhanceLabels[workflowId], kind: "video", generation: defaultVideoEnhanceDraft(workflowId) },
     };
-    if (sourceId && !canConnectCanvasNodes(source, card, edgesRef.current)) return;
+    if (sourceId && !canConnectCanvasNodes(source, card, edgesRef.current, nodesRef.current)) return;
     const nextEdges = source ? [...edgesRef.current, {
       id: uid(), source: source.id, target: card.id, sourceHandle: "out", targetHandle: "in", type: "default", data: { role: "reference" },
     }] : edgesRef.current;
@@ -2521,7 +2525,7 @@ function CanvasEditor({
     (connection: Connection) => {
       const source=nodesRef.current.find(node=>node.id===connection.source);
       const target=nodesRef.current.find(node=>node.id===connection.target);
-      if (!canConnectCanvasNodes(source, target, edgesRef.current)) return;
+      if (!canConnectCanvasNodes(source, target, edgesRef.current, nodesRef.current)) return;
       const role = source?.type === cameraMotionRole ? cameraMotionRole : canReference(source, target) ? "reference" : "relation";
       edit(
         nodesRef.current.map(node=>node.id===target?.id && target.data.kind==="video" && !isVideoEnhanceWorkflow(target.data.generation?.workflow_id) && (!node.data.generation?.video_mode || node.data.generation.video_mode==="text") && role==="reference" ? {...node,data:{...node.data,generation:{...defaultVideoDraft(),...node.data.generation,video_mode:"reference"}}}:node),
@@ -2541,7 +2545,7 @@ function CanvasEditor({
   );
   const reconnectCanvasEdge = useCallback((edge:Edge, connection:Connection) => {
     const source=nodesRef.current.find(node=>node.id===connection.source),target=nodesRef.current.find(node=>node.id===connection.target);
-    if (!source || !target || edgeLocked(edge,nodesRef.current) || !canConnectCanvasNodes(source, target, edgesRef.current, edge)) return;
+    if (!source || !target || edgeLocked(edge,nodesRef.current) || !canConnectCanvasNodes(source, target, edgesRef.current, nodesRef.current, edge)) return;
     const nextNodes=nodesRef.current.map(node=>{
       const generation=node.data.generation;
       const activateVideo=node.id===target.id && target.data.kind==="video" && !isVideoEnhanceWorkflow(generation?.workflow_id) && edgeRole(edge)==="reference" && (!generation?.video_mode || generation.video_mode==="text");
@@ -2697,8 +2701,8 @@ function CanvasEditor({
       const source = nodesRef.current.find(node => node.id === edge.source);
       const target = nodesRef.current.find(node => node.id === edge.target);
       if (isVideoEnhanceWorkflow(target?.data.generation?.workflow_id)) {
-        if (!canConnectCanvasNodes(source, target, edgesRef.current, { ...edge, data: { role } })) {
-          setNotice("视频补帧和放大节点只接受一条视频参考线。");
+        if (!canConnectCanvasNodes(source, target, edgesRef.current, nodesRef.current, { ...edge, data: { role } })) {
+          setNotice("每个后期节点只接受一条视频参考线，水印节点可另接一张 Logo 图片。");
           return;
         }
       } else if (!canReference(source, target)) {
@@ -3967,7 +3971,7 @@ function CanvasEditor({
                 }}
                 isValidConnection={connection=>{
                   const source=nodesRef.current.find(node=>node.id===connection.source),target=nodesRef.current.find(node=>node.id===connection.target);
-                  return canConnectCanvasNodes(source, target, edgesRef.current, reconnectingEdge.current);
+                  return canConnectCanvasNodes(source, target, edgesRef.current, nodesRef.current, reconnectingEdge.current);
                 }}
                 defaultEdgeOptions={{
                   type: "default",
@@ -4203,6 +4207,9 @@ function CanvasEditor({
                     locked={selectedVideo.data.locked}
                     input={resolveVideoEnhanceInput(nodes, edges, selectedVideo.id)}
                     getInput={() => resolveVideoEnhanceInput(nodesRef.current, edgesRef.current, selectedVideo.id)}
+                    logo={resolveVideoEnhanceInput(nodes, edges, selectedVideo.id, "image")}
+                    getLogo={() => resolveVideoEnhanceInput(nodesRef.current, edgesRef.current, selectedVideo.id, "image")}
+                    mediaRevisions={mediaRevisions}
                     onPreview={onPreview}
                     onChange={patch => {
                       const current = nodesRef.current.find(node => node.id === selectedVideo.id)?.data.generation;
@@ -4767,7 +4774,7 @@ function CanvasEditor({
           ) : selectedEdge ? (
             <div className="canvas-inspector-section">
               <p className="canvas-section-caption">拖动连线两端的圆点重接，或在下方选择节点。</p>
-              {(["source","target"] as const).map(endpoint=><label className="canvas-field" key={endpoint}>{endpoint==="source"?"连接来源":"连接目标"}<StudioSelect aria-label={endpoint==="source"?"连接来源":"连接目标"} disabled={edgeLocked(selectedEdge,nodes)} value={selectedEdge[endpoint]} onChange={event=>reconnectCanvasEdge(selectedEdge,{source:selectedEdge.source,target:selectedEdge.target,sourceHandle:selectedEdge.sourceHandle||"out",targetHandle:selectedEdge.targetHandle||"in",[endpoint]:event.target.value})}>{nodes.filter(node=>!node.data.production_settings && canConnectCanvasNodes(endpoint==="source"?node:nodes.find(item=>item.id===selectedEdge.source),endpoint==="target"?node:nodes.find(item=>item.id===selectedEdge.target),edges,selectedEdge)).map(node=><option key={node.id} value={node.id}>{node.data.title||node.data.subject?.name||node.type||node.id}</option>)}</StudioSelect></label>)}
+              {(["source","target"] as const).map(endpoint=><label className="canvas-field" key={endpoint}>{endpoint==="source"?"连接来源":"连接目标"}<StudioSelect aria-label={endpoint==="source"?"连接来源":"连接目标"} disabled={edgeLocked(selectedEdge,nodes)} value={selectedEdge[endpoint]} onChange={event=>reconnectCanvasEdge(selectedEdge,{source:selectedEdge.source,target:selectedEdge.target,sourceHandle:selectedEdge.sourceHandle||"out",targetHandle:selectedEdge.targetHandle||"in",[endpoint]:event.target.value})}>{nodes.filter(node=>!node.data.production_settings && canConnectCanvasNodes(endpoint==="source"?node:nodes.find(item=>item.id===selectedEdge.source),endpoint==="target"?node:nodes.find(item=>item.id===selectedEdge.target),edges,nodes,selectedEdge)).map(node=><option key={node.id} value={node.id}>{node.data.title||node.data.subject?.name||node.type||node.id}</option>)}</StudioSelect></label>)}
               <label className="canvas-field">连线用途<StudioSelect aria-label="连线用途" disabled={edgeLocked(selectedEdge,nodes) || edgeRole(selectedEdge) === cameraMotionRole} value={edgeRole(selectedEdge)} onChange={event=>changeEdgeRole(selectedEdge.id,event.target.value)}><option value="pending" disabled>用途待确认</option><option value={cameraMotionRole} disabled>运镜</option><option value="relation">故事关系</option><option value="reference">图片参考</option></StudioSelect></label>
               <label className="canvas-field">
                 连线文字

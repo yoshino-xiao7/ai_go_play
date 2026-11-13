@@ -32,6 +32,7 @@ export type GenerationDraft = {
   lip_sync_options?: LipSyncOptions;
   video_options?: VideoOptions;
   enhance_options?: VideoEnhanceOptions;
+  watermark_options?: WatermarkOptions;
   model?: string;
   quality?: string;
   kind?: "video" | "audio";
@@ -64,6 +65,7 @@ export type GenerationRequest = {
   lip_sync_options?: LipSyncOptions;
   video_options?: VideoOptions;
   enhance_options?: VideoEnhanceOptions;
+  watermark_options?: WatermarkOptions;
   provider?: "openai";
   model?: string;
   quality?: string;
@@ -94,10 +96,19 @@ export type VideoEngine = "native"|"director"|"turbo";
 export type VideoOptions = {engine?:VideoEngine;sampler?:"res_multistep"|"euler";scheduler?:"simple"|"beta"|"normal";ref_image_size?:"match"|"1024"|"1280"|"1536"|"max"};
 export const VIDEO_INTERPOLATE_WORKFLOW = "builtin-video-interpolate-local";
 export const VIDEO_UPSCALE_WORKFLOW = "builtin-video-upscale-local";
-export type VideoEnhanceWorkflow = typeof VIDEO_INTERPOLATE_WORKFLOW | typeof VIDEO_UPSCALE_WORKFLOW;
-export const isVideoEnhanceWorkflow = (id?: string): id is VideoEnhanceWorkflow => id === VIDEO_INTERPOLATE_WORKFLOW || id === VIDEO_UPSCALE_WORKFLOW;
+export const VIDEO_WATERMARK_WORKFLOW = "builtin-video-watermark-local";
+export type VideoEnhanceWorkflow = typeof VIDEO_INTERPOLATE_WORKFLOW | typeof VIDEO_UPSCALE_WORKFLOW | typeof VIDEO_WATERMARK_WORKFLOW;
+export const isVideoEnhanceWorkflow = (id?: string): id is VideoEnhanceWorkflow => id === VIDEO_INTERPOLATE_WORKFLOW || id === VIDEO_UPSCALE_WORKFLOW || id === VIDEO_WATERMARK_WORKFLOW;
 export type VideoEnhanceMethod = "rife" | "hold" | "anime6b" | "remacri";
 export type VideoEnhanceOptions = {method?: VideoEnhanceMethod; fps?: number; width?: number; height?: number; cuts?: number[]};
+export type WatermarkOptions = {
+  mode: "text" | "image";
+  text: string;
+  position: "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center";
+  size: number;
+  opacity: number;
+  color: string;
+};
 export type H3Guide = {
   id?: string;
   title?: string;

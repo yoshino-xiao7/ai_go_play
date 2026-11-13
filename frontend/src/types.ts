@@ -82,3 +82,16 @@ export type StorageInfo = {
     progress?: number;
   } | null;
 };
+
+export type SetuUser = {
+  id: number;
+  nickname?: string;
+  avatarUrl?: string;
+};
+
+export type ShareStatus = {
+  connected: boolean;
+  user: SetuUser | null;
+  siteBase: string;
+  apiBase: string;
+};

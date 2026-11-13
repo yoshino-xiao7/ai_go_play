@@ -79,3 +79,109 @@
 .workflow-import { padding: 22px 25px; overflow-y: auto; }.workflow-import input[hidden] { display: none; }.workflow-file-drop { background: var(--accent-soft); border: 1px dashed var(--border-light); border-radius: 9px; padding: 24px; display: flex; flex-direction: column; align-items: center; width: 100%; gap: 10px; margin-bottom: 22px; color: var(--accent); }.workflow-file-drop strong { font-size: 13px; font-weight: 500; }.workflow-file-drop span { font-size: 12px; color: var(--muted); }.workflow-import details { font-size: 12px; color: #98a2ab; margin: 15px 0; }.workflow-import summary { cursor: pointer; margin-bottom: 11px; }.workflow-import textarea { font: 11px/1.7 Consolas,monospace; }
 @media (max-width:1200px) { .workflow-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }.workflow-heading-actions .button { font-size: 12px; }.workflow-intro-link { display: none; } }
 @media (max-width:800px) { .workflow-filterbar { flex-direction: column; align-items: stretch; }.workflow-search { width: 100%; }.workflow-grid { grid-template-columns: 1fr; }.workflow-intro { padding: 17px; }.workflow-intro-icon { display: none; }.workflow-settings-grid { grid-template-columns: 1fr; gap: 15px; }.workflow-binding-group { grid-template-columns: 1fr; }.workflow-editor-tabs { gap: 13px; padding: 0 15px; }.workflow-editor-tabs button { font-size: 12px; }.workflow-heading-actions { flex-wrap: wrap; }.workflow-mode-tabs { gap: 1px; }.workflow-mode-tabs button { padding: 8px; }.workflow-editor-footer { flex-wrap: wrap; padding: 12px 15px; }.workflow-editor-body { padding: 18px 15px; } }
+
+.capability-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 24px 28px;
+  color: var(--text);
+  max-height: min(72vh, 680px);
+  overflow-y: auto;
+}
+.capability-modal-hero {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 20px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.capability-hero-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  border: 1px solid var(--accent-soft);
+  flex-shrink: 0;
+}
+.capability-hero-icon.enhance { color: #f472b6; background: rgba(244, 114, 182, 0.12); border-color: rgba(244, 114, 182, 0.25); }
+.capability-hero-icon.lipsync { color: #38bdf8; background: rgba(56, 189, 248, 0.12); border-color: rgba(56, 189, 248, 0.25); }
+.capability-hero-icon.voice { color: #a78bfa; background: rgba(167, 139, 250, 0.12); border-color: rgba(167, 139, 250, 0.25); }
+.capability-hero-icon.screenplay { color: #fbbf24; background: rgba(251, 191, 36, 0.12); border-color: rgba(251, 191, 36, 0.25); }
+.capability-modal-hero h3 { margin: 0 0 6px; font-size: 16px; font-weight: 600; }
+.capability-modal-hero p { margin: 0; font-size: 13px; color: var(--muted); line-height: 1.5; }
+.capability-feature-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+.feature-item {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.feature-item strong {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  color: var(--text);
+}
+.feature-item p {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+.capability-status-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 12px;
+}
+.capability-status-bar .ready { color: #10b981; font-weight: 500; }
+.capability-status-bar .invalid { color: #f87171; font-weight: 500; }
+.capability-guide-box {
+  background: rgba(243, 171, 194, 0.05);
+  border: 1px solid rgba(243, 171, 194, 0.15);
+  border-radius: 10px;
+  padding: 14px 18px;
+}
+.capability-guide-box h4 {
+  margin: 0 0 10px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--accent);
+}
+.capability-guide-box ol {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.8;
+}
+.capability-guide-box strong { color: var(--text); }
+.capability-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 10px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}

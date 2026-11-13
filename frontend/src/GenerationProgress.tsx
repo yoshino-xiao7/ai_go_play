@@ -1,6 +1,6 @@
 import {useCallback, useSyncExternalStore} from "react";
 import {api} from "./api";
-import {activeGenerationStates, generationStateLabels} from "./generationTypes";
+import {activeGenerationStates, generationStateLabels, VIDEO_WATERMARK_WORKFLOW} from "./generationTypes";
 import type {GenerationJob} from "./generationTypes";
 import "./generation-progress.css";
 
@@ -47,15 +47,18 @@ export function GenerationProgress({job, pending=false, compact=false}: {job?:Ge
   if (!pending && (!job || !active(job))) return null;
   const execution = job?.execution_progress;
   const running = !pending && job?.status === "running";
+  const watermark = job?.request?.workflow_id === VIDEO_WATERMARK_WORKFLOW;
+  const watermarkPercent = running && watermark && typeof job?.progress === "number" ? Math.floor(job.progress * 100) : undefined;
   const measured = running && execution?.connected && execution.value !== undefined && execution.max !== undefined && execution.max > 1;
-  const percent = measured ? Math.min(100,Math.max(0, Math.floor(execution.value! / execution.max! * 100))) : undefined;
+  const percent = watermarkPercent ?? (measured ? Math.min(100,Math.max(0, Math.floor(execution.value! / execution.max! * 100))) : undefined);
   const videoFrames = execution?.node_type === "ManjuVideoEnhance";
-  const label = pending ? "正在提交" : running && videoFrames ? measured ? (execution.value === execution.max ? "正在收尾编码" : "正在处理视频帧") : "正在准备视频后期" : running && job?.request?.provider==="openai" ? "OpenAI 正在生成 · 完成后自动保存" : running ? execution?.connected ? execution.label || "等待执行进度" : "正在生成 · 连接进度通道中" : job ? generationStateLabels[job.status] : "正在提交";
+  const label = pending ? "正在提交" : running && watermark ? job.message || "正在烧录水印" : running && videoFrames ? measured ? (execution.value === execution.max ? "正在收尾编码" : "正在处理视频帧") : "正在准备视频后期" : running && job?.request?.provider==="openai" ? "OpenAI 正在生成 · 完成后自动保存" : running ? execution?.connected ? execution.label || "等待执行进度" : "正在生成 · 连接进度通道中" : job ? generationStateLabels[job.status] : "正在提交";
   const sampling = execution?.node_type?.includes("Sampler") || execution?.node_type==="MiniMaxH3Director";
   return <div className={compact?"generation-live-inline":"generation-live-overlay"} role="status" aria-label="生成进度">
     {!compact && <div className="generation-live-dots" aria-hidden="true"/>}
     <div className="generation-live-detail"><span>{label}</span>{measured && <strong>{execution!.value} / {execution!.max}{videoFrames ? " 帧" : sampling ? " 步" : ""}<small>{percent}%</small></strong>}
-      {measured && <div className="generation-live-track" role="progressbar" aria-label={videoFrames ? "视频帧处理进度" : "当前步骤进度"} aria-valuenow={percent} aria-valuemin={0} aria-valuemax={100}><i style={{width:`${percent}%`}}/></div>}
+      {watermarkPercent !== undefined && <strong>{watermarkPercent}%</strong>}
+      {percent !== undefined && <div className="generation-live-track" role="progressbar" aria-label={watermark ? "水印烧录进度" : videoFrames ? "视频帧处理进度" : "当前步骤进度"} aria-valuenow={percent} aria-valuemin={0} aria-valuemax={100}><i style={{width:`${percent}%`}}/></div>}
       {!compact && <small>{measured?"当前步骤进度 · 完成后自动保存":"结果将保留在当前卡片"}</small>}
     </div>
   </div>;

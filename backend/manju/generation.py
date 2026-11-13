@@ -23,6 +23,7 @@ from .speech import SpeechAdapter, normalize_speech
 from .voice_design import VoiceDesignAdapter, normalize_voice_design, PROFILE_ID as VOICE_DESIGN_PROFILE
 from .lipsync import LipSyncAdapter, normalize_lipsync, PROFILE_ID as LIPSYNC_PROFILE
 from .video_enhance import PROFILES as ENHANCEMENT_PROFILES, VideoEnhanceAdapter, normalize_enhancement
+from .watermark import PROFILE_ID as WATERMARK_PROFILE, WatermarkAdapter, normalize_watermark
 from .store import DomainError, encode, fingerprint, new_id, now
 from .reference_contract import normalize_references, compile_prompt
 from .generation_progress import GenerationProgress
@@ -60,9 +61,12 @@ class GenerationService:
         self.voice_design = VoiceDesignAdapter(self.video)
         self.lipsync = LipSyncAdapter(store, workflows)
         self.video_enhancement = {key: VideoEnhanceAdapter(store, workflows, key) for key in ENHANCEMENT_PROFILES}
+        self.watermark = self.video_enhancement[WATERMARK_PROFILE] = WatermarkAdapter(store)
         self.openai = OpenAIImages(store, transport=openai_transport, **({"key_loader": openai_key_loader} if openai_key_loader else {}))
         self.external_executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="manju-openai")
         self.external_jobs = {}
+        self.watermark_executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="manju-watermark")
+        self.watermark_job = None
         self.telemetry = GenerationProgress(enabled=transport is None)
         self.client = httpx.Client(timeout=httpx.Timeout(15, connect=3), trust_env=False, transport=transport)
         self.operation_lock = threading.RLock()
@@ -83,6 +87,7 @@ class GenerationService:
         if not self.thread.is_alive():
             self.client.close()
         self.external_executor.shutdown(wait=True, cancel_futures=True)
+        self.watermark_executor.shutdown(wait=True, cancel_futures=True)
         self.openai.close()
         self.telemetry.close()
 
@@ -99,6 +104,8 @@ class GenerationService:
         job["can_cancel"] = job["status"] in ACTIVE_STATUSES and job["status"] != "collecting"
         if job["request"].get("provider") == "openai":
             job["can_cancel"] = job["status"] == "unknown" or (job["status"] == "pending" and not job["submission_started_at"])
+        if job["workflow_id"] == WATERMARK_PROFILE and job["cancel_requested"]:
+            job["can_cancel"] = False
         return job
 
     def get(self, job_id):
@@ -111,7 +118,7 @@ class GenerationService:
     def _with_progress(self, job):
         job["execution_progress"] = self.telemetry.snapshot(job["id"]) if job["status"] in ACTIVE_STATUSES else None
         # A node's sampling fraction is not the fraction of the whole workflow.
-        if job["status"] in ACTIVE_STATUSES:
+        if job["status"] in ACTIVE_STATUSES and job["workflow_id"] != WATERMARK_PROFILE:
             job["progress"] = None
         return job
 
@@ -205,7 +212,10 @@ class GenerationService:
                 raise DomainError(422, "此工作流未绑定蒙版输入。", "generation_mask_unsupported")
             versions = {}
             for reference in references:
-                version = self.video.input_version(reference["version_id"]) if video else audio_adapter.input_version(reference["version_id"]) if speech else self._input_version(reference["version_id"])
+                if video:
+                    version = (self.watermark if video_adapter is self.watermark else self.video).input_version(reference["version_id"])
+                else:
+                    version = audio_adapter.input_version(reference["version_id"]) if speech else self._input_version(reference["version_id"])
                 node_id = reference.get("node_id")
                 # A node is provenance, not ownership of an immutable image version.
                 versions[version["id"]] = version
@@ -232,7 +242,8 @@ class GenerationService:
             if request["parameters"].get("seed") == -1:
                 request["parameters"]["seed"] = secrets.randbits(31)
             timestamp, job_id = now(), new_id()
-            self.store.conn.execute("INSERT INTO generation_jobs(id,project_id,source_node_id,status,request_id,request_hash,request_json,workflow_json,backend_url,created_at,updated_at,parent_job_id) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)", (job_id, request["project_id"], source, "pending", key, request_hash, encode(request), encode(workflow), "https://api.openai.com/v1" if external else f"http://127.0.0.1:{self.comfy.port}", timestamp, timestamp, parent_job_id))
+            backend_url = "https://api.openai.com/v1" if external else "" if video_adapter is self.watermark else f"http://127.0.0.1:{self.comfy.port}"
+            self.store.conn.execute("INSERT INTO generation_jobs(id,project_id,source_node_id,status,request_id,request_hash,request_json,workflow_json,backend_url,created_at,updated_at,parent_job_id) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)", (job_id, request["project_id"], source, "pending", key, request_hash, encode(request), encode(workflow), backend_url, timestamp, timestamp, parent_job_id))
             for version in versions.values():
                 self.store.conn.execute("INSERT INTO generation_inputs VALUES(?,?)", (job_id, version["id"]))
                 self.store._link_asset(request["project_id"], version["asset_id"])
@@ -247,6 +258,8 @@ class GenerationService:
         if payload.get("kind") == "video":
             if payload.get("workflow_id") == LIPSYNC_PROFILE:
                 return normalize_lipsync(payload, GenerationService._validate_request)
+            if payload.get("workflow_id") == WATERMARK_PROFILE:
+                return normalize_watermark(payload, GenerationService._validate_request)
             if isinstance(payload.get("workflow_id"), str) and payload["workflow_id"] in ENHANCEMENT_PROFILES:
                 return normalize_enhancement(payload, GenerationService._validate_request)
             return normalize_video(payload, GenerationService._validate_request)
@@ -370,13 +383,14 @@ class GenerationService:
             if self.store.maintenance:
                 return
             with self.store.lock:
-                pending = self.store.conn.execute("SELECT id FROM generation_jobs WHERE status='pending' ORDER BY created_at,id LIMIT 5").fetchall()
-                polling = self.store.conn.execute("SELECT id FROM generation_jobs WHERE status IN ('submitting','queued','running','collecting','unknown') ORDER BY created_at,id").fetchall()
+                pending = self.store.conn.execute("SELECT id FROM generation_jobs WHERE backend_url<>'' AND status='pending' ORDER BY created_at,id LIMIT 5").fetchall()
+                polling = self.store.conn.execute("SELECT id FROM generation_jobs WHERE backend_url<>'' AND status IN ('submitting','queued','running','collecting','unknown') ORDER BY created_at,id").fetchall()
+                local = self.store.conn.execute("SELECT id FROM generation_jobs WHERE backend_url='' AND status IN ('pending','running','collecting') ORDER BY status='pending',created_at,id LIMIT 1").fetchone()
             # Reserve submission slots and rotate reconciliation slots: unresolved
             # upstream receipts must never starve new jobs or later running jobs.
             offset = self.poll_cursor % len(polling) if polling else 0
             rotating = polling[offset:] + polling[:offset]
-            rows = list(pending) + list(rotating[:15])
+            rows = ([local] if local else []) + list(pending) + list(rotating[:15])
             self.poll_cursor = (offset + min(15, len(polling))) % len(polling) if polling else 0
             self.telemetry.retain({row["id"] for row in list(pending) + list(polling)})
             for row in rows:
@@ -384,6 +398,9 @@ class GenerationService:
                     return
                 job = self.get(row["id"])
                 try:
+                    if job["workflow_id"] == WATERMARK_PROFILE:
+                        self._tick_watermark(job)
+                        continue
                     if job["request"].get("provider") == "openai":
                         self._tick_openai(job)
                         continue
@@ -405,6 +422,66 @@ class GenerationService:
                         self._fail(job["id"], {"code": "comfy_connection_error", "message": str(error)})
                 except Exception as error:
                     self._fail(job["id"], {"code": "generation_error", "message": str(error)})
+
+    def _tick_watermark(self, job):
+        if self.watermark_job is not None and not self.watermark_job.done():
+            return
+        self.watermark_job = self.watermark_executor.submit(self._run_watermark, job)
+
+    def _run_watermark(self, job):
+        job_id = job["id"]
+        folder = self.store.root / "temp"
+        output = folder / f"watermark-{job_id}.mp4"
+        pending = folder / f"watermark-{job_id}.pending.mp4"
+
+        def report(seconds, duration):
+            current = self.get(job_id)
+            if self.stop_event.is_set() or current["cancel_requested"] or current["status"] == "cancelled":
+                raise InterruptedError
+            if duration:
+                progress = min(.98, int(seconds / duration * 100) / 100)
+                if progress > current["progress"]:
+                    self._update(job_id, progress=progress)
+
+        try:
+            with self.operation_lock:
+                report(0, None)
+                if not output.exists():
+                    self._update(job_id, status="running", progress=0, message="正在烧录视频水印。")
+            if not output.exists():
+                self.watermark.burn(job["request"], pending, report)
+                pending.replace(output)
+            with self.operation_lock, self.store.media_lock:
+                report(0, None)
+                if self.store.maintenance:
+                    return
+                self._update(job_id, status="collecting", message="正在保存水印成片。")
+                source_id = next(ref["version_id"] for ref in job["request"]["references"] if ref["media_type"] == "video")
+                filename = Path(self.store.version(source_id)["filename"]).stem[:110] + " · 水印.mp4"
+                metadata = probe_media(output, filename)
+                if metadata["type"] != "video":
+                    raise DomainError(422, "水印输出缺少有效画面。", "watermark_output")
+                with output.open("rb") as file:
+                    digest = hashlib.file_digest(file, "sha256").hexdigest()
+                asset = self.store.ingest(output, filename, metadata, digest, project_id=job["project_id"],
+                                          request_id=f"generation:{job_id}:0", source="watermark")
+                outputs = [{"asset_id": asset["id"], "version_id": asset["imported_version_id"], "node_id": job["source_node_id"]}]
+                self._append_results(job, outputs)
+                self._update(job_id, status="succeeded", progress=1, message="水印成片已保存。", outputs_json=encode(outputs), error_json=None)
+            output.unlink(missing_ok=True)
+        except InterruptedError:
+            if self.get(job_id)["cancel_requested"] or self.get(job_id)["status"] == "cancelled":
+                self._update(job_id, status="cancelled", message="水印烧录已取消。", progress=0)
+                output.unlink(missing_ok=True)
+        except DomainError as error:
+            if error.detail["code"] != "storage_busy":
+                self._fail(job_id, error.detail)
+                output.unlink(missing_ok=True)
+        except Exception as error:
+            self._fail(job_id, {"code": "watermark_failed", "message": str(error)})
+            output.unlink(missing_ok=True)
+        finally:
+            pending.unlink(missing_ok=True)
 
     def _openai_receipt(self, job_id):
         return self.store.root / "temp" / f"openai-{job_id}.json"
@@ -751,6 +828,14 @@ class GenerationService:
             job = self.get(job_id)
             if job["status"] in TERMINAL_STATUSES:
                 return job
+            if job["workflow_id"] == WATERMARK_PROFILE:
+                if job["status"] == "collecting":
+                    raise DomainError(409, "水印成片正在保存。", "generation_collecting")
+                if job["status"] == "pending":
+                    self._update(job_id, status="cancelled", message="水印烧录已取消。")
+                else:
+                    self._update(job_id, cancel_requested=1, message="正在取消水印烧录。")
+                return self.get(job_id)
             if job["request"].get("provider") == "openai":
                 if job["status"] == "pending" and job["id"] not in self.external_jobs:
                     self._update(job_id, status="cancelled", message="已取消尚未提交的 OpenAI 任务。")

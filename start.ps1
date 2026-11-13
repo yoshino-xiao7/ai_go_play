@@ -37,7 +37,7 @@ try {
     if (-not $acquired) { throw 'Another startup is still running. Please retry in a moment.' }
     $health = Get-ManjuHealth
     if ($health) {
-        Write-Host "Manju is running at $url"
+        Write-Host "ai-go-play is running at $url"
         Write-Host "Storage: $($health.root)"
         if (-not $NoBrowser) { Start-Process $url }
         exit 0

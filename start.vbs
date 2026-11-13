@@ -31,7 +31,7 @@ If exitCode <> 0 Then
         reader.Close
     End If
     If Len(details) = 0 Then details = "Run start.ps1 in PowerShell to read the startup error."
-    MsgBox "Manju could not start." & vbCrLf & vbCrLf & details & vbCrLf & vbCrLf & "Logs: " & runtime, vbOKOnly + vbCritical, "Manju"
+    MsgBox "ai-go-play could not start." & vbCrLf & vbCrLf & details & vbCrLf & vbCrLf & "Logs: " & runtime, vbOKOnly + vbCritical, "ai-go-play"
 End If
 WScript.Quit exitCode
 

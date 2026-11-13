@@ -17,6 +17,8 @@ import {
   Clapperboard,
   CircuitBoard,
   Clock3,
+  Cloud,
+  ExternalLink,
   Film,
   Folder,
   FolderOpen,
@@ -26,20 +28,23 @@ import {
   Image as ImageIcon,
   Layers2,
   LayoutDashboard,
+  ListChecks,
   LoaderCircle,
+  LogOut,
   MoreHorizontal,
   Plus,
   RefreshCw,
   Search,
   Settings2,
   SlidersHorizontal,
+  Sparkles,
   Trash2,
   Upload,
+  User,
   X,
   AlertCircle,
   ArchiveRestore,
   PackageOpen,
-  ListChecks,
 } from "lucide-react";
 import { api, dateText, mediaUrl, sizeText, uploadAsset } from "./api";
 import type {
@@ -47,6 +52,8 @@ import type {
   AssetPage,
   AssetVersion,
   Project,
+  SetuUser,
+  ShareStatus,
   StorageInfo,
   Task,
 } from "./types";
@@ -120,6 +127,121 @@ export default function App() {
   const openComfy = useCallback(() => setComfyOpen(true), []);
   const closeComfy = useCallback(() => setComfyOpen(false), []);
   const projectId = route.startsWith("/canvas/") ? route.split("/")[2] : null;
+
+  const [shareStatus, setShareStatus] = useState<ShareStatus | null>(null);
+  const [shareMenuOpen, setShareMenuOpen] = useState(false);
+  const [shareBusy, setShareBusy] = useState(false);
+  const [connectingYike, setConnectingYike] = useState<{
+    requestId: string;
+    url: string;
+  } | null>(null);
+  const shareMenuRef = useRef<HTMLDivElement>(null);
+
+  const refreshShareStatus = useCallback(async () => {
+    try {
+      const status = await api<ShareStatus>("/api/share/status");
+      setShareStatus(status);
+    } catch {
+      /* Silent fallback */
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshShareStatus();
+    const onFocus = () => void refreshShareStatus();
+    const onCustomEvent = () => void refreshShareStatus();
+    window.addEventListener("focus", onFocus);
+    window.addEventListener("manju:reconnected", onCustomEvent);
+    window.addEventListener("manju:event", onCustomEvent);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      window.removeEventListener("manju:reconnected", onCustomEvent);
+      window.removeEventListener("manju:event", onCustomEvent);
+    };
+  }, [refreshShareStatus]);
+
+  useEffect(() => {
+    if (!shareMenuOpen) return;
+    const handleOutside = (e: MouseEvent) => {
+      if (
+        shareMenuRef.current &&
+        !shareMenuRef.current.contains(e.target as Node)
+      ) {
+        setShareMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, [shareMenuOpen]);
+
+  useEffect(() => {
+    if (!connectingYike) return;
+    let cancelled = false;
+    const tick = async () => {
+      try {
+        const result = await api<{
+          state: "pending" | "approved" | "failed" | "expired";
+          user?: SetuUser | null;
+          error?: string | null;
+        }>(`/api/share/connect/${connectingYike.requestId}`);
+        if (cancelled) return;
+        if (result.state === "approved") {
+          setConnectingYike(null);
+          await refreshShareStatus();
+          notify("已成功连接亦可账号！");
+        } else if (result.state !== "pending") {
+          setConnectingYike(null);
+          notify(result.error || "授权已超时，请重新发起连接。", true);
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setConnectingYike(null);
+          notify(e instanceof Error ? e.message : String(e), true);
+        }
+      }
+    };
+    void tick();
+    const timer = window.setInterval(() => void tick(), 2000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [connectingYike, notify, refreshShareStatus]);
+
+  const handleConnectYike = async () => {
+    setShareBusy(true);
+    try {
+      const result = await api<{ request_id: string; authorize_url: string }>(
+        "/api/share/connect",
+        {
+          method: "POST",
+        },
+      );
+      setConnectingYike({
+        requestId: result.request_id,
+        url: result.authorize_url,
+      });
+      window.open(result.authorize_url, "_blank");
+    } catch (e) {
+      notify(e instanceof Error ? e.message : String(e), true);
+    } finally {
+      setShareBusy(false);
+    }
+  };
+
+  const handleDisconnectYike = async () => {
+    setShareBusy(true);
+    try {
+      await api("/api/share/disconnect", { method: "POST" });
+      await refreshShareStatus();
+      setShareMenuOpen(false);
+      notify("已解除亦可账号绑定");
+    } catch (e) {
+      notify(e instanceof Error ? e.message : String(e), true);
+    } finally {
+      setShareBusy(false);
+    }
+  };
 
   useEffect(() => {
     if (!toast) return;
@@ -215,9 +337,9 @@ export default function App() {
   return (
     <div className={`app-shell ${projectId ? "app-shell-canvas" : ""}`}>
       {!projectId && <nav className="app-rail" aria-label="主导航">
-        <a className="brand" href="#/projects" aria-label="Manju 本地创作工作台">
+        <a className="brand" href="#/projects" aria-label="ai-go-play · AI to AI 协同创作工作台">
           <img src="/icon.svg" width="34" height="34" alt="" />
-          <span>Manju<small>本地创作工作台</small></span>
+          <span>ai-go-play<small>AI to AI 协同创作工作台</small></span>
         </a>
         <div className="rail-links">
           <a
@@ -273,9 +395,113 @@ export default function App() {
             <span>设置</span>
           </a>
         </div>
-        <div className="rail-status" role="status">
-          <span className={`connection-dot ${connected ? "online" : ""}`} />
-          {connected ? "本机服务已连接" : "正在连接本机服务"}
+        <div className="rail-account-section">
+          {shareStatus?.connected && shareStatus.user ? (
+            <div className="rail-user-card-wrap" ref={shareMenuRef}>
+              <button
+                type="button"
+                className={`rail-user-card ${shareMenuOpen ? "is-active" : ""}`}
+                onClick={() => setShareMenuOpen(!shareMenuOpen)}
+                aria-expanded={shareMenuOpen}
+                aria-label={`亦可账号：${shareStatus.user.nickname || "已连接"}`}
+              >
+                <div className="rail-avatar-wrap">
+                  {shareStatus.user.avatarUrl ? (
+                    <img src={shareStatus.user.avatarUrl} alt="" className="rail-avatar-img" />
+                  ) : (
+                    <div className="rail-avatar-placeholder">
+                      {(shareStatus.user.nickname || "YK").slice(0, 1).toUpperCase()}
+                    </div>
+                  )}
+                  <span className="rail-online-dot" title="亦可云端已连接" />
+                </div>
+                <div className="rail-user-info">
+                  <span className="rail-user-name" title={shareStatus.user.nickname || `UID: ${shareStatus.user.id}`}>
+                    {shareStatus.user.nickname || "亦可用户"}
+                  </span>
+                  <span className="rail-user-meta">亦可账号 · UID {shareStatus.user.id}</span>
+                </div>
+              </button>
+
+              {shareMenuOpen && (
+                <div className="rail-user-popover">
+                  <div className="user-popover-header">
+                    <div className="popover-avatar-wrap">
+                      {shareStatus.user.avatarUrl ? (
+                        <img src={shareStatus.user.avatarUrl} alt="" className="popover-avatar-img" />
+                      ) : (
+                        <div className="popover-avatar-placeholder">
+                          {(shareStatus.user.nickname || "YK").slice(0, 1).toUpperCase()}
+                        </div>
+                      )}
+                    </div>
+                    <div className="popover-user-details">
+                      <div className="popover-name-row">
+                        <strong>{shareStatus.user.nickname || "亦可用户"}</strong>
+                        <span className="user-badge-online">已授权</span>
+                      </div>
+                      <span className="popover-uid">UID: {shareStatus.user.id}</span>
+                    </div>
+                  </div>
+
+                  <div className="user-popover-actions">
+                    <button
+                      type="button"
+                      className="popover-action-btn"
+                      onClick={() => {
+                        window.open(`${shareStatus.siteBase}/canvas`, "_blank");
+                        setShareMenuOpen(false);
+                      }}
+                    >
+                      <Sparkles size={15} />
+                      <span>亦可画布广场</span>
+                      <ExternalLink size={13} className="action-ext-icon" />
+                    </button>
+                    <button
+                      type="button"
+                      className="popover-action-btn"
+                      onClick={() => {
+                        window.open(`${shareStatus.siteBase}/app/profile`, "_blank");
+                        setShareMenuOpen(false);
+                      }}
+                    >
+                      <User size={15} />
+                      <span>个人中心 · 我的分享</span>
+                      <ExternalLink size={13} className="action-ext-icon" />
+                    </button>
+                    <div className="popover-divider" />
+                    <button
+                      type="button"
+                      className="popover-action-btn is-danger"
+                      onClick={handleDisconnectYike}
+                      disabled={shareBusy}
+                    >
+                      <LogOut size={15} />
+                      <span>解除绑定</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="rail-bind-wrap">
+              <button
+                type="button"
+                className="rail-bind-btn"
+                onClick={handleConnectYike}
+                disabled={shareBusy}
+                title="绑定亦可账号，可一键分享画布到亦可广场并关联 B 站"
+              >
+                <Cloud size={15} />
+                <span>绑定亦可账号</span>
+              </button>
+            </div>
+          )}
+
+          <div className="rail-status" role="status" title={connected ? "本地服务运行正常" : "正在尝试重连本地服务"}>
+            <span className={`connection-dot ${connected ? "online" : ""}`} />
+            <span className="rail-status-text">{connected ? "本机服务已连接" : "正在连接本机服务"}</span>
+          </div>
         </div>
       </nav>}
       <main className={`app-content ${projectId ? "canvas-content" : ""}`}>
@@ -428,6 +654,41 @@ export default function App() {
             ))}
           </div>
         </div>
+      )}
+      {connectingYike && (
+        <Modal
+          title="连接亦可账号"
+          onClose={() => setConnectingYike(null)}
+          className="yike-connect-modal"
+        >
+          <div className="yike-connect-dialog">
+            <div className="connect-dialog-icon">
+              <Cloud size={32} />
+              <LoaderCircle size={20} className="spin connect-dialog-spinner" />
+            </div>
+            <h3>正在等待浏览器授权…</h3>
+            <p>
+              已在默认浏览器打开亦可授权页面。请在页面中登录并点击<strong>「授权连接」</strong>。
+            </p>
+            <div className="connect-dialog-actions">
+              <button
+                type="button"
+                className="button secondary btn"
+                onClick={() => window.open(connectingYike.url, "_blank")}
+              >
+                <ExternalLink size={15} />
+                重新打开授权页
+              </button>
+              <button
+                type="button"
+                className="button secondary btn"
+                onClick={() => setConnectingYike(null)}
+              >
+                取消
+              </button>
+            </div>
+          </div>
+        </Modal>
       )}
       {tasksOpen && (
         <TasksModal
@@ -634,7 +895,7 @@ function Projects({
           <EmptyState
             icon={search ? <Search size={27} /> : <Layers2 size={30} strokeWidth={1.5} />}
             title={search ? "没有匹配的项目" : "还没有项目"}
-            description={search ? `找不到包含“${search}”的项目。` : "新建一张画布，或导入已有的 Manju 项目包。"}
+            description={search ? `找不到包含“${search}”的项目。` : "新建一张画布，或导入已有的 ai-go-play 项目包。"}
             action={search ? (
               <button className="button secondary btn" onClick={() => setSearch("")}>清除搜索</button>
             ) : (
@@ -1752,7 +2013,7 @@ function StorageSettings({
                 <input
                   value={target}
                   onChange={(e) => setTarget(e.target.value)}
-                  placeholder="例如 E:\\ManjuData"
+                  placeholder="例如 E:\\ai_go_play_data"
                   aria-label="新资料库目录"
                 />
                 <button

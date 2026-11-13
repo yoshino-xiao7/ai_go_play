@@ -1,5 +1,5 @@
 import type { Edge, Node } from "@xyflow/react";
-import { isVideoEnhanceWorkflow } from "./generationTypes";
+import { isVideoEnhanceWorkflow, VIDEO_WATERMARK_WORKFLOW } from "./generationTypes";
 import type { GenerationDraft, ImageReference } from "./generationTypes";
 import type { SubjectSnapshot } from "./subjectTypes";
 
@@ -13,21 +13,23 @@ export const canConnectCameraMotion = (source: ReferenceNode, target: ReferenceN
   !edges.some(edge => edge.id !== replacingId && edge.target === target.id && edgeRole(edge) === cameraMotionRole);
 export const canReference = (source?: ReferenceNode, target?: ReferenceNode) => {
   if (isVideoEnhanceWorkflow(target?.data.generation?.workflow_id)) {
-    return target?.type === "media" && source?.type === "media" && source.data.kind === "video" && !!(source.data.asset_version_id || source.data.generation);
+    const watermark = target.data.generation?.workflow_id === VIDEO_WATERMARK_WORKFLOW;
+    return target?.type === "media" && source?.type === "media" && (source.data.kind === "video" || watermark && source.data.kind === "image") && !!(source.data.asset_version_id || source.data.generation);
   }
   return target?.data.generation?.workflow_id === "builtin-latentsync15-local" ? !!(target.type === "media" && source?.type === "media" && ["video","audio"].includes(source.data.kind||"") && (source.data.asset_version_id || source.data.generation)) : target?.data.kind === "audio" ? !!(source?.type === "subject" ? source.data.subject?.voice_version_id : source?.data.kind === "audio" && (source.data.asset_version_id || source.data.generation)) && target.type === "media" : !!(source?.data.asset_version_id || source?.data.generation) && target?.type === "media" && (target.data.kind === "video" && (source!.type === "subject" || source!.type === "media" && ["image","video","audio"].includes(source!.data.kind||"")) || target.data.kind === "image" && (source!.type === "subject" || source!.type === "media" && source!.data.kind === "image"));
 };
 
-export function resolveVideoEnhanceInput(nodes: ReferenceNode[], edges: Edge[], targetId: string): ImageReference | undefined {
-  const incoming = edges.filter(edge => edge.target === targetId && edgeRole(edge) === "reference");
+export function resolveVideoEnhanceInput(nodes: ReferenceNode[], edges: Edge[], targetId: string, kind: "video" | "image" = "video"): ImageReference | undefined {
+  const incoming = edges.filter(edge => edge.target === targetId && edgeRole(edge) === "reference")
+    .map(edge => ({edge, source: nodes.find(node => node.id === edge.source)}))
+    .filter(({source}) => source?.type === "media" && source.data.kind === kind);
   if (incoming.length !== 1) return;
-  const edge = incoming[0];
-  const source = nodes.find(node => node.id === edge.source);
-  if (source?.type !== "media" || source.data.kind !== "video" || !source.data.asset_version_id) return;
+  const {edge, source} = incoming[0];
+  if (!source?.data.asset_version_id) return;
   return {
     id: `edge-${edge.id}`, edge_id: edge.id, node_id: source.id,
-    version_id: source.data.asset_version_id, title: source.data.title || "上游视频",
-    source: "connection", role: "reference", media_type: "video",
+    version_id: source.data.asset_version_id, title: source.data.title || (kind === "video" ? "上游视频" : "Logo 图片"),
+    source: "connection", role: "reference", media_type: kind,
   };
 }
 

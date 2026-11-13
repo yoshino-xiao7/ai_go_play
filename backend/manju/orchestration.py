@@ -14,6 +14,7 @@ from .store import DomainError, encode, fingerprint, new_id, now
 from .camera_motion import linked_camera_motion
 from .video import PROFILE_ID as H3_PROFILE
 from .video_enhance import PROFILES as ENHANCEMENT_PROFILES
+from .watermark import PROFILE_ID as WATERMARK_PROFILE
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS canvas_runs (
@@ -43,7 +44,7 @@ DONE = {'succeeded', 'reused'}
 BAD = {'failed', 'blocked', 'cancelled'}
 FIELDS = {'workflow_id', 'prompt', 'prompt_parts', 'parameters', 'negative_prompt', 'mask_version_id',
           'provider', 'model', 'quality', 'video_options', 'video_mode', 'duration', 'audio',
-          'speech_options', 'subject_node_id', 'lip_sync_options', 'enhance_options', 'h3_guides', 'frame_count'}
+          'speech_options', 'subject_node_id', 'lip_sync_options', 'enhance_options', 'watermark_options', 'h3_guides', 'frame_count'}
 
 
 class OrchestrationService:
@@ -90,7 +91,7 @@ class OrchestrationService:
         draft = data.get('generation', {})
         workflow_id = draft.get('workflow_id')
         fields = FIELDS
-        if kind == 'video' and isinstance(workflow_id, str) and workflow_id in ENHANCEMENT_PROFILES:
+        if kind == 'video' and isinstance(workflow_id, str) and (workflow_id in ENHANCEMENT_PROFILES or workflow_id == WATERMARK_PROFILE):
             # Older video editors saved H3 defaults on video enhancement cards.
             fields = fields - {'parameters', 'video_options', 'video_mode', 'duration', 'audio', 'h3_guides', 'frame_count'}
         request = {k: copy.deepcopy(v) for k, v in draft.items() if k in fields}
@@ -118,6 +119,9 @@ class OrchestrationService:
                                'version_id': source_data.get('subject', {}).get('voice_version_id') if voice else source_data.get('asset_version_id'),
                                'title': source_data.get('title', source['id']), 'media_type': 'audio' if voice else source_data.get('kind', 'image'),
                                'role': source_data.get('kind') if draft.get('workflow_id') == 'builtin-latentsync15-local' else edge.get('data', {}).get('reference_role', 'first_frame' if request.get('video_mode') == 'frames' and not references else 'last_frame' if request.get('video_mode') == 'frames' else 'reference')})
+        watermark = request.get('watermark_options')
+        if workflow_id == WATERMARK_PROFILE and isinstance(watermark, dict) and watermark.get('mode') == 'text':
+            references = [ref for ref in references if ref.get('media_type') != 'image']
         dependencies, bindings = set(), []
         for index, ref in enumerate(references):
             source_id = ref.get('node_id')
@@ -225,7 +229,7 @@ class OrchestrationService:
                                 workflow = self.generations.openai.snapshot(request['workflow_id'].removeprefix('builtin-openai-'))
                             elif request['workflow_id'] == 'builtin-latentsync15-local':
                                 workflow = self.generations.lipsync.snapshot()
-                            elif request['workflow_id'] in ENHANCEMENT_PROFILES:
+                            elif request['workflow_id'] in ENHANCEMENT_PROFILES or request['workflow_id'] == WATERMARK_PROFILE:
                                 workflow = self.generations.video_adapter(request).snapshot()
                             elif spec['kind'] == 'video':
                                 workflow = self.generations.video.snapshot(request.get('video_options'))

@@ -11,20 +11,11 @@ import {
 } from "lucide-react";
 
 import { api } from "./api";
-import type { Project } from "./types";
+import type { Project, SetuUser, ShareStatus } from "./types";
 import { Modal } from "./ui";
 import "./share-panel.css";
 
 type Viewport = { x: number; y: number; zoom: number };
-
-type SetuUser = { id: number; nickname?: string; avatarUrl?: string };
-
-type ShareStatus = {
-  connected: boolean;
-  user: SetuUser | null;
-  siteBase: string;
-  apiBase: string;
-};
 
 type ShareRow = {
   share_id: number;

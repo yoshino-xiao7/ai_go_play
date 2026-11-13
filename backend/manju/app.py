@@ -268,7 +268,7 @@ def create_app(data_dir: str | Path | None = None, config_file: str | Path | Non
             status = enhancement.status()
             return {"valid": status["ready"], "online": status["ready"],
                     "errors": [{"code": "video_enhance_not_ready", "message": error} for error in status["errors"]],
-                    "warnings": [], "output_nodes": ["enhance"]}
+                    "warnings": [], "output_nodes": status.get("output_nodes", ["enhance"])}
         if workflow_id == "builtin-indextts25-local":
             status = request.app.state.generations.speech.status()
             return {"valid": status["ready"], "online": status["ready"], "errors": [{"code":"speech_unavailable","message":e} for e in status["errors"]], "warnings": [], "output_nodes": ["save"]}
@@ -278,6 +278,14 @@ def create_app(data_dir: str | Path | None = None, config_file: str | Path | Non
                     "errors": [] if report["ready"] else [{"code": "openai_unavailable", "message": report["error"] or "当前项目没有已接入的图片模型。"}],
                     "warnings": [], "output_nodes": ["openai"]}
         return request.app.state.workflows.validate(workflow_id, online=True)
+
+    @application.post("/api/video/watermark/preview")
+    def preview_watermark(request: Request, body: dict = Body(...)):
+        video, logo = body.get("video_version_id"), body.get("logo_version_id")
+        if not isinstance(video, str) or not video or logo is not None and (not isinstance(logo, str) or not logo):
+            raise DomainError(422, "请选择视频或 Logo 的素材版本。", "watermark_input")
+        overlay = request.app.state.generations.watermark.preview(video, body.get("options", {}), logo)
+        return Response(overlay, media_type="image/png", headers={"Cache-Control": "no-store"})
 
     @application.get("/api/openai/images")
     def openai_image_catalog(request: Request, refresh: bool = False):

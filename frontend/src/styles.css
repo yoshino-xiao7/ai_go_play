@@ -211,13 +211,238 @@ a svg {
   border-radius: 2px;
   content: "";
 }
+.rail-account-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.rail-user-card-wrap {
+  position: relative;
+  width: 100%;
+}
+.rail-user-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  text-align: left;
+  transition: all 0.15s ease;
+}
+.rail-user-card:hover,
+.rail-user-card.is-active {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--border-light);
+}
+.rail-avatar-wrap {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+}
+.rail-avatar-img {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+.rail-avatar-placeholder {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #e879a8, #8b5cf6);
+  color: #fff;
+  font-weight: 600;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.rail-online-dot {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #10b981;
+  border: 2px solid var(--rail);
+  box-shadow: 0 0 4px rgba(16, 185, 129, 0.5);
+}
+.rail-user-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+.rail-user-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rail-user-meta {
+  font-size: 10px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rail-user-popover {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  width: 228px;
+  background: var(--panel-raised);
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.55);
+  padding: 14px;
+  z-index: 100;
+  backdrop-filter: blur(16px);
+  animation: popoverFadeIn 0.15s ease-out;
+}
+@keyframes popoverFadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.user-popover-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.popover-avatar-wrap {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+}
+.popover-avatar-img {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+.popover-avatar-placeholder {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #e879a8, #8b5cf6);
+  color: #fff;
+  font-weight: 600;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.popover-user-details {
+  flex: 1;
+  min-width: 0;
+}
+.popover-name-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+.popover-name-row strong {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.user-badge-online {
+  font-size: 10px;
+  padding: 2px 5px;
+  border-radius: 4px;
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  flex-shrink: 0;
+}
+.popover-uid {
+  font-size: 11px;
+  color: var(--muted);
+  font-family: monospace;
+}
+.user-popover-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 10px;
+}
+.popover-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 12px;
+  text-align: left;
+  transition: background 0.12s ease;
+}
+.popover-action-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+.action-ext-icon {
+  margin-left: auto;
+  opacity: 0.45;
+}
+.popover-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 0;
+}
+.popover-action-btn.is-danger {
+  color: #f87171;
+}
+.popover-action-btn.is-danger:hover {
+  background: rgba(239, 68, 68, 0.15);
+}
+.rail-bind-wrap {
+  width: 100%;
+}
+.rail-bind-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(243, 171, 194, 0.08);
+  border: 1px dashed var(--accent-line);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+.rail-bind-btn:hover {
+  background: rgba(243, 171, 194, 0.18);
+  border-color: var(--accent);
+}
 .rail-status {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 15px 9px 2px;
-  margin-top: 14px;
-  border-top: 1px solid var(--border);
+  gap: 7px;
+  padding: 2px 4px;
   color: var(--muted);
   font-size: 11px;
 }
@@ -230,6 +455,52 @@ a svg {
 }
 .connection-dot.online {
   background: var(--status-ok);
+}
+.yike-connect-modal .modal-content {
+  max-width: 420px;
+}
+.yike-connect-dialog {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 20px 10px;
+  gap: 12px;
+}
+.connect-dialog-icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(243, 171, 194, 0.12);
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+.connect-dialog-spinner {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  color: var(--accent);
+}
+.yike-connect-dialog h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+}
+.yike-connect-dialog p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.connect-dialog-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
 }
 .app-content {
   flex: 1;
@@ -1360,6 +1631,7 @@ progress {
     border-right: 0;
   }
   .app-rail .brand,
+  .rail-account-section,
   .rail-status {
     display: none;
   }

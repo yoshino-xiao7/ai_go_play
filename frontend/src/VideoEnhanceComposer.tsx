@@ -1,18 +1,19 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowUp, Film, LoaderCircle, Square } from "lucide-react";
-import { api, ApiError } from "./api";
+import { api, ApiError, mediaUrl } from "./api";
 import { GenerationProgress, useGenerationJob } from "./GenerationProgress";
-import { activeGenerationStates, generationStateLabels, VIDEO_INTERPOLATE_WORKFLOW, VIDEO_UPSCALE_WORKFLOW } from "./generationTypes";
-import type { GenerationDraft, GenerationJob, GenerationRequest, ImageReference, VideoEnhanceMethod, VideoEnhanceOptions, VideoEnhanceWorkflow } from "./generationTypes";
+import { activeGenerationStates, generationStateLabels, VIDEO_INTERPOLATE_WORKFLOW, VIDEO_UPSCALE_WORKFLOW, VIDEO_WATERMARK_WORKFLOW } from "./generationTypes";
+import type { GenerationDraft, GenerationJob, GenerationRequest, ImageReference, VideoEnhanceMethod, VideoEnhanceOptions, VideoEnhanceWorkflow, WatermarkOptions } from "./generationTypes";
 import StudioSelect from "./StudioSelect";
 import "./video.css";
 
 export const videoEnhanceLabels = {
   [VIDEO_INTERPOLATE_WORKFLOW]: "视频补帧",
   [VIDEO_UPSCALE_WORKFLOW]: "视频放大",
+  [VIDEO_WATERMARK_WORKFLOW]: "视频水印",
 };
 
-const methodOptions: Record<VideoEnhanceWorkflow, { id: VideoEnhanceMethod; name: string; description: string }[]> = {
+const methodOptions: Partial<Record<VideoEnhanceWorkflow, { id: VideoEnhanceMethod; name: string; description: string }[]>> = {
   [VIDEO_INTERPOLATE_WORKFLOW]: [
     { id: "rife", name: "RIFE · AI 补帧", description: "生成中间画面。填写切点可避免跨镜头补帧。" },
     { id: "hold", name: "重复原帧", description: "按目标帧率重复原帧，保留原画的停顿节奏。" },
@@ -30,11 +31,14 @@ const resolutionPresets = [
   { width: 3840, height: 2160 },
 ];
 type EnhanceProfile = { ready: boolean; methods?: { id: VideoEnhanceMethod; name: string; ready: boolean }[] };
+const defaultWatermark: WatermarkOptions = { mode: "text", text: "", position: "bottom-right", size: 4, opacity: 65, color: "#ffffff" };
 
 export function defaultVideoEnhanceDraft(workflowId: VideoEnhanceWorkflow): GenerationDraft {
   return {
     kind: "video", workflow_id: workflowId, mode: "text_to_image", prompt: "", references: [], parameters: {},
-    enhance_options: workflowId === VIDEO_INTERPOLATE_WORKFLOW ? { method: "rife", fps: 60, cuts: [] } : { method: "anime6b", width: 3840, height: 2160 },
+    ...(workflowId === VIDEO_WATERMARK_WORKFLOW ? { watermark_options: defaultWatermark } : {
+      enhance_options: workflowId === VIDEO_INTERPOLATE_WORKFLOW ? { method: "rife", fps: 60, cuts: [] } : { method: "anime6b", width: 3840, height: 2160 },
+    }),
   };
 }
 
@@ -57,6 +61,9 @@ type Props = {
   locked?: boolean;
   input?: ImageReference;
   getInput: () => ImageReference | undefined;
+  logo?: ImageReference;
+  getLogo: () => ImageReference | undefined;
+  mediaRevisions: Record<string, number>;
   onPreview: (versionId: string) => void;
   onChange: (patch: Partial<GenerationDraft>) => void;
   onBeginEdit: () => void;
@@ -66,9 +73,11 @@ type Props = {
 export default function VideoEnhanceComposer(props: Props) {
   const { draft, input, workflowId } = props;
   const interpolate = workflowId === VIDEO_INTERPOLATE_WORKFLOW;
+  const watermark = workflowId === VIDEO_WATERMARK_WORKFLOW;
   const label = videoEnhanceLabels[workflowId];
-  const methods = methodOptions[workflowId];
+  const methods = methodOptions[workflowId] ?? [];
   const options = { ...defaultVideoEnhanceDraft(workflowId).enhance_options, ...draft.enhance_options };
+  const mark = { ...defaultWatermark, ...draft.watermark_options };
   const method = methods.find(item => item.id === options.method);
   const [profile, setProfile] = useState<EnhanceProfile>();
   const [profileError, setProfileError] = useState(false);
@@ -99,10 +108,13 @@ export default function VideoEnhanceComposer(props: Props) {
 
   function methodReady(id: VideoEnhanceMethod) {
     const advertised = profile?.methods?.find(item => item.id === id);
-    return advertised?.ready ?? (id === methods[0].id && profile?.ready !== false);
+    return advertised?.ready ?? (id === methods[0]?.id && profile?.ready !== false);
   }
 
-  const invalid = !method ? "请选择处理模式。" : !methodReady(method.id) ? "当前处理模式在本机不可用。" : interpolate
+  const markReady = mark.mode === "text" ? !!mark.text.trim() : !!props.logo;
+  const invalid = watermark ? profile?.ready === false ? "烧录水印需要本机 FFmpeg 和 FFprobe。" : !markReady
+    ? mark.mode === "text" ? "请输入水印文字。" : "请把 Logo 图片卡片连接到这里。" : ""
+    : !method ? "请选择处理模式。" : !methodReady(method.id) ? "当前处理模式在本机不可用。" : interpolate
     ? !inRange(options.fps, 1, 120) ? "目标帧率须为 1–120 的整数。"
       : rife && !cuts ? "切点须为严格递增的正整数，最多 4096 个。" : ""
     : !inRange(options.width, 64, 4096, 2) || !inRange(options.height, 64, 4096, 2)
@@ -141,17 +153,24 @@ export default function VideoEnhanceComposer(props: Props) {
         setError("请连接一张已有视频素材的上游卡片。");
         return;
       }
-      const enhance_options: VideoEnhanceOptions = interpolate
+      const logo = watermark && mark.mode === "image" ? props.getLogo() : undefined;
+      if (watermark && mark.mode === "image" && !logo) {
+        setError("请把 Logo 图片卡片连接到这里。");
+        return;
+      }
+      const enhanceOptions: VideoEnhanceOptions = interpolate
         ? { method: method?.id, fps: options.fps, cuts: rife ? cuts : [] }
         : { method: method?.id, width: options.width, height: options.height };
+      const references = logo ? [reference, logo] : [reference];
       request = {
         kind: "video", project_id: props.projectId, source_node_id: props.nodeId,
-        workflow_id: workflowId, mode: "text_to_image", prompt: "", references: [reference],
-        enhance_options, parameters: {}, placement: { x: 0, y: 0 }, result_policy: "replace",
+        workflow_id: workflowId, mode: "text_to_image", prompt: "", references,
+        ...(watermark ? { watermark_options: mark } : { enhance_options: enhanceOptions }),
+        parameters: {}, placement: { x: 0, y: 0 }, result_policy: "replace",
         request_id: crypto.randomUUID(),
       };
       props.onChange({
-        prompt: "", references: [reference], enhance_options: { ...options, ...(rife ? { cuts } : {}) }, parameters: {},
+        prompt: "", references, ...(watermark ? { watermark_options: mark } : { enhance_options: { ...options, ...(rife ? { cuts } : {}) } }), parameters: {},
         pending_request_id: request.request_id, pending_submission: request,
       });
     }
@@ -197,7 +216,7 @@ export default function VideoEnhanceComposer(props: Props) {
   }
 
   const selectedInput = pending?.references[0] ?? input;
-  const submitLabel = pending ? "重新确认提交" : `开始${label}`;
+  const submitLabel = pending ? "重新确认提交" : watermark ? "烧录水印" : `开始${label}`;
   return (
     <section className="video-composer nodrag nopan nowheel" aria-label={label} onPointerDown={e => e.stopPropagation()} onWheel={e => e.stopPropagation()}>
       <header><strong>{label}</strong><small className="video-local-mark">本地</small></header>
@@ -208,7 +227,11 @@ export default function VideoEnhanceComposer(props: Props) {
           </button>
         </div>
       ) : <p className="video-notice">将上游视频卡片的输出连到此卡片。上游有结果后即可处理。</p>}
-      <div className="video-advanced">
+      {watermark ? <WatermarkFields options={mark} video={selectedInput?.version_id}
+        mediaRevision={props.mediaRevisions[selectedInput?.version_id ?? ""] ?? 0}
+        logo={pending?.references.find(ref => ref.media_type === "image") ?? props.logo}
+        disabled={blocked} onPreview={props.onPreview} onBeginEdit={props.onBeginEdit}
+        onChange={watermark_options => props.onChange({watermark_options})} /> : <div className="video-advanced">
         <div className="video-parameter-grid" style={{ gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>
           <label>{interpolate ? "补帧模式" : "放大模式"}
             <StudioSelect value={method?.id ?? ""} disabled={blocked} onChange={e => {
@@ -244,7 +267,7 @@ export default function VideoEnhanceComposer(props: Props) {
         <p>{method?.description} {interpolate ? "目标帧率需达到源视频帧率。" : "按原画幅缩放，画幅不同时填边。"}</p>
         {rife && <p>切点使用每个新镜头在源视频中的首帧索引，从 0 开始计数。各切点以逗号或空格分隔。</p>}
         {!profile && <p role="status">{profileError ? "暂未读取本地模式状态。" : "正在检查本地模式…"}</p>}
-      </div>
+      </div>}
       <footer className="video-controls">
         {job && <span className="video-output-count">{generationStateLabels[job.status]}</span>}
         <span className="video-control-spacer" />
@@ -262,4 +285,83 @@ export default function VideoEnhanceComposer(props: Props) {
       {job?.error && !active && <p className="video-notice" role="alert">{typeof job.error === "string" ? job.error : job.error.message}</p>}
     </section>
   );
+}
+
+function WatermarkFields({options, video, logo, mediaRevision, disabled, onChange, onPreview, onBeginEdit}: {
+  options: WatermarkOptions;
+  video?: string;
+  logo?: {version_id: string; title?: string};
+  mediaRevision: number;
+  disabled: boolean;
+  onChange: (options: WatermarkOptions) => void;
+  onPreview: (version: string) => void;
+  onBeginEdit: () => void;
+}) {
+  const [overlay, setOverlay] = useState("");
+  const [previewError, setPreviewError] = useState("");
+  const ready = options.mode === "text" ? !!options.text.trim() : !!logo;
+  const previewBody = video && ready ? JSON.stringify({video_version_id: video, logo_version_id: logo?.version_id, options}) : "";
+  useEffect(() => {
+    setOverlay("");
+    setPreviewError("");
+    if (!previewBody) return;
+    const controller = new AbortController();
+    let url = "";
+    const timer = setTimeout(async () => {
+      try {
+        const reply = await fetch("/api/video/watermark/preview", {
+          method: "POST", headers: {"Content-Type": "application/json"}, body: previewBody, signal: controller.signal,
+        });
+        if (!reply.ok) {
+          const body = await reply.json();
+          throw new ApiError(reply.status, body.detail);
+        }
+        const blob = await reply.blob();
+        if (!controller.signal.aborted) {
+          url = URL.createObjectURL(blob);
+          setOverlay(url);
+        }
+      } catch (error) {
+        if (!controller.signal.aborted) setPreviewError(error instanceof Error ? error.message : "水印预览失败。");
+      }
+    }, 250);
+    return () => {
+      controller.abort();
+      clearTimeout(timer);
+      if (url) URL.revokeObjectURL(url);
+    };
+  }, [previewBody]);
+
+  const set = <K extends keyof WatermarkOptions>(key: K, value: WatermarkOptions[K]) => onChange({...options, [key]: value});
+  return <div className="video-advanced">
+    <div className="video-parameter-grid watermark-fields">
+      <label>水印类型
+        <StudioSelect value={options.mode} disabled={disabled} onChange={e => {onBeginEdit(); set("mode", e.target.value as WatermarkOptions["mode"]);}}>
+          <option value="text">文字</option><option value="image">Logo 图片</option>
+        </StudioSelect>
+      </label>
+      <label>位置
+        <StudioSelect value={options.position} disabled={disabled} onChange={e => {onBeginEdit(); set("position", e.target.value as WatermarkOptions["position"]);}}>
+          <option value="top-left">左上</option><option value="top-right">右上</option>
+          <option value="bottom-left">左下</option><option value="bottom-right">右下</option><option value="center">居中</option>
+        </StudioSelect>
+      </label>
+      {options.mode === "text" ? <>
+        <label className="watermark-wide">水印文字<input maxLength={100} value={options.text} disabled={disabled}
+          placeholder="输入署名或账号" onFocus={onBeginEdit} onChange={e => set("text", e.target.value)} /></label>
+        <label>文字颜色<input type="color" value={options.color} disabled={disabled} onFocus={onBeginEdit} onChange={e => set("color", e.target.value)} /></label>
+      </> : logo ? <button className="video-control watermark-wide" type="button" onClick={() => onPreview(logo.version_id)}>Logo · {logo.title || "查看图片"}</button> : null}
+      <label>大小（短边 {options.size}%）
+        <input type="range" min={1} max={40} value={options.size} disabled={disabled} onFocus={onBeginEdit} onChange={e => set("size", Number(e.target.value))} />
+      </label>
+      <label>不透明度（{options.opacity}%）
+        <input type="range" min={1} max={100} value={options.opacity} disabled={disabled} onFocus={onBeginEdit} onChange={e => set("opacity", Number(e.target.value))} />
+      </label>
+    </div>
+    {video && <div className="watermark-preview" aria-label="水印预览">
+      <img src={`${mediaUrl(video)}&refresh=${mediaRevision}`} alt="视频首帧" draggable={false} />
+      {overlay && <img className="watermark-overlay" src={overlay} alt="水印" draggable={false} />}
+    </div>}
+    {previewError && <p role="alert">{previewError}</p>}
+  </div>;
 }
