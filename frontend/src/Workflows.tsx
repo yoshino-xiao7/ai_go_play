@@ -127,9 +127,9 @@ export default function Workflows({ refresh, onChanged, onOpenComfy }: { refresh
       if (wfRes.status === "fulfilled") {
         const all = wfRes.value.items;
         setItems(all.filter((item: any) => !("kind" in item && (item.kind === "video" || item.kind === "audio"))) as Workflow[]);
-        setVideo(all.find((item: any) => "kind" in item && item.kind === "video" && item.id === "builtin-minimax-h3-local") as VideoProfile | undefined);
+        setVideo(all.find((item: any) => "kind" in item && item.kind === "video" && item.id === "builtin-h3-local") as VideoProfile | undefined);
         setAudio(all.find((item: any) => "kind" in item && item.kind === "audio") as AudioProfile | undefined);
-        setVideoEnhanceItems(all.filter((item: any) => "kind" in item && item.kind === "video" && item.id !== "builtin-minimax-h3-local"));
+        setVideoEnhanceItems(all.filter((item: any) => "kind" in item && item.kind === "video" && item.id !== "builtin-h3-local"));
         setError("");
       } else {
         setError(errorMessage(wfRes.reason));
@@ -170,7 +170,7 @@ export default function Workflows({ refresh, onChanged, onOpenComfy }: { refresh
     setBusy("video_enhance");
     try {
       const res = await api<{ items: any[] }>("/api/workflows?include_video=true");
-      setVideoEnhanceItems(res.items.filter(item => "kind" in item && item.kind === "video" && item.id !== "builtin-minimax-h3-local"));
+      setVideoEnhanceItems(res.items.filter(item => "kind" in item && item.kind === "video" && item.id !== "builtin-h3-local"));
     } catch (e) {
       setError(errorMessage(e));
     } finally {
@@ -223,7 +223,7 @@ export default function Workflows({ refresh, onChanged, onOpenComfy }: { refresh
 
   const s = search.trim().toLowerCase();
   const showVideo = (mode === "all" || mode === "video") && !!video && (!s || "minimax h3 director 本地音视频 视频生成 文生视频 首尾帧 全参考".toLowerCase().includes(s));
-  const showEnhance = (mode === "all" || mode === "video_enhance") && (!s || "视频后期 视频超分 视频放大 视频插帧 视频补帧 视频去水印 anime6b rife real-esrgan".toLowerCase().includes(s));
+  const showEnhance = (mode === "all" || mode === "video_enhance") && (!s || "视频后期 视频超分 视频放大 视频插帧 视频补帧 添加水印 视频水印 anime6b rife real-esrgan".toLowerCase().includes(s));
   const showAudio = (mode === "all" || mode === "voice") && !!audio && (!s || "indextts 2.5 人物配音 音色克隆 语音".toLowerCase().includes(s));
   const showVoiceDesign = (mode === "all" || mode === "voice") && (!s || "原生音色设计 声音定制 提示词 角色配音 minimax h3 voice design".toLowerCase().includes(s));
   const showLipsync = (mode === "all" || mode === "lipsync") && (!s || "latentsync 1.5 口型同步 对口型 唇形同步 音画同步".toLowerCase().includes(s));
@@ -326,7 +326,7 @@ export default function Workflows({ refresh, onChanged, onOpenComfy }: { refresh
           </article>
         )}
 
-        {/* 2. 视频后期增强 (超分 / 补帧 / 去水印) */}
+        {/* 2. 视频后期增强 (超分 / 补帧 / 水印) */}
         {showEnhance && (
           <article className="workflow-card">
             <button className="workflow-card-main" onClick={() => setShowingEnhanceModal(true)}>
@@ -334,12 +334,12 @@ export default function Workflows({ refresh, onChanged, onOpenComfy }: { refresh
                 <Maximize2 size={25}/>
               </div>
               <div className="workflow-card-tags"><span>视频后期</span><span className="builtin">内置</span></div>
-              <h2>视频后期增强 · 超分 / 补帧 / 去水印</h2>
-              <p>集成 Real-ESRGAN / Anime6B 超分辨率放大、RIFE 60fps 深度学习插帧，以及智能时序水印消除管线。</p>
+              <h2>视频后期增强 · 超分 / 补帧 / 水印</h2>
+              <p>支持 Real-ESRGAN / Anime6B 超分放大、RIFE 插帧，以及文字或图片水印，可按需要配置输出参数。</p>
               <div className="workflow-card-capabilities">
                 <span><Maximize2 size={12}/>Anime6B 超分</span>
                 <span><Film size={12}/>RIFE 60fps</span>
-                <span><Wand2 size={12}/>智能去水印</span>
+                <span><Wand2 size={12}/>文字 / 图片水印</span>
               </div>
             </button>
             <div className="workflow-card-validation">
@@ -553,13 +553,13 @@ export default function Workflows({ refresh, onChanged, onOpenComfy }: { refresh
 
     {/* Video Enhance Info Modal */}
     {showingEnhanceModal && (
-      <Modal title="视频后期增强 · 超分 / 补帧 / 去水印" onClose={() => setShowingEnhanceModal(false)} wide className="management-modal">
+      <Modal title="视频后期增强 · 超分 / 补帧 / 水印" onClose={() => setShowingEnhanceModal(false)} wide className="management-modal">
         <div className="capability-modal-body">
           <div className="capability-modal-hero">
             <div className="capability-hero-icon enhance"><Maximize2 size={32} /></div>
             <div>
               <h3>AI 视频后期处理管线</h3>
-              <p>集成深度学习超分放大、RIFE 补帧与视频水印遮罩智能抹除，专为成片质量提升设计。</p>
+              <p>按需进行超分放大、RIFE 插帧，或为视频添加文字和图片水印。</p>
             </div>
           </div>
 
@@ -569,12 +569,12 @@ export default function Workflows({ refresh, onChanged, onOpenComfy }: { refresh
               <p>将低清生图或 720p 视频重建为 1080p / 4K，修复二次元线条或写实纹理，噪点抑制与锐化。</p>
             </div>
             <div className="feature-item">
-              <strong><Film size={16} /> RIFE 4.6 深度学习补帧</strong>
+              <strong><Film size={16} /> RIFE 4.26 深度学习补帧</strong>
               <p>时序光流插帧至 60fps 高帧率，大幅缓解 AI 视频的画面跳帧、生硬动作与微顿挫感。</p>
             </div>
             <div className="feature-item">
-              <strong><Wand2 size={16} /> 视频去水印与瑕疵消除</strong>
-              <p>框选或通过遮罩定位水印角标，利用时序上下文进行无缝像素填补与平滑消除。</p>
+              <strong><Wand2 size={16} /> 文字与图片水印</strong>
+              <p>为视频添加文字或图片水印，并配置位置、大小与透明度。</p>
             </div>
           </div>
 
@@ -592,7 +592,7 @@ export default function Workflows({ refresh, onChanged, onOpenComfy }: { refresh
             <h4><GitBranch size={16} /> 如何在画布中使用</h4>
             <ol>
               <li>在无限画布中，选中任意已有视频卡片。</li>
-              <li>在卡片顶部的悬浮操作条中，直接点击<strong>「视频补帧」</strong>、<strong>「视频放大」</strong>或<strong>「视频去水印」</strong>。</li>
+              <li>通过视频卡片的生成操作选择补帧、放大或水印功能。</li>
               <li>在弹出的专属参数面板中选择算法、放大倍率或帧率，点击生成后新版本视频将自动保存在当前卡片。</li>
             </ol>
           </div>

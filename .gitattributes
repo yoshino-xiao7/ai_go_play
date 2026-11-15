@@ -1,0 +1,3 @@
+.githooks/* text eol=lf
+# Keep upstream license/model-card bytes identical to the recorded SHA-256.
+release/licenses/*.txt -text -whitespace

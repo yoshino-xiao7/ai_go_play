@@ -75,7 +75,7 @@ def main():
     from indextts.infer_v2_5 import IndexTTS2
     seed=request['seed'];random.seed(seed);np.random.seed(seed%(2**32));torch.manual_seed(seed)
     root=Path(request['model_dir'])
-    engine=IndexTTS2(cfg_path=str(root/'config.yaml'),model_dir=str(root),device='cuda:0',use_bf16=True,use_cuda_kernel=False,use_deepspeed=False,use_accel=False,use_torch_compile=False,use_qwen_emo=bool(request.get('use_emo_text',False)))
+    engine=IndexTTS2(cfg_path=str(root/'config.yaml'),model_dir=str(root),device='cuda:0',use_bf16=torch.cuda.is_bf16_supported(),use_cuda_kernel=False,use_deepspeed=False,use_accel=False,use_torch_compile=False,use_qwen_emo=bool(request.get('use_emo_text',False)))
     steps=configure_quality(engine,request.get('quality','standard'))
     arguments=synthesis_arguments(request)
     segments=sentence_segments(request['text'])

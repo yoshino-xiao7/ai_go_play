@@ -1,0 +1,39 @@
+{
+  "note": "Local checkout reference only; not yet validated as a reproducible upstream installation. Goohaitools must not inherit its parent ComfyUI commit.",
+  "components": [
+    {
+      "component": "ComfyUI",
+      "independent_git_checkout": true,
+      "commit": "6e8488ef986067631e9c86e2a14360644b105663",
+      "has_local_changes": true
+    },
+    {
+      "component": "Goohaitools-comfyui",
+      "independent_git_checkout": false
+    },
+    {
+      "component": "ComfyUI-MiniMax-H3-Turbo",
+      "independent_git_checkout": true,
+      "commit": "4274783a23afcfdbea3b4876cb79effd6c510785",
+      "has_local_changes": false
+    },
+    {
+      "component": "ComfyUI_MiniMaxH3_Director",
+      "independent_git_checkout": true,
+      "commit": "4c6245e518dd8a494f3afc4f3cccd53f22d82d10",
+      "has_local_changes": false
+    },
+    {
+      "component": "IndexTTS",
+      "independent_git_checkout": true,
+      "commit": "d9e41aac89fd00b3d71497fddb287b7f24613712",
+      "has_local_changes": false
+    },
+    {
+      "component": "LatentSync",
+      "independent_git_checkout": true,
+      "commit": "a229c3948406bc2cf6eaf4873e662e70c6a04746",
+      "has_local_changes": false
+    }
+  ]
+}

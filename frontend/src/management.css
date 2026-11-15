@@ -17,10 +17,10 @@ html[data-theme="studio"] .management-modal .modal-heading {padding:20px 26px;bo
 .management-layout {display:grid;grid-template-columns:196px minmax(0,1fr);flex:1;min-height:0;overflow:hidden}
 .management-nav {display:flex;flex-direction:column;gap:6px;padding:28px 14px;background:var(--rail);border-right:1px solid var(--admin-line)}
 .management-nav-label {font-size:12px;color:var(--admin-muted);margin:0 12px 14px}
-.management-nav button {display:flex;align-items:center;gap:12px;min-height:44px;padding:10px 12px;border:1px solid transparent;border-radius:8px;background:none;color:#cfccd4;text-align:left;font-size:14px;line-height:1.5}
-.management-nav button:hover {background:#ffffff06}
-.management-nav button[aria-current=page] {background:var(--accent-soft);color:var(--accent);border-color:var(--border-light)}
-.management-nav button svg {flex-shrink:0}
+.management-nav :is(button,a) {display:flex;align-items:center;gap:12px;min-height:44px;padding:10px 12px;border:1px solid transparent;border-radius:8px;background:none;color:#cfccd4;text-align:left;font-size:14px;line-height:1.5}
+.management-nav :is(button,a):hover {background:#ffffff06}
+.management-nav :is(button,a)[aria-current=page] {background:var(--accent-soft);color:var(--accent);border-color:var(--border-light)}
+.management-nav :is(button,a) svg {flex-shrink:0}
 .management-nav p {font-size:12px;color:#9e9aa6;line-height:1.9;margin:24px 12px 0}
 .management-layout [hidden] {display:none!important}
 html[data-theme="studio"] .management-modal :is(input,textarea,select):not([type=checkbox]) {background:var(--admin-input);border-color:#46444c;color:var(--admin-text);font-size:14px;min-height:40px;border-radius:8px}
@@ -186,7 +186,7 @@ html[data-theme="studio"] .workflow-modal .workflow-editor {background:var(--adm
   .management-layout {grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr)}
   .management-nav {flex-direction:row;flex-wrap:wrap;padding:12px;border-right:0;border-bottom:1px solid var(--admin-line);gap:6px}
   .management-nav-label,.management-nav p {display:none}
-  .management-nav button {font-size:13px;gap:7px;padding:8px 10px;min-height:40px}
+  .management-nav :is(button,a) {font-size:13px;gap:7px;padding:8px 10px;min-height:40px}
   .comfy-panel .comfy-service-controls {margin-left:0}
   .comfy-panel .comfy-service-meta {gap:10px}
   .comfy-panel .comfy-service-icon {display:none}

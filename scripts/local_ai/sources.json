@@ -1,0 +1,19 @@
+{
+  "lipsync": {
+    "url": "https://codeload.github.com/bytedance/LatentSync/zip/a229c3948406bc2cf6eaf4873e662e70c6a04746",
+    "sha256": "3a1eddcd604eebc4d3b104f3f649101dbe58bb2e1c52e80cf0845c335aebcb69"
+  },
+  "uv": {
+    "url": "https://github.com/astral-sh/uv/releases/download/0.13.7/uv-x86_64-pc-windows-msvc.zip",
+    "sha256": "0cdc5b38fe5a8168ed6a25814f5ba43c21d313dd3187314fccb37b7cec46e021"
+  },
+  "ffmpeg": {
+    "url": "https://www.gyan.dev/ffmpeg/builds/packages/ffmpeg-9.0.2-essentials_build.zip",
+    "sha256": "60f467265b1e312373dbcd92200c2618a74850f98d3d078e94296bb3fa2047ba"
+  },
+  "speech": {
+    "url": "https://codeload.github.com/index-tts/index-tts/zip/d9e41aac89fd00b3d71497fddb287b7f24613712",
+    "sha256": "86c3bb36566d706017bf99c6f19d45a4092b21ebff9fcac51fe198a42fedd0a4"
+  },
+  "python_version": "3.11.18"
+}

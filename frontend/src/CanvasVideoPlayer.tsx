@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
-import { Maximize2, Pause, Play, Volume2, VolumeX } from "lucide-react";
+import { Columns2, Maximize2, Pause, Play, Volume2, VolumeX } from "lucide-react";
 import { mediaUrl } from "./api";
 import "./video.css";
 
@@ -9,11 +9,12 @@ function timeLabel(seconds: number) {
   return `${String(Math.floor(whole / 60)).padStart(2, "0")}:${String(whole % 60).padStart(2, "0")}`;
 }
 
-export default function CanvasVideoPlayer({ versionId, selected, previewOpen, onOpen }: {
+export default function CanvasVideoPlayer({ versionId, selected, previewOpen, onOpen, onCompare }: {
   versionId: string;
   selected: boolean;
   previewOpen: boolean;
   onOpen: () => void;
+  onCompare?: () => void;
 }) {
   const player = useRef<HTMLVideoElement>(null);
   const wantsPlayback = useRef(false);
@@ -86,6 +87,7 @@ export default function CanvasVideoPlayer({ versionId, selected, previewOpen, on
         <button type="button" aria-label={muted ? "取消静音" : "静音"} onClick={() => setMuted(value => !value)}>
           {muted ? <VolumeX size={15} /> : <Volume2 size={15} />}
         </button>
+        {onCompare && <button type="button" aria-label="逐帧对照" title="逐帧对照" onClick={() => { player.current?.pause(); onCompare(); }}><Columns2 size={14} /></button>}
         <button type="button" aria-label="查看完整视频" onClick={onOpen}><Maximize2 size={14} /></button>
       </div>
       <input

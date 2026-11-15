@@ -26,6 +26,7 @@ def runtime():
 
 def emotion_model_ready(config):
     if not config:return False
+    if config.get('emotion') is False:return False
     root=Path(config['model_dir'])
     try:
         import yaml
@@ -81,7 +82,8 @@ class ManjuIndexTTS25:
             log=folder/'inference.log';process=None
             try:
                 with log.open('wb') as stream:
-                    process=subprocess.Popen([config['python'],str(Path(__file__).with_name('worker.py')),str(payload)],cwd=config['repo'],stdout=stream,stderr=subprocess.STDOUT,stdin=subprocess.DEVNULL,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0),env={**os.environ,'PYTHONIOENCODING':'utf-8','HF_HUB_OFFLINE':'1','TRANSFORMERS_OFFLINE':'1'})
+                    from .runtime_env import worker_command, worker_environment
+                    process=subprocess.Popen(worker_command(config,Path(__file__).with_name('worker.py'),payload),cwd=folder,stdout=stream,stderr=subprocess.STDOUT,stdin=subprocess.DEVNULL,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0),env=worker_environment(config))
                     deadline=time.monotonic()+1800
                     while process.poll() is None:
                         model_management.throw_exception_if_processing_interrupted()

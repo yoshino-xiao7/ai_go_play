@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "checked_at": "2026-11-15T02:30:57.095Z",
+  "share_url": "https://pan.baidu.com/s/5nO-pzE6K3be3-t0zkpm1Pw",
+  "reference_share_url": "https://pan.quark.cn/s/2ce0688209ca",
+  "status": "all_paths_and_sizes_match",
+  "model_files": 48,
+  "supporting_files": 6,
+  "total_files": 54,
+  "total_bytes": 186797117212,
+  "missing_files": 0,
+  "unexpected_files": 0,
+  "anonymous_share_listing_accessible": true,
+  "passcode_required": false,
+  "all_cloud_bytes_verified": false,
+  "verification_scope": "Authenticated Baidu directory listing compared against the Quark share inventory captured on 2026-11-14; public Baidu share opened anonymously and all eight pack directories were visible. No Baidu model redownload or SHA-256 verification was performed."
+}

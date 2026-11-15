@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 使用与故障说明
+    url: https://github.com/yoshino-xiao7/ai_go_play/blob/main/SUPPORT.md
+    about: 先检查安装、运行环境与已知范围。
+  - name: 安全问题
+    url: https://github.com/yoshino-xiao7/ai_go_play/blob/main/SECURITY.md
+    about: 请勿公开敏感漏洞详情或账号信息。

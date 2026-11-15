@@ -1,0 +1,54 @@
+{
+  "checked_at": "2026-11-14",
+  "declarations": [
+    {
+      "repository": "facebook/w2v-bert-2.0",
+      "revision": "da985ba0987f70aaeb84a80f2851cfac8c697a7b",
+      "license_declaration": "mit",
+      "model_card_url": "https://huggingface.co/facebook/w2v-bert-2.0/blob/da985ba0987f70aaeb84a80f2851cfac8c697a7b/README.md",
+      "note": "Metadata declaration only; see MODEL-LICENSES.md for conflicting or missing full texts."
+    },
+    {
+      "repository": "funasr/campplus",
+      "revision": "e4b6ede7ce16997aff4ae69fbca1f0175e2afede",
+      "license_declaration": "apache-2.0",
+      "model_card_url": "https://huggingface.co/funasr/campplus/blob/e4b6ede7ce16997aff4ae69fbca1f0175e2afede/README.md",
+      "note": "Metadata declaration only; see MODEL-LICENSES.md for conflicting or missing full texts."
+    },
+    {
+      "repository": "stabilityai/sd-vae-ft-mse",
+      "revision": "31f26fdeee1355a5c34592e401dd41e45d25a493",
+      "license_declaration": "mit",
+      "model_card_url": "https://huggingface.co/stabilityai/sd-vae-ft-mse/blob/31f26fdeee1355a5c34592e401dd41e45d25a493/README.md",
+      "note": "Metadata declaration only; see MODEL-LICENSES.md for conflicting or missing full texts."
+    },
+    {
+      "repository": "ByteDance/LatentSync-1.5",
+      "revision": "32a20d29aead0498e3e885e90dbbe8027da1b61b",
+      "license_declaration": "openrail++",
+      "model_card_url": "https://huggingface.co/ByteDance/LatentSync-1.5/blob/32a20d29aead0498e3e885e90dbbe8027da1b61b/README.md",
+      "note": "Metadata declaration only; see MODEL-LICENSES.md for conflicting or missing full texts."
+    },
+    {
+      "repository": "ethanfel/Qwen3-VL-32B-Ultra-Heretic-H3-ComfyUI-INT8-ConvRot",
+      "revision": "e8967f6a39ea5b4939a1aff81be3e8706490c0e8",
+      "license_declaration": "apache-2.0",
+      "model_card_url": "https://huggingface.co/ethanfel/Qwen3-VL-32B-Ultra-Heretic-H3-ComfyUI-INT8-ConvRot/blob/e8967f6a39ea5b4939a1aff81be3e8706490c0e8/README.md",
+      "note": "Metadata declaration only; see MODEL-LICENSES.md for conflicting or missing full texts."
+    },
+    {
+      "repository": "larryvrh/MiniMax-H3-Turbo-Lora",
+      "revision": "43a74557ac3f6539db8e0f2a959d03feb7a81480",
+      "license_declaration": "apache-2.0",
+      "model_card_url": "https://huggingface.co/larryvrh/MiniMax-H3-Turbo-Lora/blob/43a74557ac3f6539db8e0f2a959d03feb7a81480/README.md",
+      "note": "Metadata declaration only; see MODEL-LICENSES.md for conflicting or missing full texts."
+    },
+    {
+      "repository": "FacehugmanIII/4x_foolhardy_Remacri",
+      "revision": "cc321d560d74ac924feac463373b8fc4f59fee31",
+      "license_declaration": "unknown",
+      "model_card_url": "https://huggingface.co/FacehugmanIII/4x_foolhardy_Remacri/blob/cc321d560d74ac924feac463373b8fc4f59fee31/README.md",
+      "note": "Metadata declaration only; see MODEL-LICENSES.md for conflicting or missing full texts."
+    }
+  ]
+}

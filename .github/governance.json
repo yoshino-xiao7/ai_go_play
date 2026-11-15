@@ -1,0 +1,12 @@
+{
+  "repository": "yoshino-xiao7/ai_go_play",
+  "owner": "yoshino-xiao7",
+  "development_branch": "dev",
+  "integration_branch": "integration",
+  "release_branch": "main",
+  "required_checks": {
+    "integration": ["policy/integration/route", "policy/integration/review", "quality"],
+    "main": ["policy/main/route", "policy/main/review", "quality"]
+  },
+  "release_environment": "release"
+}

@@ -1,5 +1,7 @@
 from io import BytesIO
 import importlib.util
+import json
+import os
 from pathlib import Path
 
 from PIL import Image
@@ -10,6 +12,28 @@ from manju.media import find_binary,run_process
 spec=importlib.util.spec_from_file_location('lipsync_mouth_worker',Path(__file__).parents[1]/'integrations/comfyui_manju_lipsync/worker.py')
 worker=importlib.util.module_from_spec(spec);spec.loader.exec_module(worker)
 TRACK={'box':[16,8,32,56],'mouth':[32,48]}
+
+
+@pytest.mark.skipif(os.name!='nt',reason='Windows file sharing semantics')
+def test_progress_reader_lock_does_not_fail_inference(tmp_path):
+    path=tmp_path/'progress.json'
+    path.write_text('{"progress":0.1}')
+    with path.open('rb'):
+        assert worker.write_progress(path,.8) is False
+        assert json.loads(path.read_text())=={'progress':.1}
+    assert worker.write_progress(path,1) is True
+    assert json.loads(path.read_text())=={'progress':1}
+
+
+def test_progress_retries_a_transient_replace_lock(tmp_path,monkeypatch):
+    path=tmp_path/'progress.json';original=Path.replace;calls=[]
+    def replace(source,target):
+        calls.append(target)
+        if len(calls)<3:raise PermissionError('reader holds progress')
+        return original(source,target)
+    monkeypatch.setattr(Path,'replace',replace)
+    assert worker.write_progress(path,.7) is True
+    assert len(calls)==3 and json.loads(path.read_text())=={'progress':.7}
 
 
 def test_only_real_model_mouth_is_blended_and_surroundings_are_exact():

@@ -351,6 +351,9 @@ class ComfyManager:
             if installation["kind"] == "portable":
                 command.append("--windows-standalone-build")
             command.extend(["--listen", "127.0.0.1", "--port", str(self.port), "--disable-auto-launch"])
+            model_paths = self.directory / 'ai-go-play-model-paths.yaml'
+            if model_paths.is_file():
+                command.extend(['--extra-model-paths-config', str(model_paths)])
             environment = os.environ.copy()
             environment.pop("PYTHONHOME", None)
             environment.pop("PYTHONPATH", None)
