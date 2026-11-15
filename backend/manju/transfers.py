@@ -13,6 +13,7 @@ import shutil
 import sqlite3
 import stat
 import tempfile
+import threading
 import time
 import zipfile
 
@@ -26,6 +27,9 @@ MAX_ARCHIVE_BYTES = 100 * 1024**3
 MAX_MANIFEST_BYTES = 16 * 1024**2
 HASH_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 ACTIVE_MIGRATION_STATES = {"copying", "failed", "switching"}
+# Windows readers can deny replacing an open journal. Keep the short JSON I/O
+# separate from the long migration lock so progress polling remains responsive.
+_JSON_IO_LOCK = threading.RLock()
 
 
 def _hash_file(path: Path) -> str:
@@ -37,24 +41,26 @@ def _hash_file(path: Path) -> str:
 
 
 def _write_json(path: Path, value: dict) -> None:
-    if "state" in value:
-        value["status"] = value["state"]
-    path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_name(path.name + ".tmp")
-    with temporary.open("w", encoding="utf-8") as stream:
-        json.dump(value, stream, ensure_ascii=False, indent=2)
-        stream.flush()
-        os.fsync(stream.fileno())
-    temporary.replace(path)
+    with _JSON_IO_LOCK:
+        if "state" in value:
+            value["status"] = value["state"]
+        path.parent.mkdir(parents=True, exist_ok=True)
+        temporary = path.with_name(path.name + ".tmp")
+        with temporary.open("w", encoding="utf-8") as stream:
+            json.dump(value, stream, ensure_ascii=False, indent=2)
+            stream.flush()
+            os.fsync(stream.fileno())
+        temporary.replace(path)
 
 
 def _read_json(path: Path) -> dict | None:
-    if not path.exists():
-        return None
-    try:
-        value = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, ValueError) as error:
-        raise DomainError(409, f"无法读取迁移配置：{error}", "migration_journal_invalid") from error
+    with _JSON_IO_LOCK:
+        if not path.exists():
+            return None
+        try:
+            value = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as error:
+            raise DomainError(409, f"无法读取迁移配置：{error}", "migration_journal_invalid") from error
     if not isinstance(value, dict):
         raise DomainError(409, "迁移配置格式错误", "migration_journal_invalid")
     return value

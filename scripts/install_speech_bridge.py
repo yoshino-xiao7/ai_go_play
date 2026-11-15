@@ -15,7 +15,7 @@ def install(comfy,runtime,models):
     if not python.is_file() or not (comfy/'main.py').is_file() or not (models/'manju-models.json').is_file():raise RuntimeError('ComfyUI, isolated runtime or verified models are missing.')
     destination=comfy/'custom_nodes/comfyui_manju_speech'
     destination.mkdir(parents=True,exist_ok=True)
-    for name in ('__init__.py','worker.py'):shutil.copy2(root/'integrations/comfyui_manju_speech'/name,destination/name)
+    for name in ('__init__.py','worker.py','runtime_env.py'):shutil.copy2(root/'integrations/comfyui_manju_speech'/name,destination/name)
     (destination/'runtime.json').write_text(json.dumps({'python':str(python),'repo':str(runtime),'model_dir':str(models)},indent=2),encoding='utf-8')
     print('Installed bridge:',destination)
 

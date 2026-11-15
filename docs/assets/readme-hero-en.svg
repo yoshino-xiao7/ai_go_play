@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="420" viewBox="0 0 1280 420" role="img" aria-labelledby="title desc">
+  <title id="title">ai-go-play — AI-to-AI creation</title>
+  <desc id="desc">Project branding and a diagram connecting story, characters, shots and final work.</desc>
+  <defs><pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#ffffff" opacity=".07"/></pattern></defs>
+  <rect width="1280" height="420" rx="24" fill="#181617"/>
+  <rect width="1280" height="420" rx="24" fill="url(#grid)"/>
+  <g transform="translate(66 64)">
+    <rect width="60" height="60" rx="17" fill="#f3abc2"/>
+    <g transform="translate(6 6)" fill="none" stroke="#2d1720" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m24 11 14 8-14 8-14-8 14-8Z"/><path d="m10 27 14 8 14-8M10 23l14 8 14-8"/></g>
+  </g>
+  <g font-family="Segoe UI,Microsoft YaHei,Noto Sans CJK SC,sans-serif">
+    <text x="148" y="106" fill="#f7f1f3" font-size="44" font-weight="650" letter-spacing="-1">ai-go-play</text>
+    <text x="68" y="184" fill="#f7f1f3" font-size="38" font-weight="600">You direct the story. AI creates with you.</text>
+    <text x="70" y="225" fill="#b9aeb3" font-size="19">AI to AI · A local infinite canvas for your creative process</text>
+    <path d="M278 316H366M548 316H636M818 316H906" stroke="#946978" stroke-width="2" fill="none"/>
+    <g fill="#252124" stroke="#51424a"><rect x="70" y="282" width="208" height="68" rx="12"/><rect x="366" y="282" width="182" height="68" rx="12"/><rect x="636" y="282" width="182" height="68" rx="12"/><rect x="906" y="282" width="300" height="68" rx="12"/></g>
+    <g fill="#f3abc2" font-size="12" letter-spacing="2"><text x="91" y="308">01</text><text x="387" y="308">02</text><text x="657" y="308">03</text><text x="927" y="308">04</text></g>
+    <g fill="#eee5e9" font-size="20"><text x="128" y="326">Story</text><text x="408" y="326">Characters</text><text x="678" y="326">Shots</text><text x="964" y="326">Edit, finish and share</text></g>
+    <text x="1206" y="386" fill="#96868e" font-size="12" text-anchor="end">Workflow illustration · Directed and reviewed by people</text>
+  </g>
+</svg>

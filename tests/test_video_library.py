@@ -2,16 +2,19 @@ import pytest
 from conftest import project
 from test_generation import generation
 from test_video import video_service, h3_catalog, request
+from manju.store import DomainError
 
 
 def test_unified_catalog_keeps_image_clients_compatible(client,video_service):
     images=client.get('/api/workflows').json()['items']
     assert all(item['mode']!='video' for item in images)
     all_items=client.get('/api/workflows?include_video=true').json()['items']
-    assert len(all_items)==len(images)+1
-    video=all_items[-1]
+    video_items={item['id']:item for item in all_items if item['mode']=='video'}
+    assert set(video_items)=={'builtin-h3-local','builtin-video-interpolate-local','builtin-video-upscale-local','builtin-video-watermark-local'}
+    assert len(all_items)==len(images)+len(video_items)
+    video=video_items['builtin-h3-local']
     assert video['id']=='builtin-h3-local' and video['ready']
-    assert len(client.get('/api/workflows?include_video=true&mode=video').json()['items'])==1
+    assert {item['id'] for item in client.get('/api/workflows?include_video=true&mode=video').json()['items']}==set(video_items)
 
 
 def test_defaults_reach_actual_graph_and_repeated_request_is_stable(client,video_service):
@@ -63,8 +66,10 @@ def test_three_graph_templates_offline_and_no_submission(client,video_service,mo
         assert graph['condition']['class_type']==('MiniMaxH3ReferenceToVideo' if mode=='reference' else 'MiniMaxH3ImageToVideo')
         assert len(template['placeholder_files'])=={'text':0,'frames':2,'reference':3}[mode]
     assert not service.list()
-    monkeypatch.setattr(service.workflows,'object_info',lambda:(_ for _ in ()).throw(RuntimeError('offline')))
-    assert not client.get('/api/workflows?include_video=true').json()['items'][-1]['ready']
+    monkeypatch.setattr(service.workflows,'object_info',lambda:(_ for _ in ()).throw(DomainError(503,'offline','comfy_unavailable')))
+    items={item['id']:item for item in client.get('/api/workflows?include_video=true').json()['items']}
+    for name in ('builtin-h3-local','builtin-video-interpolate-local','builtin-video-upscale-local'):
+        assert not items[name]['ready']
     assert client.get('/api/video/workflow?mode=reference').status_code==200
     assert client.get('/api/video/workflow?mode=unknown').status_code==422
 

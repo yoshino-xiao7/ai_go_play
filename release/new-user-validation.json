@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-14",
+  "scope": "Follow the first-start guide using a source-only ZIP and an isolated local user profile on the same Windows PC.",
+  "source_bootstrap": {
+    "project_path_contains_chinese": true,
+    "no_git_directory": true,
+    "no_existing_venv_node_modules_dist_or_project_cache": true,
+    "path_contains_only_windows_tools": true,
+    "blank_profile_and_explicit_isolated_data_configuration": true,
+    "entry_point": "start.cmd -NoBrowser",
+    "private_python_node_dependencies_frontend_ffmpeg_installed": true,
+    "doctor_passed_with_project_private_ffmpeg_and_ffprobe": true,
+    "repeat_launch_reuses_running_service": true,
+    "powershell_5_progress_page_retry_and_reopen_test_passed": true
+  },
+  "web_flow": {
+    "passed": true,
+    "existing_official_comfyui_from_previous_clean_validation_reused": true,
+    "managed_engine_start_and_restart": true,
+    "public_share_files_matched_by_name_and_size": 48,
+    "shared_model_folder_hint_verified": true,
+    "missing_model_list_includes_cloud_location": true,
+    "real_directory_picker_used": true,
+    "real_model_files_copied_and_sha256_verified": 3,
+    "selected_pack": "08-video-enhance",
+    "models_copied_from_existing_local_files_not_redownloaded_from_quark": true,
+    "runtime_component_installation_passed": true,
+    "refresh_restores_validation": true,
+    "both_documents_opened_and_consent_gate_checked": true,
+    "guest_enters_actual_canvas_and_reload_succeeds": true,
+    "console_errors": []
+  },
+  "external_comfyui": {
+    "ordinary_launcher_without_extra_model_paths_argument_tested": true,
+    "selected_model_root_loaded_by_setup_node": true,
+    "ready_packs": 8,
+    "user_extra_model_paths_not_modified": true
+  },
+  "regression": {
+    "full_suite_passed": 519,
+    "full_suite_skipped": 1,
+    "skip_reason": "Windows target-symlink test requires symlink creation privileges.",
+    "frontend_build_passed": true,
+    "guide_md_txt_content_matches": true
+  },
+  "source_inventory_review": {
+    "no_runtime_caches_or_model_weights_in_candidate_source_zip": true,
+    "no_env_or_credentials_files_found": true,
+    "no_private_key_or_github_openai_token_signatures_found": true,
+    "signature_scan_is_not_a_complete_secret_audit": true
+  },
+  "release_followups": [
+    "Superseded on 2026-11-14: all 48 source records are documented in model-sources.json. See MODEL-LICENSES.md for separate license conditions and unresolved full texts.",
+    "New and modified source files have not been committed or published by this review. Download and check the actual remote release ZIP after publishing the reviewed files.",
+    "A second physical computer and other GPU/driver combinations have not been tested.",
+    "Quark files were listed remotely but were not all redownloaded and SHA256-verified from the public share.",
+    "Actual Yike account registration/authorization requires a user and was not automated.",
+    "Current per-mode results and remaining cases are in generation-validation.json. GPU tests were deferred on user request to prioritize production tasks; this is not a claim that all inference modes passed."
+  ]
+}

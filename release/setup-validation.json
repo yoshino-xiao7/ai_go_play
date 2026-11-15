@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-14",
+  "platform": "Windows 11 x64",
+  "gpu": "NVIDIA GeForce RTX 5060 Ti 16 GB",
+  "bootstrap": {
+    "source_copy_without_venv_node_modules_or_dist": true,
+    "managed_python": "3.12.13",
+    "managed_node": "22.23.5",
+    "core_dependencies_frontend_and_ffmpeg_installed": true,
+    "windows_powershell_5_http_host_tested": true,
+    "managed_python_launch_from_unicode_path_tested": true
+  },
+  "comfyui": {
+    "fresh_official_portable": true,
+    "version": "0.45.0",
+    "python": "3.13.14",
+    "torch": "2.14.1+cu130",
+    "pinned_download_sha256_verified": true,
+    "third_party_node_sources_installed": 5,
+    "sageattention_cuda_and_triton_jit_probe_passed": true,
+    "managed_restart_and_loaded_revision_verified": true
+  },
+  "models": {
+    "public_quark_share_files_matched_by_name_and_size": 48,
+    "local_files_verified_by_sha256": 48,
+    "functional_packs_ready": 8,
+    "existing_model_files_reused": true,
+    "cloud_files_redownloaded_and_hashed": false
+  },
+  "inference": {
+    "speech_and_lipsync_runtimes_reused_from_previous_clean_install": true,
+    "previous_clean_install_evidence": "local-ai-validation.json",
+    "web_runtime_install_and_checks_passed": true,
+    "fresh_comfyui_real_speech_task": {
+      "status": "success",
+      "text_emotion_enabled": true,
+      "duration_seconds": 3.065034
+    },
+    "fresh_comfyui_real_lipsync_task": {
+      "status": "success",
+      "duration_seconds": 1.0,
+      "width": 1080,
+      "height": 1920,
+      "frames": 25,
+      "has_audio": true
+    }
+  },
+  "regression": {
+    "full_suite_passed": 517,
+    "full_suite_skipped": 1,
+    "skip_reason": "Target symlink test requires Windows symlink privileges.",
+    "frontend_production_build_passed": true,
+    "browser_flow_passed": true,
+    "browser_console_errors": [],
+    "browser_checks": [
+      "real engine connection",
+      "public share scan",
+      "directory browser and custom model path",
+      "missing model list blocks completion",
+      "refresh preserves setup state",
+      "consent starts unchecked and gates completion",
+      "privacy document dialog",
+      "guest enters the actual canvas"
+    ],
+    "responsive_widths_without_horizontal_overflow": [1440, 1024, 820, 768, 390]
+  },
+  "limitations": [
+    "Same physical machine; other PCs, GPUs and driver combinations have not been validated.",
+    "Speech and lip-sync environments were freshly installed in the previous validation, then reused with the fresh ComfyUI portable in this validation.",
+    "Quark model download takes place on the official website; the local Web wizard scans the public share and imports and verifies downloaded files.",
+    "Actual Yike registration and account authorization require a user and were not automated in this validation.",
+    "Audio/video files and durations were verified; perceptual quality and lip synchronization were not scored."
+  ]
+}

@@ -37,6 +37,13 @@ def find_binary(name: str) -> str | None:
     located = shutil.which(name)
     if located:
         candidates.append(located)
+    # The optional local AI installer keeps FFmpeg private to this checkout.
+    try:
+        local_paths = json.loads((Path(__file__).resolve().parents[2] / ".manju/local-ai-paths.json").read_text(encoding="utf-8"))
+        if isinstance(local_paths, dict) and name in {"ffmpeg", "ffprobe"} and isinstance(local_paths.get(name), str):
+            candidates.append(local_paths[name])
+    except (OSError, ValueError, TypeError):
+        pass
     if os.name == "nt":
         package_root = Path(os.environ.get("LOCALAPPDATA", "")) / "Microsoft" / "WinGet" / "Packages"
         if package_root.is_dir():

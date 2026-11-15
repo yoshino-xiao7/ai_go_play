@@ -1,0 +1,874 @@
+{
+  "schema_version": 1,
+  "checked_at": "2026-11-14",
+  "status": "local-functional-validation-complete",
+  "published": false,
+  "scope": "Actual local canvas generation API. Cloud providers were not invoked. This is not a claim that every generation mode is validated.",
+  "source_review": {
+    "total": 48,
+    "upstream_matched": 47,
+    "locally_generated_manifest": 1,
+    "details": "model-sources.json",
+    "license_conditions_and_open_items": "MODEL-LICENSES.md"
+  },
+  "environment": {
+    "gpu": "NVIDIA GeForce RTX 5060 Ti",
+    "vram_mib": 16311,
+    "driver": "617.42",
+    "system_ram_gib": 31.1,
+    "comfyui": "0.45.0",
+    "comfy_python": "3.13.14",
+    "torch": "2.14.1+cu130",
+    "visible_models": "Only published files, isolated model root",
+    "timing_caveat": "Some image tests overlapped production GPU activity. These timings are not hardware minimums or performance benchmarks."
+  },
+  "cases": [
+    {
+      "case": "qwen-text",
+      "status": "succeeded",
+      "job_id": "3a3087db37354736b9955fafd424b2c6",
+      "node_id": "qwen-text-6294cdc5",
+      "elapsed_seconds": 39.1,
+      "outputs": [
+        {
+          "version_id": "09951a3b773b48219a13a1b46da4b4a1",
+          "mime": "image/png",
+          "sha256": "1bfff7561a638d38a7b7989b64df7625c62e7ecbb2175e32d302e116198f481a",
+          "width": 512,
+          "height": 512
+        }
+      ]
+    },
+    {
+      "case": "qwen-reference",
+      "status": "succeeded",
+      "job_id": "b1374a2aaaf94ea2ad0e17ad65c9009a",
+      "node_id": "qwen-reference-76915876",
+      "elapsed_seconds": 24.0,
+      "outputs": [
+        {
+          "version_id": "3d194aaa52bf43458623df5459303765",
+          "mime": "image/png",
+          "sha256": "57884ef6e2f3db189f703ef6ce123d5692d4a6f88e191544e045e032d163cb0f",
+          "width": 512,
+          "height": 512
+        }
+      ]
+    },
+    {
+      "case": "qwen-edit",
+      "status": "succeeded",
+      "job_id": "ff004e89eaa14319a7e6c35d4e1d31fd",
+      "node_id": "qwen-edit-67418ad0",
+      "elapsed_seconds": 24.0,
+      "outputs": [
+        {
+          "version_id": "3d02b564b13e40aa9b55de8fb8e07ee5",
+          "mime": "image/png",
+          "sha256": "1df8a7bcce39bf4e8b1a513ec936e31aead94e6bd91adff0a912e087478fd4a3",
+          "width": 512,
+          "height": 512
+        }
+      ]
+    },
+    {
+      "case": "h3-image-text",
+      "status": "succeeded",
+      "job_id": "f41519d1d2be45bb95add74465161057",
+      "node_id": "h3-image-text-8c2afc86",
+      "elapsed_seconds": 366.6,
+      "outputs": [
+        {
+          "version_id": "31641ae18f6847ba9fec93ceed99289c",
+          "mime": "image/png",
+          "sha256": "378884979ae4acff227924b54449cb23c4484f266a9ae989481e918e9fd9756e",
+          "width": 512,
+          "height": 512
+        }
+      ]
+    },
+    {
+      "case": "h3-image-reference",
+      "status": "succeeded",
+      "job_id": "cde8656089e04524a65bbfba7c5d983f",
+      "node_id": "h3-image-reference-3a7cd040",
+      "elapsed_seconds": 393.6,
+      "outputs": [
+        {
+          "version_id": "ae682e6d55a344eca74155d3171a904b",
+          "mime": "image/png",
+          "sha256": "de8e63c630b4c810c25b2c9f52f295e464640e11033451732b445e18c8675215",
+          "width": 512,
+          "height": 512
+        }
+      ]
+    },
+    {
+      "case": "h3-image-edit",
+      "status": "succeeded",
+      "job_id": "c72773f622c749f6a22773b87b3e913a",
+      "node_id": "h3-image-edit-e3ac1336",
+      "elapsed_seconds": 105.2,
+      "outputs": [
+        {
+          "version_id": "97f636c74fba4921bfd86a3fbfcc3243",
+          "mime": "image/png",
+          "sha256": "5c36a32022273130ecf503a37e02fdc0f221c42ab117afcf46aade7ca9b6da68",
+          "width": 512,
+          "height": 512
+        }
+      ]
+    },
+    {
+      "case": "h3-native-text",
+      "status": "succeeded",
+      "job_id": "61161463b5884e18a3b5eacea6063136",
+      "node_id": "h3-native-text-bfe3f2c2",
+      "elapsed_seconds": 51.4,
+      "outputs": [
+        {
+          "version_id": "a7b80ba219514c4bb42960ae1cac392f",
+          "mime": "video/mp4",
+          "sha256": "8c558a625f7549b19615a27c638c31d6ffb7a42cba450115c1a4dc73a78faa39",
+          "streams": [
+            {
+              "codec_type": "video",
+              "codec_name": "h264",
+              "width": 256,
+              "height": 256,
+              "r_frame_rate": "24/1",
+              "nb_frames": "22",
+              "duration": "0.916667"
+            },
+            {
+              "codec_type": "audio",
+              "codec_name": "aac",
+              "r_frame_rate": "0/0",
+              "nb_frames": "30",
+              "sample_rate": "32000",
+              "channels": 2,
+              "duration": "0.916687"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case": "h3-native-first",
+      "status": "succeeded",
+      "job_id": "3729ede7b6d24437b937c103e48ad669",
+      "node_id": "h3-native-first-b4aba75d",
+      "elapsed_seconds": 48.5,
+      "outputs": [
+        {
+          "version_id": "6aacbc9dac2e4aa0b8cad99a3aac776b",
+          "mime": "video/mp4",
+          "sha256": "46eca10092e890543f39555206c11fbc964a5875c4ae8c8ea044e1edfd8a8794",
+          "streams": [
+            {
+              "codec_type": "video",
+              "codec_name": "h264",
+              "width": 256,
+              "height": 256,
+              "r_frame_rate": "24/1",
+              "nb_frames": "22",
+              "duration": "0.916667"
+            },
+            {
+              "codec_type": "audio",
+              "codec_name": "aac",
+              "r_frame_rate": "0/0",
+              "nb_frames": "30",
+              "sample_rate": "32000",
+              "channels": 2,
+              "duration": "0.916687"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case": "h3-native-first-last",
+      "status": "succeeded",
+      "job_id": "75e78b7a9fc14655b5c96382fb6e6dbd",
+      "node_id": "h3-native-first-last-e480aec1",
+      "elapsed_seconds": 51.5,
+      "outputs": [
+        {
+          "version_id": "411d3af0be4044cc92a0b3ff165f0159",
+          "mime": "video/mp4",
+          "sha256": "c6d7d8a024f7710b5021480eae60408ac0a461ea96ceba29443437b0dbae62c0",
+          "streams": [
+            {
+              "codec_type": "video",
+              "codec_name": "h264",
+              "width": 256,
+              "height": 256,
+              "r_frame_rate": "24/1",
+              "nb_frames": "22",
+              "duration": "0.916667"
+            },
+            {
+              "codec_type": "audio",
+              "codec_name": "aac",
+              "r_frame_rate": "0/0",
+              "nb_frames": "30",
+              "sample_rate": "32000",
+              "channels": 2,
+              "duration": "0.916687"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case": "h3-native-reference",
+      "status": "succeeded",
+      "job_id": "1aa0d7744be44c7887c07679f11a9cb0",
+      "node_id": "h3-native-reference-1f76a2d4",
+      "elapsed_seconds": 51.5,
+      "outputs": [
+        {
+          "version_id": "0921697ec5ec4eb18e3b48afabdf0425",
+          "mime": "video/mp4",
+          "sha256": "5b34d8ff92c8effab254d2d8c22294f545ebed17e95954afc5e1ecc402776bb5",
+          "streams": [
+            {
+              "codec_type": "video",
+              "codec_name": "h264",
+              "width": 256,
+              "height": 256,
+              "r_frame_rate": "24/1",
+              "nb_frames": "22",
+              "duration": "0.916667"
+            },
+            {
+              "codec_type": "audio",
+              "codec_name": "aac",
+              "r_frame_rate": "0/0",
+              "nb_frames": "30",
+              "sample_rate": "32000",
+              "channels": 2,
+              "duration": "0.916687"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case": "h3-director-reference",
+      "status": "succeeded",
+      "job_id": "41137cb6367d4806ae514dd436eb9292",
+      "node_id": "h3-director-reference-2533f065",
+      "elapsed_seconds": 102.5,
+      "outputs": [
+        {
+          "version_id": "f01867aa1c6b4281ac1cb9fd1b3a0f7d",
+          "mime": "video/mp4",
+          "sha256": "a4b8b159bbb750dc1b9a57ee2248e1b6ed58299495e1524bc54fac1ead93729f",
+          "streams": [
+            {
+              "codec_type": "video",
+              "codec_name": "h264",
+              "width": 256,
+              "height": 256,
+              "r_frame_rate": "24/1",
+              "nb_frames": "107",
+              "duration": "4.458333"
+            },
+            {
+              "codec_type": "audio",
+              "codec_name": "aac",
+              "r_frame_rate": "0/0",
+              "nb_frames": "141",
+              "sample_rate": "32000",
+              "channels": 2,
+              "duration": "4.458344"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case": "h3-director-first",
+      "status": "succeeded",
+      "job_id": "4c9f410bfb0d40a9a071d2cd037ea96e",
+      "node_id": "h3-director-first-99d3d885",
+      "elapsed_seconds": 108.6,
+      "outputs": [
+        {
+          "version_id": "8b83ed8e84494b7c878a450136383be6",
+          "mime": "video/mp4",
+          "sha256": "6123d9fab51d98faf0397f0bdf3672b33a0d3f088f04959872e3ed3dc012b76e",
+          "streams": [
+            {
+              "codec_type": "video",
+              "codec_name": "h264",
+              "width": 256,
+              "height": 256,
+              "r_frame_rate": "24/1",
+              "nb_frames": "107",
+              "duration": "4.458333"
+            },
+            {
+              "codec_type": "audio",
+              "codec_name": "aac",
+              "r_frame_rate": "0/0",
+              "nb_frames": "141",
+              "sample_rate": "32000",
+              "channels": 2,
+              "duration": "4.458344"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case": "h3-director-text",
+      "status": "succeeded",
+      "job_id": "c21cf64087e0433587b4c683885ff5a8",
+      "node_id": "h3-director-text-9fa96ab9",
+      "elapsed_seconds": 108.6,
+      "outputs": [
+        {
+          "version_id": "d2c14447ea0b4872b5bed964f648ba51",
+          "mime": "video/mp4",
+          "sha256": "8f965c476797fff59e7f6ce6fecd42e0f7927a2f888634269fe62ec2be2926c0",
+          "streams": [
+            {
+              "codec_type": "video",
+              "codec_name": "h264",
+              "width": 256,
+              "height": 256,
+              "r_frame_rate": "24/1",
+              "nb_frames": "107",
+              "duration": "4.458333"
+            },
+            {
+              "codec_type": "audio",
+              "codec_name": "aac",
+              "r_frame_rate": "0/0",
+              "nb_frames": "141",
+              "sample_rate": "32000",
+              "channels": 2,
+              "duration": "4.458344"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case": "h3-turbo-reference",
+      "status": "succeeded",
+      "job_id": "8c85e1c027ec4f13b08a5c761d8c65fa",
+      "node_id": "h3-turbo-reference-bd1993ec",
+      "elapsed_seconds": 39.5,
+      "outputs": [
+        {
+          "version_id": "d46e6674158c47c1a629112339f1ffd7",
+          "mime": "video/mp4",
+          "sha256": "0e6103852ec7e982e5eb04c44bb189870beec8d7ebd34540944ab933d815f421",
+          "streams": [
+            {
+              "codec_type": "video",
+              "codec_name": "h264",
+              "width": 256,
+              "height": 256,
+              "r_frame_rate": "24/1",
+              "nb_frames": "22",
+              "duration": "0.916667"
+            },
+            {
+              "codec_type": "audio",
+              "codec_name": "aac",
+              "r_frame_rate": "0/0",
+              "nb_frames": "30",
+              "sample_rate": "32000",
+              "channels": 2,
+              "duration": "0.916687"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case": "h3-native-guide",
+      "status": "succeeded",
+      "job_id": "6f574eff23b148e880f10badcc503942",
+      "node_id": "h3-native-guide-df518b7a",
+      "elapsed_seconds": 45.5,
+      "outputs": [
+        {
+          "version_id": "2414645ebf1e40c5abaa2a97d0fa2c48",
+          "mime": "video/mp4",
+          "sha256": "202bada510d9a780f2d24d2ef96541399b71b1a33a83f93609f6ee9c1e36b26e",
+          "streams": [
+            {
+              "codec_type": "video",
+              "codec_name": "h264",
+              "width": 256,
+              "height": 256,
+              "r_frame_rate": "24/1",
+              "nb_frames": "22",
+              "duration": "0.916667"
+            },
+            {
+              "codec_type": "audio",
+              "codec_name": "aac",
+              "r_frame_rate": "0/0",
+              "nb_frames": "30",
+              "sample_rate": "32000",
+              "channels": 2,
+              "duration": "0.916687"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case": "h3-native-default-4s",
+      "status": "succeeded",
+      "job_id": "94adf512088b4ccc92c1ae9931da8a09",
+      "node_id": "h3-native-default-4s-b7653872",
+      "elapsed_seconds": 237.7,
+      "outputs": [
+        {
+          "version_id": "edc9f3f8374a43159d2664a777cf029a",
+          "mime": "video/mp4",
+          "sha256": "5c0c8f5f38523ff4621f5c0e967bb8a899437b655ab52cc4b1e6a8e4d5457b47",
+          "streams": [
+            {
+              "codec_type": "video",
+              "codec_name": "h264",
+              "width": 864,
+              "height": 480,
+              "r_frame_rate": "24/1",
+              "nb_frames": "107",
+              "duration": "4.458333"
+            },
+            {
+              "codec_type": "audio",
+              "codec_name": "aac",
+              "r_frame_rate": "0/0",
+              "nb_frames": "141",
+              "sample_rate": "32000",
+              "channels": 2,
+              "duration": "4.450000"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case": "h3-turbo-default-4s",
+      "status": "succeeded",
+      "job_id": "904fd3f57bc0425c98bdb865f1af6067",
+      "node_id": "h3-turbo-default-4s-52a83a01",
+      "elapsed_seconds": 93.5,
+      "outputs": [
+        {
+          "version_id": "fb3ff99fa3164f73979d0f8ce11a6b39",
+          "mime": "video/mp4",
+          "sha256": "2e7a0cd62f81fc9f92e0494bee4f396b406b42542dd36f9344fbf03acfcefc90",
+          "streams": [
+            {
+              "codec_type": "video",
+              "codec_name": "h264",
+              "width": 864,
+              "height": 480,
+              "r_frame_rate": "24/1",
+              "nb_frames": "107",
+              "duration": "4.458333"
+            },
+            {
+              "codec_type": "audio",
+              "codec_name": "aac",
+              "r_frame_rate": "0/0",
+              "nb_frames": "141",
+              "sample_rate": "32000",
+              "channels": 2,
+              "duration": "4.450000"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case": "indextts-reference",
+      "status": "succeeded",
+      "job_id": "1cb4c65683474c9f943a5973445555e4",
+      "node_id": "indextts-reference-9024d054",
+      "elapsed_seconds": 75.8,
+      "outputs": [
+        {
+          "version_id": "88bb1663996e46c1b1f7054600a42d3b",
+          "mime": "audio/flac",
+          "sha256": "0c4d3d89978af9161738dd9197aa1fea8f6607db7412ae44363785dee9fbc59a",
+          "streams": [
+            {
+              "codec_type": "audio",
+              "codec_name": "flac",
+              "r_frame_rate": "0/0",
+              "sample_rate": "22050",
+              "channels": 1,
+              "duration": "3.390113"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case": "indextts-emotion-text",
+      "status": "succeeded",
+      "job_id": "310250936a73409985adf311cfbe0908",
+      "node_id": "indextts-emotion-text-9207e2fd",
+      "elapsed_seconds": 48.5,
+      "outputs": [
+        {
+          "version_id": "2441688c88b54d6194889f77784e130c",
+          "mime": "audio/flac",
+          "sha256": "21dfbc61fdaf20efff8534824647846767081d30c12b48965605e8368c2da65a",
+          "streams": [
+            {
+              "codec_type": "audio",
+              "codec_name": "flac",
+              "r_frame_rate": "0/0",
+              "sample_rate": "22050",
+              "channels": 1,
+              "duration": "2.507755"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case": "indextts-emotion-audio",
+      "status": "succeeded",
+      "job_id": "4934cad827174e2faa790b475bd9474a",
+      "node_id": "indextts-emotion-audio-9625bcba",
+      "elapsed_seconds": 42.4,
+      "outputs": [
+        {
+          "version_id": "66b7546b51a44ff8975c0f716416643d",
+          "mime": "audio/flac",
+          "sha256": "34769884463f0dc281695244881d88071b4ab22b515d17324784273fa24d8338",
+          "streams": [
+            {
+              "codec_type": "audio",
+              "codec_name": "flac",
+              "r_frame_rate": "0/0",
+              "sample_rate": "22050",
+              "channels": 1,
+              "duration": "3.308844"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case": "latentsync-auto",
+      "status": "succeeded",
+      "job_id": "2853b82e4e7c498d8dfa777b7fd06fad",
+      "node_id": "latentsync-auto-2e6fd914",
+      "elapsed_seconds": 190.3,
+      "outputs": [
+        {
+          "version_id": "7ed9549046fc487c85167f7d078eb770",
+          "mime": "video/mp4",
+          "sha256": "83adf24d86d6b467c9d164671b101f6a44152cf80cef907a9f181eb9aafda2ee",
+          "streams": [
+            {
+              "codec_type": "video",
+              "codec_name": "h264",
+              "width": 1080,
+              "height": 1920,
+              "r_frame_rate": "25/1",
+              "nb_frames": "250",
+              "duration": "10.000000"
+            },
+            {
+              "codec_type": "audio",
+              "codec_name": "aac",
+              "r_frame_rate": "0/0",
+              "nb_frames": "158",
+              "sample_rate": "16000",
+              "channels": 1,
+              "duration": "10.000000"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case": "h3-voice-design",
+      "status": "succeeded",
+      "job_id": "05ddbc66b0504c4bb0920e368f3a8558",
+      "node_id": "h3-voice-design-121a00df",
+      "elapsed_seconds": 620.2,
+      "outputs": [
+        {
+          "version_id": "7ec600b4b28e47d1a18fca74e6c882df",
+          "mime": "audio/flac",
+          "sha256": "59f12f6442e98faa315e6e607b3db631f14b2eb975dc527cb29d652667d8437a",
+          "streams": [
+            {
+              "codec_type": "audio",
+              "codec_name": "flac",
+              "r_frame_rate": "0/0",
+              "sample_rate": "32000",
+              "channels": 2,
+              "duration": "8.000000"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case": "enhance-rife",
+      "status": "succeeded",
+      "job_id": "5072db137a1c4f6588bb73f444c880af",
+      "node_id": "enhance-rife-3d25e199",
+      "elapsed_seconds": 3.9,
+      "outputs": [
+        {
+          "version_id": "3545bfd7b56b49af81cd729800586bdd",
+          "mime": "video/x-matroska",
+          "sha256": "50945cec326a9458753cedebd7495f1df907b7246422727a07bbee132e8af9e3",
+          "streams": [
+            {
+              "codec_type": "video",
+              "codec_name": "h264",
+              "width": 256,
+              "height": 256,
+              "r_frame_rate": "48/1"
+            },
+            {
+              "codec_type": "audio",
+              "codec_name": "aac",
+              "r_frame_rate": "0/0",
+              "sample_rate": "32000",
+              "channels": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case": "enhance-hold",
+      "status": "succeeded",
+      "job_id": "8142b6b226194ca08fae99ef7f75e724",
+      "node_id": "enhance-hold-529f1351",
+      "elapsed_seconds": 3.8,
+      "outputs": [
+        {
+          "version_id": "b0d26e95cfaf477d92ca4ad53d8189a0",
+          "mime": "video/x-matroska",
+          "sha256": "fd8fc329c08dfc37eabfad2f232466eba7e0762badeb94c061dbd0d722371910",
+          "streams": [
+            {
+              "codec_type": "video",
+              "codec_name": "h264",
+              "width": 256,
+              "height": 256,
+              "r_frame_rate": "48/1"
+            },
+            {
+              "codec_type": "audio",
+              "codec_name": "aac",
+              "r_frame_rate": "0/0",
+              "sample_rate": "32000",
+              "channels": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case": "enhance-anime6b",
+      "status": "succeeded",
+      "job_id": "e705a434c95f49b9abc0c3845250426e",
+      "node_id": "enhance-anime6b-df9a4a50",
+      "elapsed_seconds": 3.8,
+      "outputs": [
+        {
+          "version_id": "f0b5a64e51f2465ba9057adf6928b95b",
+          "mime": "video/x-matroska",
+          "sha256": "6d281cb0d7df6d3ce5132698820224984d3043b4c64846954288eb9e5c3f97f8",
+          "streams": [
+            {
+              "codec_type": "video",
+              "codec_name": "h264",
+              "width": 512,
+              "height": 512,
+              "r_frame_rate": "24/1"
+            },
+            {
+              "codec_type": "audio",
+              "codec_name": "aac",
+              "r_frame_rate": "0/0",
+              "sample_rate": "32000",
+              "channels": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case": "enhance-remacri",
+      "status": "succeeded",
+      "job_id": "dd3b4829afa44643a2c1b94eb17a71df",
+      "node_id": "enhance-remacri-496a5645",
+      "elapsed_seconds": 3.8,
+      "outputs": [
+        {
+          "version_id": "809d3666c2934ab48ff1e1ea689ffeb6",
+          "mime": "video/x-matroska",
+          "sha256": "2928edfe0859d68b7635aafafed2f400f2be013eab1186f506477c25bb432d87",
+          "streams": [
+            {
+              "codec_type": "video",
+              "codec_name": "h264",
+              "width": 512,
+              "height": 512,
+              "r_frame_rate": "24/1"
+            },
+            {
+              "codec_type": "audio",
+              "codec_name": "aac",
+              "r_frame_rate": "0/0",
+              "sample_rate": "32000",
+              "channels": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case": "watermark-text",
+      "status": "succeeded",
+      "job_id": "b787bf042b544054ab0b7c49fe11cd72",
+      "node_id": "watermark-text-57f983bd",
+      "elapsed_seconds": 6.0,
+      "outputs": [
+        {
+          "version_id": "23307ad44a2841d7aa63527173dc5b46",
+          "mime": "video/mp4",
+          "sha256": "ba6e0c75988a80fabedc0687cb1774ef5c606ba362d3f8740eea38135d438ac5",
+          "streams": [
+            {
+              "codec_type": "video",
+              "codec_name": "h264",
+              "width": 1080,
+              "height": 1920,
+              "r_frame_rate": "25/1",
+              "nb_frames": "250",
+              "duration": "10.000000"
+            },
+            {
+              "codec_type": "audio",
+              "codec_name": "aac",
+              "r_frame_rate": "0/0",
+              "nb_frames": "432",
+              "sample_rate": "44100",
+              "channels": 2,
+              "duration": "10.007800"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case": "watermark-image",
+      "status": "succeeded",
+      "job_id": "f61b731c57cd4061882c3ae1cf8eaa9e",
+      "node_id": "watermark-image-3870cd06",
+      "elapsed_seconds": 6.0,
+      "outputs": [
+        {
+          "version_id": "47022c06141845179def3cfa55c3039f",
+          "mime": "video/mp4",
+          "sha256": "24430f1808a65bcbeb2dbc83f738be2d6578ee254a2516a33ecd758bac70e9e9",
+          "streams": [
+            {
+              "codec_type": "video",
+              "codec_name": "h264",
+              "width": 1080,
+              "height": 1920,
+              "r_frame_rate": "25/1",
+              "nb_frames": "250",
+              "duration": "10.000000"
+            },
+            {
+              "codec_type": "audio",
+              "codec_name": "aac",
+              "r_frame_rate": "0/0",
+              "nb_frames": "432",
+              "sample_rate": "44100",
+              "channels": 2,
+              "duration": "10.007800"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "passed_count": 28,
+  "remaining_cases": [],
+  "regression": {
+    "backend_passed": 522,
+    "backend_skipped": 1,
+    "skip_reason": "Windows symlink creation privileges",
+    "frontend_build": true,
+    "browser_legacy_backend_404_canvas_restored": true,
+    "browser_new_backend_onboarding_preserved": true,
+    "browser_real_503_not_bypassed": true,
+    "browser_legacy_recheck_503_not_bypassed": true,
+    "existing_frontend_chunks_retained_during_rebuild": true
+  },
+  "export_import": {
+    "project_id": "5eb699acfca548b686b193a2d289dc3c",
+    "imported_project_id": "3584ac1b0bfd43a5bfabb2d0aa754e8b",
+    "archive": "release-acceptance.manju",
+    "archive_sha256": "debbf9651a0c2e405cf0a9a3b1613edf46a08dd550a2349b6d968c8ee5362519",
+    "nodes": 37,
+    "edges": 29,
+    "all_blob_hashes_verified": true,
+    "generation_provenance_preserved": true
+  },
+  "evidence_directory": ".qa/release-final",
+  "next_action": "Resolve remaining redistribution evidence and downstream license conditions; test on another machine before publishing. Full cloud re-download cancelled by user after 25 successful file hashes; 23 remain unverified. See license-review.json and quark-download-validation.json. No release or upload is authorized.",
+  "production_priority_recheck": {
+    "succeeded": 6,
+    "cancelled": 13,
+    "active": 0,
+    "cancelled_jobs_retried": false
+  },
+  "media_review": {
+    "decoded_video_count": 18,
+    "decoded_video_frames": 1549,
+    "black_white_or_large_adjacent_change_flags": 0,
+    "browser_play_and_seek_passed": 18,
+    "browser_javascript_errors": [],
+    "audio_cpu_transcription_count": 4,
+    "visual_review": "Image/video contact frames inspected. Functional acceptance, not an artistic-quality or phoneme-alignment guarantee.",
+    "audio_review_limit": "Signal checks and local Whisper tiny transcription; not a human listening-quality score."
+  },
+  "qa_corrections": [
+    {
+      "case": "latentsync-auto",
+      "issue": "QA segment of one second was shorter than the input speech. API correctly returned lipsync_audio_overflow (422).",
+      "resolution": "Retested the full source duration; preserve product validation."
+    },
+    {
+      "case": "browser-seek-check",
+      "issue": "Synthetic range fill raced playback timeupdate events.",
+      "resolution": "Pause and click the actual seek control, then assert media seek position."
+    }
+  ],
+  "runtime_cleanup": {
+    "qa_comfy_port": 8205,
+    "qa_comfy_stopped_after_inference": true,
+    "production_service_restarted": false,
+    "production_jobs_cancelled_by_this_run": 0
+  }
+}

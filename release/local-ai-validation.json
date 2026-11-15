@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-13",
+  "platform": "Windows 11 x64",
+  "gpu": "NVIDIA GeForce RTX 5060 Ti",
+  "gpu_total_bytes": 17074421760,
+  "python": "3.11.18",
+  "torch": "2.8.0+cu128",
+  "numpy": "1.26.4",
+  "cuda": "12.8",
+  "fresh_runtime_install": true,
+  "separate_speech_lipsync_environments": true,
+  "repeated_cmd_install": true,
+  "check_only_passed": true,
+  "model_sha256_verified_files": 32,
+  "offline_inference": [
+    {
+      "bytes": 116268,
+      "python_network_blocked": true,
+      "fresh_cache": true,
+      "kind": "speech",
+      "duration_seconds": 2.635465
+    },
+    {
+      "bytes": 116268,
+      "python_network_blocked": true,
+      "fresh_cache": true,
+      "kind": "speech_emotion_text",
+      "duration_seconds": 2.635465
+    },
+    {
+      "frames": 25,
+      "duration_seconds": 1.0,
+      "fresh_cache": true,
+      "kind": "lipsync",
+      "has_audio": true,
+      "python_network_blocked": true,
+      "height": 1920,
+      "width": 1080
+    }
+  ],
+  "comfyui": {
+    "speech_task_status": "success",
+    "isolated_base_and_custom_nodes": true,
+    "reused_existing_portable": true,
+    "lipsync_task_status": "success"
+  },
+  "regression": {
+    "windows_progress_lock_test_passed": true,
+    "full_suite_passed": 499,
+    "unicode_worker_launch_test_passed": true,
+    "later_targeted_suite_passed": 98
+  },
+  "limitations": [
+    "Same physical machine; other PCs/GPUs have not been validated.",
+    "ComfyUI portable installation was reused; only inference runtimes and ComfyUI task directories were clean.",
+    "Audio/video validity and representative video frames checked; perceptual speech quality and lip synchronization were not scored."
+  ]
+}

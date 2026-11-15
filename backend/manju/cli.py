@@ -795,7 +795,12 @@ def main(argv=None):
                 os.environ["MANJU_DATA_DIR"] = str(Path(args.data_dir).expanduser().resolve())
             if args.config_file:
                 os.environ["MANJU_CONFIG_FILE"] = str(Path(args.config_file).expanduser().resolve())
-            uvicorn.run("manju.app:create_app", factory=True, host="127.0.0.1", port=args.port, access_log=False)
+            from .app import create_app
+            application = create_app()
+            server = uvicorn.Server(uvicorn.Config(application, host="127.0.0.1", port=args.port,
+                                                   access_log=False, timeout_graceful_shutdown=3))
+            application.state.request_shutdown = lambda: setattr(server, 'should_exit', True)
+            server.run()
             return 0
         url = getattr(args, "url", os.environ.get("MANJU_URL", "http://127.0.0.1:8765"))
         parsed = urlsplit(url)

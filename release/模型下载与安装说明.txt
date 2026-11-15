@@ -1,0 +1,76 @@
+ai-go-play 模型下载与安装说明
+
+本分发清单对应项目内置工作流和标准 H3 INT8 视频预设：
+48 个模型及配套文件，去重共 186,797,079,987 字节，约 173.97 GiB。
+基础画布无需这些模型；按需要下载对应功能包。
+
+百度网盘：https://pan.baidu.com/s/5nO-pzE6K3be3-t0zkpm1Pw（无需提取码）
+夸克网盘：https://pan.quark.cn/s/2ce0688209ca（提取码：BsXE）
+两处模型目录相同，任选其一下载；大文件请使用对应网盘客户端。
+
+一、下载目录
+
+01-qwen-image：Qwen Image 2.1 文生图、参考图、编辑。
+02-h3-image：MiniMax H3 图像生成、图像编辑和提示词增强。
+03-h3-video：标准 H3 视频、音色设计。
+04-h3-turbo：H3 Turbo 视频所需的专用编码器和 LoRA。
+05-indextts：IndexTTS 2.5 配音及其辅助模型、配置、tokenizer。
+06-indextts-emotion：可选的 IndexTTS 文本情绪模型。
+07-latentsync：LatentSync 1.5 口型模型、Whisper、VAE、人脸检测。
+08-video-enhance：RIFE 4.26 插帧、Anime6B 和 Remacri 超分。
+
+二、安装路径与共享文件
+
+每个分类里的 models 目录都按模型原相对路径整理。
+将所下载分类的 models 内容合并到同一个模型根目录，保留目录层级和原文件名。
+例如 models/diffusion_models/xxx.safetensors 应安装为：
+你的模型根目录/diffusion_models/xxx.safetensors
+不要把 01-qwen-image 等分类名放进 ComfyUI 的模型扫描目录层级中。
+
+共享权重只保存一份，按需下载时注意：
+1. 标准 H3 视频还需要 02-h3-image/models/text_encoders/ 中的
+   qwen3vl_32b_minimax_h3_int8_convrot.safetensors。
+2. H3 Turbo 除了 04-h3-turbo，还需要 03-h3-video 中的
+   diffusion_models/minimax_h3_fl2va_int8_convrot.safetensors、
+   vae/minimax_h3_video_vae_int8_convrot.safetensors、
+   vae/minimax_h3_audio_vae_fp32.safetensors。
+3. 文本情绪包需与 05-indextts 合并到同一个 tts/IndexTTS-2.5 目录。
+4. 完整依赖以 models.json 的 packs 字段为准。
+
+三、下载完整性检查
+
+把 verify_models.py、models.json、model-checksums.sha256 放在同一目录。
+使用 Python 3.12 或以上版本运行：
+
+python verify_models.py --models-root "C:/AI/models"
+
+只检查 Qwen 包：
+
+python verify_models.py --models-root "C:/AI/models" --pack 01-qwen-image
+
+把 C:/AI/models 替换为自己的模型根目录。
+OK 表示 SHA256 与发布者本地清单一致；MISSING 表示文件缺失；
+MISMATCH 表示内容不一致，请核对下载是否完整、版本是否正确。
+完整校验需要读取约 174 GiB 文件，期间没有新输出不一定是卡住。
+此清单记录发布者本地文件，不代表模型原作者的签名。
+
+四、模型以外的必要环境
+
+模型文件不能代替运行环境：
+1. 画布主程序需要 Python 3.12+、前端构建；媒体处理需要 FFmpeg/FFprobe。
+2. 本地图像和视频需要兼容的 ComfyUI 与对应节点。
+3. Qwen 需要 Goohaitools 的 TextEncodeQwenImage21GH。
+4. H3 视频需要 Director 扩展；Turbo 还需要对应的 Turbo 扩展。
+5. IndexTTS 与 LatentSync 需要独立 Python 环境和 Manju 桥接节点。
+   下载项目后双击根目录 install-local-ai.cmd，选择 ComfyUI 与合并后的
+   模型目录，自动安装独立 Python 3.11、推理依赖、FFmpeg 和桥接节点。
+   语音/口型安装器适用 Windows x64 + NVIDIA；需要联网下载运行环境。
+   具体步骤、重检、真实生成验收见 release/语音与口型从零安装.md。
+6. 外部模型目录通过 ComfyUI 的模型路径配置接入，不要写死作者的盘符。
+
+项目安装说明与后续更新：
+https://github.com/yoshino-xiao7/ai_go_play
+
+当前模型来源与第三方许可证材料仍需逐项补齐；项目源码的 MIT
+许可证不代表第三方模型也采用 MIT。另一台真实电脑上的 GPU 生成验收
+仍需完成；同机独立环境验收不等于覆盖所有显卡和系统。

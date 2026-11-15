@@ -1,4 +1,4 @@
 interface:
   display_name: "Manju 短剧制作"
-  short_description: "从剧本拆资产、排分镜和人物表演，写提示词并复核 H3 镜头效果"
-  default_prompt: "用 $manju-video-production 从当前 Manju 项目的剧本拆资产和分镜，按可见表演写 H3 提示词，并复用画布上的固定版本素材。"
+  short_description: "在 Manju 画布提交镜头创作，保留提示词和参考连线，逐帧复核成片"
+  default_prompt: "用 $manju-video-production 在当前 Manju 画布继续制作，保存实际提示词、固定参考连线和各 Agent 的创作记录，逐帧与拼接复验后导出。"
