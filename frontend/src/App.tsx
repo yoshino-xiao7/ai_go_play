@@ -1,4 +1,5 @@
 import StudioSelect from "./StudioSelect";
+import ExitApplication from "./ExitApplication";
 import {
   lazy,
   Suspense,
@@ -26,6 +27,7 @@ import {
   GitBranch,
   HardDrive,
   Image as ImageIcon,
+  Info,
   Layers2,
   LayoutDashboard,
   ListChecks,
@@ -62,6 +64,7 @@ const Canvas = lazy(() => import("./Canvas"));
 const ComfyPanel = lazy(() => import("./ComfyPanel"));
 const Workflows = lazy(() => import("./Workflows"));
 const GenerationTasks = lazy(() => import("./GenerationTasks"));
+const About = lazy(() => import("./About"));
 
 const ACCEPT =
   ".png,.jpg,.jpeg,.webp,.gif,.mp4,.mov,.webm,.mkv,.wav,.mp3,.m4a,.flac,.ogg";
@@ -374,6 +377,7 @@ export default function App() {
           </a>
         </div>
         <div className="rail-bottom">
+          <a className="rail-link" href="#/setup"><ArrowDownToLine size={20} /><span>安装向导</span></a>
           <button className="rail-link" onClick={() => setTasksOpen(true)} aria-expanded={tasksOpen}>
             <ListChecks size={20} />
             <span>任务</span>
@@ -394,8 +398,12 @@ export default function App() {
             <Settings2 size={21} />
             <span>设置</span>
           </a>
+          <a className={`rail-link ${currentSection === "about" ? "active" : ""}`} href="#/about" aria-current={currentSection === "about" ? "page" : undefined}>
+            <Info size={21} /><span>关于</span>
+          </a>
         </div>
         <div className="rail-account-section">
+          {!projectId && <ExitApplication className="rail-link" />}
           {shareStatus?.connected && shareStatus.user ? (
             <div className="rail-user-card-wrap" ref={shareMenuRef}>
               <button
@@ -551,6 +559,8 @@ export default function App() {
           <Suspense fallback={<Loading />}>
             <Workflows refresh={refresh} onChanged={changed} onOpenComfy={openComfy} />
           </Suspense>
+        ) : route === "/about" ? (
+          <Suspense fallback={<Loading />}><About notify={notify} /></Suspense>
         ) : route === "/settings" ? (
           <StorageSettings
             refresh={refresh}
@@ -1977,6 +1987,7 @@ function StorageSettings({
             <button aria-current={section === "library" ? "page" : undefined} onClick={() => setSection("library")}><HardDrive size={18} />本地存储</button>
             <button aria-current={section === "migration" ? "page" : undefined} onClick={() => setSection("migration")}><FolderOpen size={18} />资料库迁移</button>
             <button aria-current={section === "media" ? "page" : undefined} onClick={() => setSection("media")}><Clapperboard size={18} />媒体处理</button>
+            <a href="#/about"><Info size={18} />关于与检查更新</a>
             <p>创作数据保存在本机，可随时查看保存位置与处理环境。</p>
           </nav>
         <div className="settings-stack">

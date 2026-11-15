@@ -139,7 +139,7 @@ def test_start_script_reuses_running_service(tmp_path, entrypoint):
     initial_windows = visible_terminal_windows()
     pid = None
     try:
-        first = subprocess.run(command, capture_output=True, stdin=subprocess.DEVNULL, timeout=15)
+        first = subprocess.run(command, capture_output=True, stdin=subprocess.DEVNULL, timeout=300)
         assert first.returncode == 0, (first.stdout + first.stderr).decode(errors="replace")
         pid = json.loads(record.read_text(encoding="utf-8-sig"))["pid"]
         second = subprocess.run(command, capture_output=True, stdin=subprocess.DEVNULL, timeout=15)
@@ -209,18 +209,16 @@ def visible_terminal_windows():
 
 @pytest.mark.skipif(os.name != "nt", reason="Windows launcher errors")
 @pytest.mark.parametrize("missing", ["environment", "dependency"])
-def test_startup_failure_records_setup_instructions(tmp_path, missing):
+def test_startup_failure_records_setup_instructions(tmp_path, missing, isolated_launcher):
     workspace = Path(__file__).resolve().parents[1]
     environment = dict(os.environ)
     if missing == "environment":
         script = tmp_path / "start.ps1"
         script.write_bytes((workspace / "start.ps1").read_bytes())
     else:
-        script = workspace / "start.ps1"
-        shadow = tmp_path / "shadow"
-        shadow.mkdir()
+        script = isolated_launcher / "start.ps1"
+        shadow = isolated_launcher / '.venv/Lib/site-packages'
         (shadow / "psutil.py").write_text("raise ImportError('missing test dependency')", encoding="utf-8")
-        environment["PYTHONPATH"] = str(shadow)
     error_log = tmp_path / "启动失败.log"
     with socket.socket() as listener:
         listener.bind(("127.0.0.1", 0))
@@ -229,7 +227,7 @@ def test_startup_failure_records_setup_instructions(tmp_path, missing):
     assert result.returncode == 1
     message = error_log.read_text(encoding="utf-16")
     assert "missing" in message
-    assert "pip install -c requirements.lock" in message
+    assert ("complete ai-go-play project" if missing == "environment" else "pip install -c requirements.lock") in message
 
 
 def test_comfy_cli_routes_and_json(monkeypatch, capsys, tmp_path):
@@ -353,7 +351,12 @@ def test_job_wait_failure_is_nonzero_json(monkeypatch, capsys):
 
 def test_workflow_and_job_cli_subprocess(live_service):
     items = cli(live_service, "workflow", "list")["items"]
-    assert len([item for item in items if item.get("provider") != "openai"]) == 5
+    assert {item["id"] for item in items if item.get("provider") != "openai"} == {
+        "builtin-qwen21-text_to_image", "builtin-qwen21-reference", "builtin-qwen21-edit",
+        "builtin-minimax-h3-image-text_to_image", "builtin-minimax-h3-image-reference", "builtin-minimax-h3-image-edit",
+        "builtin-h3-local", "builtin-indextts25-local", "builtin-video-interpolate-local",
+        "builtin-video-upscale-local", "builtin-video-watermark-local",
+    }
     assert len([item for item in items if item.get("provider") == "openai"]) == 3
     original = cli(live_service, "workflow", "get", items[0]["id"])
     duplicate = cli(live_service, "workflow", "duplicate", original["id"])
@@ -446,6 +449,11 @@ def isolated_launcher(tmp_path):
     isolated = tmp_path / "独立工作台 空格"
     isolated.mkdir()
     shutil.copyfile(workspace / "start.ps1", isolated / "start.ps1")
+    # These tests isolate launcher/configuration behavior. The real bootstrap is
+    # exercised separately with a source-only checkout and pinned downloads.
+    scripts = isolated / 'scripts'
+    scripts.mkdir()
+    (scripts / 'bootstrap.ps1').write_text("param([string]$Workspace, [switch]$NoBrowser)\nNew-Item -ItemType Directory -Force -Path (Join-Path $Workspace '.manju/bootstrap') | Out-Null\n", encoding='utf-8')
     environment = isolated / ".venv"
     venv.EnvBuilder(with_pip=False).create(environment)
     packages = environment / "Lib" / "site-packages"

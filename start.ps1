@@ -8,13 +8,13 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+$env:PSModulePath = [IO.Path]::Combine($PSHOME, 'Modules')
 $workspace = $PSScriptRoot
 $python = Join-Path $workspace '.venv\Scripts\python.exe'
 $serverPython = Join-Path $workspace '.venv\Scripts\pythonw.exe'
 $url = "http://127.0.0.1:$Port"
 $runtime = Join-Path $env:LOCALAPPDATA 'Manju\run'
-$mutex = New-Object System.Threading.Mutex($false, "Local\Manju.Start.$Port")
-$acquired = $false
+$bootstrapOpened = $false
 
 function Get-ManjuHealth {
     try {
@@ -28,9 +28,28 @@ function Get-ManjuHealth {
     return $null
 }
 
+function Open-ExistingPreparation {
+    $webFile = Join-Path $workspace '.manju\bootstrap\web.json'
+    try {
+        if (-not (Test-Path -LiteralPath $webFile)) { return $false }
+        $web = Get-Content -LiteralPath $webFile -Raw | ConvertFrom-Json
+        $preparationUrl = "http://127.0.0.1:$([int]$web.port)/"
+        $status = Invoke-RestMethod -Uri ($preparationUrl + 'status') -TimeoutSec 2
+        if ($status.status -notin @('running', 'failed')) { return $false }
+        Write-Host "Environment preparation is already running: $preparationUrl"
+        if (-not $NoBrowser) { Start-Process $preparationUrl }
+        return $true
+    } catch { return $false }
+}
+
+while ($true) {
+$mutex = New-Object System.Threading.Mutex($false, "Local\Manju.Start.$Port")
+$acquired = $false
 try {
     try {
-        $acquired = $mutex.WaitOne(30000)
+        $acquired = $mutex.WaitOne(0)
+        if (-not $acquired -and (Open-ExistingPreparation)) { exit 0 }
+        if (-not $acquired) { $acquired = $mutex.WaitOne(30000) }
     } catch [System.Threading.AbandonedMutexException] {
         $acquired = $true
     }
@@ -42,9 +61,11 @@ try {
         if (-not $NoBrowser) { Start-Process $url }
         exit 0
     }
-    if (-not (Test-Path -LiteralPath $python) -or -not (Test-Path -LiteralPath $serverPython)) {
-        throw "Python environment is missing. Run in '$workspace':`npy -3.12 -m venv .venv`n.\.venv\Scripts\python -m pip install -c requirements.lock -e '.[dev]'"
+    if (-not (Test-Path -LiteralPath (Join-Path $workspace 'scripts\bootstrap.ps1'))) {
+        throw 'Project files are missing. Download or clone the complete ai-go-play project, then run start.cmd from its root directory.'
     }
+    & (Join-Path $workspace 'scripts\bootstrap.ps1') -Workspace $workspace -NoBrowser:($NoBrowser -or $bootstrapOpened)
+    if (-not $NoBrowser) { $bootstrapOpened = $true }
     $dependencyCheck = @'
 import sys
 try:
@@ -52,7 +73,7 @@ try:
 except ImportError:
     sys.exit(1)
 '@
-    & $python -c $dependencyCheck
+    & $python -I -X utf8 -c $dependencyCheck
     if ($LASTEXITCODE -ne 0) {
         throw "Dependencies are missing. Run in '$workspace':`n.\.venv\Scripts\python -m pip install -c requirements.lock -e '.[dev]'"
     }
@@ -71,7 +92,7 @@ except ImportError:
     New-Item -ItemType Directory -Force -Path $runtime | Out-Null
     $stdout = Join-Path $runtime "server-$Port.out.log"
     $stderr = Join-Path $runtime "server-$Port.err.log"
-    $arguments = @($serverPython, '-m', 'manju', 'serve', '--port', "$Port")
+    $arguments = @($serverPython, '-I', '-X', 'utf8', '-m', 'manju', 'serve', '--port', "$Port")
     if ($DataDir) { $arguments += @('--data-dir', $DataDir) }
     if ($ConfigFile) { $arguments += @('--config-file', $ConfigFile) }
     $defaultConfiguration = -not ($DataDir -or $ConfigFile -or $env:MANJU_DATA_DIR -or $env:MANJU_CONFIG_FILE)
@@ -120,7 +141,7 @@ except (OSError, ValueError, RuntimeError) as error:
     $previousOutputEncoding = $OutputEncoding
     try {
         $OutputEncoding = New-Object System.Text.UTF8Encoding($false)
-        $launchText = $launchSettings | ConvertTo-Json -Depth 4 -Compress | & $python -c $launcher
+        $launchText = $launchSettings | ConvertTo-Json -Depth 4 -Compress | & $python -I -X utf8 -c $launcher
         $launchExitCode = $LASTEXITCODE
         $launchResult = $launchText | ConvertFrom-Json
         if ($launchResult.error) { throw $launchResult.error }
@@ -154,7 +175,10 @@ except (OSError, ValueError, RuntimeError) as error:
     Write-Host "Manju is ready at $url"
     Write-Host "Storage: $($health.root)"
     Write-Host "Logs: $runtime"
-    if (-not $NoBrowser) { Start-Process $url }
+    $bootstrapStatus = Join-Path $workspace '.manju\bootstrap\status.json'
+    [IO.File]::WriteAllText($bootstrapStatus, (@{status='ready';phase='Ready';progress=1;url=$url} | ConvertTo-Json), (New-Object Text.UTF8Encoding($false)))
+    if (-not $NoBrowser -and -not $bootstrapOpened) { Start-Process $url }
+    break
 } catch {
     $failureMessage = $_.Exception.Message
     Write-Host $failureMessage -ForegroundColor Red
@@ -166,8 +190,16 @@ except (OSError, ValueError, RuntimeError) as error:
     } catch {
         Write-Host "Unable to save the startup error log: $($_.Exception.Message)" -ForegroundColor Red
     }
-    exit 1
+    $bootstrapStatus = Join-Path $workspace '.manju\bootstrap\status.json'
+    if (Test-Path -LiteralPath (Split-Path -Parent $bootstrapStatus)) {
+        [IO.File]::WriteAllText($bootstrapStatus, (@{status='failed';phase='Startup failed';progress=0;error=$failureMessage} | ConvertTo-Json), (New-Object Text.UTF8Encoding($false)))
+    }
+    if ($NoBrowser -or -not $bootstrapOpened) { exit 1 }
+    $retryFile = Join-Path $workspace '.manju\bootstrap\retry.request'
+    while (!(Test-Path -LiteralPath $retryFile)) { Start-Sleep -Milliseconds 500 }
+    Remove-Item -LiteralPath $retryFile
 } finally {
     if ($acquired) { $mutex.ReleaseMutex() }
     $mutex.Dispose()
+}
 }

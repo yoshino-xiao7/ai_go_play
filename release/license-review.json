@@ -1,0 +1,130 @@
+{
+  "schema_version": 1,
+  "checked_at": "2026-11-14",
+  "published": false,
+  "all_models_cleared_for_redistribution": false,
+  "scope": "Evidence review of previously unresolved components. These decisions do not grant commercial-use rights or replace the other models' terms.",
+  "cases": [
+    {
+      "id": "w2v-bert",
+      "model_paths": [
+        "tts/IndexTTS-2.5/hf_cache/w2v-bert-2.0/config.json",
+        "tts/IndexTTS-2.5/hf_cache/w2v-bert-2.0/model.safetensors",
+        "tts/IndexTTS-2.5/hf_cache/w2v-bert-2.0/preprocessor_config.json"
+      ],
+      "status": "terms-documented",
+      "redistribution_decision": "retain-license-and-notices",
+      "evidence_documents": [
+        "W2v-BERT-model-card",
+        "W2v-BERT-upstream-README",
+        "W2v-BERT-2.0"
+      ],
+      "findings": "Meta 官方模型卡声明 MIT；Seamless Communication 官方 README 的 License 段明确将 W2v-BERT 2.0 speech encoder 纳入 MIT_LICENSE。已保存 Meta 署名的原文；不将 SeamlessM4T 的非商业条款错用于该编码器。",
+      "additional_sources": []
+    },
+    {
+      "id": "campplus",
+      "model_paths": [
+        "tts/IndexTTS-2.5/hf_cache/campplus_cn_common.bin"
+      ],
+      "status": "terms-documented",
+      "redistribution_decision": "retain-license-and-notices",
+      "evidence_documents": [
+        "CAMPPlus-model-card",
+        "CAMPPlus-ModelScope-model-card",
+        "3D-Speaker",
+        "3D-Speaker-README",
+        "Apache-2.0"
+      ],
+      "findings": "FunASR Hugging Face 与 iic ModelScope 官方模型卡均明确声明 Apache-2.0。ModelScope 原始权重 SHA-256 3388cf5fd3493c9ac9c69851d8e7a8badcfb4f3dc631020c4961371646d5ada8 与本项目文件一致。模型卡链接 3D-Speaker，已保留其项目许可及官方模型卡；没有伪造该模型仓库不存在的 LICENSE 文件。",
+      "additional_sources": [
+        "https://modelscope.cn/models/iic/speech_campplus_sv_zh-cn_16k-common"
+      ]
+    },
+    {
+      "id": "sd-vae",
+      "model_paths": [
+        "lipsync/LatentSync-1.5/vae/config.json",
+        "lipsync/LatentSync-1.5/vae/diffusion_pytorch_model.safetensors"
+      ],
+      "status": "official-card-notice-gap",
+      "redistribution_decision": "hold-pending-notice-review",
+      "evidence_documents": [
+        "SD-VAE-model-card",
+        "SD-VAE-base-LDM"
+      ],
+      "findings": "Stability AI 官方模型卡明确声明 MIT，许可类型并非未知；已保留原始 kl-f8 基础项目的 LMU Munich MIT 声明。该声明不等于 Stability AI 微调版的独立版权声明，尚未取得微调版完整原件，暂不将再分发材料标记齐全。",
+      "additional_sources": []
+    },
+    {
+      "id": "latentsync-1.5",
+      "model_paths": [
+        "lipsync/LatentSync-1.5/latentsync_unet.pt"
+      ],
+      "status": "version-scope-unresolved",
+      "redistribution_decision": "hold-pending-upstream-confirmation",
+      "evidence_documents": [
+        "LatentSync-1.5-model-card",
+        "CreativeML-Open-RAIL-plusplus-M-reference",
+        "LatentSync-code"
+      ],
+      "findings": "维护者 chunyu-li 于 2025-02-25 在早期 ByteDance/LatentSync discussion #3 指向 SDXL 的 CreativeML Open RAIL++-M（2023-07-26）完整文本。已保存该文本作为参考。1.5 发布版本单独声明 OpenRAIL++，但未明确绑定上述具体版本；1.5 discussion #1 及 GitHub issue #370 截至本次核查无维护者答复。已从“找不到全文”收窄为“1.5 对该全文的适用性待确认”，不能套用代码 Apache-2.0。",
+      "additional_sources": [
+        "https://huggingface.co/ByteDance/LatentSync/discussions/3",
+        "https://huggingface.co/ByteDance/LatentSync-1.5/discussions/1",
+        "https://github.com/bytedance/LatentSync/issues/370"
+      ]
+    },
+    {
+      "id": "remacri",
+      "model_paths": [
+        "upscale_models/4x_foolhardy_Remacri.pth"
+      ],
+      "status": "catalog-declaration-author-confirmation-unresolved",
+      "redistribution_decision": "hold-pending-author-confirmation",
+      "evidence_documents": [
+        "CC-BY-NC-SA-4.0"
+      ],
+      "findings": "OpenModelDB 社区记录标注 CC-BY-NC-SA-4.0，历史由社区维护者录入；下载镜像标注 unknown。本次追溯未取得 FoolhardyVEVO 对该文件的原始授权。保留非商业限制作为社区声明，不采用其他镜像冲突的宽松元数据，不将 SHA-256 一致视为分发权证明。",
+      "additional_sources": [
+        "https://openmodeldb.info/models/4x-Remacri",
+        "https://github.com/OpenModelDB/open-model-database/blob/233259dbb522ad8841331a8995fef884c9bf7ef9/data/models/4x-Remacri.json"
+      ]
+    },
+    {
+      "id": "h3-kijai-conversion",
+      "model_paths": [
+        "vae/minimax_h3_video_vae_int8_convrot.safetensors"
+      ],
+      "status": "conversion-permission-unresolved",
+      "redistribution_decision": "hold-pending-conversion-permission-review",
+      "evidence_documents": [
+        "MiniMax-H3"
+      ],
+      "findings": "基础 H3 社区协议已有原文，Kijai 转换仓库未附独立转换授权。基础条款持续适用；单独量化转换的分发材料尚未确认，不将其描述成独立 Apache/MIT 权重。",
+      "additional_sources": []
+    }
+  ],
+  "release_gates": [
+    {
+      "id": "unresolved-model-rights",
+      "status": "pending",
+      "cases": [
+        "sd-vae",
+        "latentsync-1.5",
+        "remacri",
+        "h3-kijai-conversion"
+      ]
+    },
+    {
+      "id": "h3-downstream-terms",
+      "status": "pending",
+      "reason": "H3 原始协议中的下游条款、地区和服务条件需在公开分发前落实；隐私与用户手册勾选不等同于模型协议确认。"
+    },
+    {
+      "id": "quark-full-download-sha256",
+      "status": "not-performed-user-waived",
+      "reason": "25 个实际分享下载文件校验通过，23 个未验证。用户取消继续回下载，不将此项标记为通过。见 QUARK-DOWNLOAD-VALIDATION.md。"
+    }
+  ]
+}

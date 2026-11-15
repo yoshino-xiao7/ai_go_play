@@ -21,6 +21,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.background import BackgroundTask
 
 from .media import PreviewWorker, find_binary, probe_media
+from . import __version__
 from .comfy import ComfyManager, scan_installations
 from .generation import GenerationService
 from .production import ProductionService
@@ -31,6 +32,10 @@ from .frames import render_frame
 from .openai_images import PREFIX as OPENAI_PREFIX, estimate_cost
 from .screenplay import get_screenplay, save_screenplay
 from .share import ShareService
+from .setup_service import SetupService
+from .setup_api import router as setup_router
+from .system_api import router as system_router
+from .about import UpdateChecker, router as about_router
 from .workflows import WorkflowService
 from .store import DomainError, Store, new_id
 from .transfers import cancel_migration, export_project, import_project, migrate_storage, recover_migration_state, resume_migration, storage_status
@@ -67,7 +72,10 @@ def resolve_configuration(data_dir: str | Path | None, config_file: str | Path |
             settings = json.loads(config_path.read_text(encoding="utf-8"))
         except (OSError, ValueError) as error:
             raise RuntimeError(f"无法读取存储配置 {config_path}。请修复配置后启动。") from error
-    root = Path(settings.get("root") or explicit_root or ("D:/ManjuData" if os.name == "nt" else str(Path.home() / "ManjuData"))).expanduser().resolve()
+    # Keep existing Windows libraries, but do not require a D: drive on new PCs.
+    legacy_root = Path("D:/ManjuData")
+    default_root = legacy_root if os.name == "nt" and (legacy_root / "library.sqlite").is_file() else Path.home() / "ManjuData"
+    root = Path(settings.get("root") or explicit_root or default_root).expanduser().resolve()
     return root, config_path
 
 
@@ -118,9 +126,12 @@ def create_app(data_dir: str | Path | None = None, config_file: str | Path | Non
         application.state.production.start()
         application.state.orchestration.start()
         application.state.share = ShareService(store)
+        application.state.setup = SetupService(store, application.state.comfy, application.state.share)
+        application.state.updates = UpdateChecker()
         try:
             yield
         finally:
+            application.state.setup.close()
             application.state.share.close()
             application.state.orchestration.close()
             application.state.production.close()
@@ -131,7 +142,12 @@ def create_app(data_dir: str | Path | None = None, config_file: str | Path | Non
             if not worker.thread.is_alive() and not application.state.generations.thread.is_alive() and not application.state.production.thread.is_alive() and not application.state.orchestration.thread.is_alive() and not (migration_thread and migration_thread.is_alive()):
                 store.close()
 
-    application = FastAPI(title="Manju · 本地创作工作台", version="0.1.0", lifespan=lifespan)
+    application = FastAPI(title="Manju · 本地创作工作台", version=__version__, lifespan=lifespan)
+    application.include_router(setup_router)
+    application.include_router(system_router)
+    application.include_router(about_router)
+    application.state.shutting_down = False
+    application.state.active_writes = 0
 
     @application.exception_handler(DomainError)
     async def domain_error_handler(request: Request, error: DomainError):
@@ -165,12 +181,36 @@ def create_app(data_dir: str | Path | None = None, config_file: str | Path | Non
                 error = DomainError(413, "单个文件最大支持 20 GiB。", "upload_too_large")
                 record_upload_failure(request.app.state.store, "超出限制的上传", error)
                 return JSONResponse(status_code=413, content={"detail": error.detail})
+        writing = request.method in ('POST', 'PUT', 'PATCH', 'DELETE') and request.url.path != '/api/system/shutdown'
+        transferring = request.method == 'GET' and (
+            (request.url.path.startswith('/api/projects/') and request.url.path.endswith('/export'))
+            or (request.url.path.startswith('/api/media/') and request.query_params.get('download', '').lower() in ('true', '1', 'yes', 'on'))
+        )
+        active_operation = writing or transferring
+        transfer_counted = False
+        if active_operation and request.app.state.shutting_down:
+            return JSONResponse(status_code=503, content={'detail': {'code': 'shutdown_in_progress', 'message': '程序正在退出，请重新启动后操作。'}})
+        if active_operation:
+            request.app.state.active_writes += 1
         try:
             response = await call_next(request)
+            if transferring:
+                original_body = response.body_iterator
+                async def tracked_download():
+                    try:
+                        async for chunk in original_body:
+                            yield chunk
+                    finally:
+                        request.app.state.active_writes -= 1
+                response.body_iterator = tracked_download()
+                transfer_counted = True
         except BaseException as error:
             if uploading and not getattr(request.state, "import_failure_recorded", False):
                 record_upload_failure(request.app.state.store, "中断的上传", error)
             raise
+        finally:
+            if active_operation and not transfer_counted:
+                request.app.state.active_writes -= 1
         if uploading and response.status_code >= 400 and not getattr(request.state, "import_failure_recorded", False):
             record_upload_failure(request.app.state.store, "未完成的上传", RuntimeError(f"上传请求未完成（HTTP {response.status_code}），请重新选择文件。"))
         response.headers["X-Content-Type-Options"] = "nosniff"
@@ -184,7 +224,7 @@ def create_app(data_dir: str | Path | None = None, config_file: str | Path | Non
     @application.get("/api/health")
     def health(request: Request):
         store = get_store(request)
-        return {"ok": True, "version": "0.1.0", "root": str(store.root), "maintenance": store.maintenance}
+        return {"ok": True, "version": __version__, "root": str(store.root), "maintenance": store.maintenance}
 
     @application.get("/api/comfy")
     def comfy_status(request: Request):

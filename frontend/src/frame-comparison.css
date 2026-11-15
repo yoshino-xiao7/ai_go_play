@@ -1,0 +1,81 @@
+.frame-comparison {
+  box-sizing: border-box;
+  width: min(1280px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  padding: 16px;
+  border: 1px solid #44464c;
+  border-radius: 16px;
+  background: var(--panel, #191a1d);
+  color: #f2f3f5;
+  overflow: auto;
+}
+
+.frame-comparison::backdrop { background: #08090ce0; }
+
+.frame-comparison header,
+.frame-comparison footer,
+.frame-comparison-control {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.frame-comparison header { justify-content: space-between; margin-bottom: 12px; }
+.frame-comparison h2 { margin: 0; font-size: 16px; }
+
+.frame-comparison button {
+  display: grid;
+  place-items: center;
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  border: 1px solid #4b4d56;
+  border-radius: 8px;
+  background: #282a30;
+  color: inherit;
+  cursor: pointer;
+}
+
+.frame-comparison button:disabled { opacity: .45; cursor: default; }
+.frame-comparison button:hover:not(:disabled) { background: #373a44; }
+
+.frame-comparison-media {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.frame-comparison-panel { min-width: 0; margin: 0; }
+.frame-comparison-panel figcaption { margin-bottom: 6px; font-size: 13px; }
+.frame-comparison-panel video {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  max-height: 67dvh;
+  object-fit: contain;
+  background: #050505;
+  border-radius: 8px;
+}
+
+.frame-comparison-status {
+  position: absolute;
+  inset: 24px 0 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: 14px;
+  background: #101116dc;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.frame-comparison footer { flex-wrap: wrap; justify-content: space-between; margin-top: 12px; }
+.frame-comparison-control { flex: 1 1 340px; }
+.frame-comparison-control input { flex: 1; min-width: 0; accent-color: var(--accent, #99baf1); }
+.frame-comparison output { font-size: 13px; font-variant-numeric: tabular-nums; }
+
+@media (max-width: 680px) {
+  .frame-comparison-media { grid-template-columns: minmax(0, 1fr); }
+  .frame-comparison-panel video { max-height: 31dvh; }
+}

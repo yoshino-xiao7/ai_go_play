@@ -1,7 +1,22 @@
 """Isolated inference with offline weights and safe per-task media processing."""
 from pathlib import Path
-import json,os,sys,subprocess,types,math,tempfile
+import json,os,sys,subprocess,types,math,tempfile,time
 from fractions import Fraction
+
+
+def write_progress(path,value):
+    """A Windows reader can briefly deny replace; progress must not fail inference."""
+    pending=path.with_suffix('.pending')
+    for attempt in range(6):
+        try:
+            pending.write_text(json.dumps({'progress':value}),encoding='utf-8')
+            pending.replace(path)
+            return True
+        except PermissionError:
+            # ComfyUI polls this file from another process. Keep the last valid
+            # JSON if it remains locked; the next update can publish again.
+            time.sleep(.01*(attempt+1))
+    return False
 
 
 def mouth_mask(size,track):
@@ -93,7 +108,7 @@ def main():
     os.environ['IMAGEIO_FFMPEG_EXE']=request['ffmpeg']
     progress_path=Path(request['progress_path'])
     def progress(value):
-        tmp=progress_path.with_suffix('.pending');tmp.write_text(json.dumps({'progress':value}));tmp.replace(progress_path)
+        write_progress(progress_path,value)
     def run(args):
         completed=subprocess.run(args,capture_output=True,timeout=300,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
         if completed.returncode:raise RuntimeError(completed.stderr.decode('utf-8','replace')[-3000:])

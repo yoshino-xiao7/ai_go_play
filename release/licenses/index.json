@@ -1,0 +1,189 @@
+{
+  "checked_at": "2026-11-14",
+  "documents": [
+    {
+      "id": "Qwen-Image-2.1",
+      "url": "https://huggingface.co/Qwen/Qwen-Image-2.1/resolve/d26bb61231c349cf6b7896fa83353113880e1ba3/LICENSE",
+      "revision": "d26bb61231c349cf6b7896fa83353113880e1ba3",
+      "path": "release/licenses/Qwen-Image-2.1.txt",
+      "sha256": "8dc973f024ff95966bea25866efa443fd16776dcb1001e681e3d467ea572b28d"
+    },
+    {
+      "id": "Qwen-Image-2.1-Turbo",
+      "url": "https://huggingface.co/Qwen/Qwen-Image-2.1-Turbo/resolve/fc13ba1986fcb905854dc8de2f52eee395f49b5b/LICENSE",
+      "revision": "fc13ba1986fcb905854dc8de2f52eee395f49b5b",
+      "path": "release/licenses/Qwen-Image-2.1-Turbo.txt",
+      "sha256": "8dc973f024ff95966bea25866efa443fd16776dcb1001e681e3d467ea572b28d"
+    },
+    {
+      "id": "MiniMax-H3",
+      "url": "https://huggingface.co/MiniMaxAI/MiniMax-H3/resolve/0919fb684102ef115126612f3fbb84d1027e7317/LICENSE",
+      "revision": "0919fb684102ef115126612f3fbb84d1027e7317",
+      "path": "release/licenses/MiniMax-H3.txt",
+      "sha256": "59b99642b95ea21630e311198ddbfffbfe05aadba0c2f5d884cbdf4efcc90f44"
+    },
+    {
+      "id": "MiniMax-H3-Image",
+      "url": "https://huggingface.co/MiniMaxAI/MiniMax-H3-Image/resolve/5f90473023975e6271b0ed1dd84c4e88e4bbc6d3/LICENSE",
+      "revision": "5f90473023975e6271b0ed1dd84c4e88e4bbc6d3",
+      "path": "release/licenses/MiniMax-H3-Image.txt",
+      "sha256": "0ec3bb5e6d9e885fa2aaf15e84689e50fd51f42b53fa24d3a64ed9d8c76d423b"
+    },
+    {
+      "id": "IndexTTS-2.5",
+      "url": "https://huggingface.co/IndexTeam/IndexTTS-2.5/resolve/c39ce5ba981572cb187443877ff559dfb246ce63/LICENSE",
+      "revision": "c39ce5ba981572cb187443877ff559dfb246ce63",
+      "path": "release/licenses/IndexTTS-2.5.txt",
+      "sha256": "cc7da9ea0f8a97ef15ab3bf0389e636ce79ffca1aef5489520796ac87d87a87b"
+    },
+    {
+      "id": "BigVGAN",
+      "url": "https://huggingface.co/nvidia/bigvgan_v2_22khz_80band_256x/resolve/633ff708ed5b74903e86ff1298cf4a98e921c513/LICENSE",
+      "revision": "633ff708ed5b74903e86ff1298cf4a98e921c513",
+      "path": "release/licenses/BigVGAN.txt",
+      "sha256": "90459cd52fc41bd723df7c0c76fac1e4dd60e6bfd644a7e2a93f325bed4f6d95"
+    },
+    {
+      "id": "Qwen3.5",
+      "url": "https://huggingface.co/Qwen/Qwen3.5-9B/resolve/c202236235762e1c871ad0ccb60c8ee5ba337b9a/LICENSE",
+      "revision": "c202236235762e1c871ad0ccb60c8ee5ba337b9a",
+      "path": "release/licenses/Qwen3.5.txt",
+      "sha256": "bbedc3fda3305820b977265f01b8619d87570a6739de3a5582c3464840f1e57a"
+    },
+    {
+      "id": "YuNet",
+      "url": "https://raw.githubusercontent.com/opencv/opencv_zoo/48b10fa505aeb51fbd127fc60a5c660040e823b7/models/face_detection_yunet/LICENSE",
+      "revision": "48b10fa505aeb51fbd127fc60a5c660040e823b7",
+      "path": "release/licenses/YuNet.txt",
+      "sha256": "c83b8120c50ccbd4c4f96edf53141bdd566ebb8f8e9227e415326aa1b1aba958"
+    },
+    {
+      "id": "DRBA",
+      "url": "https://raw.githubusercontent.com/routineLife1/DRBA/d93e9128f4859df702d08aa9e860f1ea4691f483/LICENSE",
+      "revision": "d93e9128f4859df702d08aa9e860f1ea4691f483",
+      "path": "release/licenses/DRBA.txt",
+      "sha256": "bb36f53a9947fa7714721d559998940555c7752c3546cec87da3bd5806f88d23"
+    },
+    {
+      "id": "Real-ESRGAN",
+      "url": "https://raw.githubusercontent.com/xinntao/Real-ESRGAN/f83472d0113b8af82b5c5dcaa6e5a9dc88e466a7/LICENSE",
+      "revision": "f83472d0113b8af82b5c5dcaa6e5a9dc88e466a7",
+      "path": "release/licenses/Real-ESRGAN.txt",
+      "sha256": "4a699ec4863d96a91fc265948a0c90033f7e8735d515524dcf3444736406e0c2"
+    },
+    {
+      "id": "Whisper",
+      "url": "https://raw.githubusercontent.com/openai/whisper/86098128c0b4f24f0e2aa2994de830614b474227/LICENSE",
+      "revision": "86098128c0b4f24f0e2aa2994de830614b474227",
+      "path": "release/licenses/Whisper.txt",
+      "sha256": "b5d65a59060e68c4ff940e1eddfa6f94b2d68fdf58ed7f4dd57721c997e35e9d"
+    },
+    {
+      "id": "LatentSync-code",
+      "url": "https://raw.githubusercontent.com/bytedance/LatentSync/a229c3948406bc2cf6eaf4873e662e70c6a04746/LICENSE",
+      "revision": "a229c3948406bc2cf6eaf4873e662e70c6a04746",
+      "path": "release/licenses/LatentSync-code.txt",
+      "sha256": "43070e2d4e532684de521b885f385d0841030efa2b1a20bafb76133a5e1379c1"
+    },
+    {
+      "id": "CC-BY-NC-SA-4.0",
+      "url": "https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode.txt",
+      "path": "release/licenses/CC-BY-NC-SA-4.0.txt",
+      "sha256": "e66c269d4819aaab34b49ef5220c4ddab6756f21bb5180761a4eb8561f2b7bbd"
+    },
+    {
+      "id": "Apache-2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+      "path": "release/licenses/Apache-2.0.txt",
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "id": "W2v-BERT-model-card",
+      "url": "https://huggingface.co/facebook/w2v-bert-2.0/resolve/da985ba0987f70aaeb84a80f2851cfac8c697a7b/README.md",
+      "revision": "da985ba0987f70aaeb84a80f2851cfac8c697a7b",
+      "path": "release/licenses/W2v-BERT-model-card.txt",
+      "sha256": "478afeacb3b4ce0d86b361f099416d28a7e7673ade31775c0f85f396979b7fc2",
+      "kind": "official-model-card"
+    },
+    {
+      "id": "CAMPPlus-model-card",
+      "url": "https://huggingface.co/funasr/campplus/resolve/e4b6ede7ce16997aff4ae69fbca1f0175e2afede/README.md",
+      "revision": "e4b6ede7ce16997aff4ae69fbca1f0175e2afede",
+      "path": "release/licenses/CAMPPlus-model-card.txt",
+      "sha256": "c6025ccc42e290640f44e06f0742c584b99afe738bb819d74889330c692446f9",
+      "kind": "official-model-card"
+    },
+    {
+      "id": "SD-VAE-model-card",
+      "url": "https://huggingface.co/stabilityai/sd-vae-ft-mse/resolve/31f26fdeee1355a5c34592e401dd41e45d25a493/README.md",
+      "revision": "31f26fdeee1355a5c34592e401dd41e45d25a493",
+      "path": "release/licenses/SD-VAE-model-card.txt",
+      "sha256": "8ac69483c18a45d0fee531e08b6ede97ee9b4c79e875659c1b0e6a5903ca3400",
+      "kind": "official-model-card"
+    },
+    {
+      "id": "LatentSync-1.5-model-card",
+      "url": "https://huggingface.co/ByteDance/LatentSync-1.5/resolve/32a20d29aead0498e3e885e90dbbe8027da1b61b/README.md",
+      "revision": "32a20d29aead0498e3e885e90dbbe8027da1b61b",
+      "path": "release/licenses/LatentSync-1.5-model-card.txt",
+      "sha256": "ed71ce8984fc41273650fafcb28b21e2a0e93e3ab00aab0362ab9bf8355e13ad",
+      "kind": "official-model-card"
+    },
+    {
+      "id": "CreativeML-Open-RAIL-plusplus-M-reference",
+      "url": "https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0/resolve/462165984030d82259a11f4367a4eed129e94a7b/LICENSE.md",
+      "revision": "462165984030d82259a11f4367a4eed129e94a7b",
+      "path": "release/licenses/CreativeML-Open-RAIL-plusplus-M-reference.txt",
+      "sha256": "19b6998b569b53ac1fc2158a8a3202c8699a9a4605b47075715d9c96be7fb6d0",
+      "kind": "reference-not-confirmed-for-latentsync-1.5"
+    },
+    {
+      "id": "W2v-BERT-2.0",
+      "url": "https://raw.githubusercontent.com/facebookresearch/seamless_communication/9a081e935c29c6b1e0e05bcbf3fcb623ad306524/MIT_LICENSE",
+      "revision": "9a081e935c29c6b1e0e05bcbf3fcb623ad306524",
+      "path": "release/licenses/W2v-BERT-2.0.txt",
+      "sha256": "da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93",
+      "kind": "original-license"
+    },
+    {
+      "id": "W2v-BERT-upstream-README",
+      "url": "https://raw.githubusercontent.com/facebookresearch/seamless_communication/9a081e935c29c6b1e0e05bcbf3fcb623ad306524/README.md",
+      "revision": "9a081e935c29c6b1e0e05bcbf3fcb623ad306524",
+      "path": "release/licenses/W2v-BERT-upstream-README.txt",
+      "sha256": "bf90146e41cb2bcc7cb64bc1209b9b2b3b6aec59fd48cbfff396ca46cb15ba15",
+      "kind": "official-model-license-scope"
+    },
+    {
+      "id": "3D-Speaker",
+      "url": "https://raw.githubusercontent.com/modelscope/3D-Speaker/065629c313eaf1a01c65c640c46d77e61e9607b4/LICENSE",
+      "revision": "065629c313eaf1a01c65c640c46d77e61e9607b4",
+      "path": "release/licenses/3D-Speaker.txt",
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "kind": "original-project-license"
+    },
+    {
+      "id": "3D-Speaker-README",
+      "url": "https://raw.githubusercontent.com/modelscope/3D-Speaker/065629c313eaf1a01c65c640c46d77e61e9607b4/README.md",
+      "revision": "065629c313eaf1a01c65c640c46d77e61e9607b4",
+      "path": "release/licenses/3D-Speaker-README.txt",
+      "sha256": "a4136e9ab27b42909de86b7d1debbb166dc7461039808a7c51db48cf3a6b5d02",
+      "kind": "official-model-origin"
+    },
+    {
+      "id": "SD-VAE-base-LDM",
+      "url": "https://raw.githubusercontent.com/CompVis/latent-diffusion/a506df5756472e2ebaf9078affdde2c4f1502cd4/LICENSE",
+      "revision": "a506df5756472e2ebaf9078affdde2c4f1502cd4",
+      "path": "release/licenses/SD-VAE-base-LDM.txt",
+      "sha256": "2ba3d36721ed0263cbc1050936ba34809d296fe629d802f7bc453007faefbdb3",
+      "kind": "base-project-license-not-finetune-notice"
+    },
+    {
+      "id": "CAMPPlus-ModelScope-model-card",
+      "url": "https://modelscope.cn/api/v1/models/iic/speech_campplus_sv_zh-cn_16k-common/repo?Revision=a045b2afcaa9c3049c98a9215a2bc274407ab237&FilePath=README.md",
+      "revision": "a045b2afcaa9c3049c98a9215a2bc274407ab237",
+      "path": "release/licenses/CAMPPlus-ModelScope-model-card.txt",
+      "sha256": "85e7f149c9d5910da9dbdd4ab5206e33db85e9763107d439a09ef40b004e2f4c",
+      "kind": "official-model-card"
+    }
+  ]
+}

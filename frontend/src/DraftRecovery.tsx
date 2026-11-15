@@ -1,7 +1,8 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Edge, Node } from "@xyflow/react";
 import { Download, FolderOpen, Upload } from "lucide-react";
 import { Modal } from "./ui";
+import { listCanvasDrafts } from "./canvasDraftStore";
 
 export type RecoverableCanvas = { project_id?: string; revision?: number; nodes: Node[]; edges: Edge[]; saved_at?: number };
 type Entry = { key: string; name: string; document: RecoverableCanvas };
@@ -32,26 +33,32 @@ export default function DraftRecovery({ projectId, draftPrefix, onClose, onResto
   const [selected, setSelected] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  const entries = useMemo(() => {
+  const [stored, setStored] = useState<Entry[]>([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    let disposed = false;
+    setLoading(true);
+    void (async () => {
     const result: Entry[] = [];
     try {
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (!key || (key !== draftPrefix && !key.startsWith(draftPrefix + ":"))) continue;
+      for (const { key, document: value } of await listCanvasDrafts(draftPrefix)) {
         try {
-          const document = parseCanvasDraft(JSON.parse(localStorage.getItem(key) || "null"), projectId);
+          const document = parseCanvasDraft(value, projectId);
           const saved = document.saved_at || Number(key.split(":backup:")[1]) || 0;
           result.push({ key, document, name: `${key.includes(":backup:") ? "冲突备份" : "未完成草稿"} · ${saved ? new Date(saved).toLocaleString() : "时间未知"}` });
         } catch { /* A corrupt entry must not hide other recoverable drafts. */ }
       }
-    } catch { /* File import remains available when browser storage is unavailable. */ }
-    return [...imported, ...result.sort((a, b) => (b.document.saved_at || 0) - (a.document.saved_at || 0))];
-  }, [draftPrefix, imported, projectId]);
+    } catch { if (!disposed) setError("无法读取本机草稿存储；仍可导入下载过的 JSON 备份。"); }
+    if (!disposed) { setStored(result.sort((a, b) => (b.document.saved_at || 0) - (a.document.saved_at || 0))); setLoading(false); }
+    })();
+    return () => { disposed = true; };
+  }, [draftPrefix, projectId]);
+  const entries = [...imported, ...stored];
   const active = entries.find(item => item.key === selected) || entries[0];
   async function load(file: File | undefined) {
     if (!file) return;
     try {
-      if (file.size > 20 * 1024 * 1024) throw new Error("草稿文件最大支持 20 MiB。");
+      if (file.size > 100 * 1024 * 1024) throw new Error("草稿文件最大支持 100 MiB。");
       const document = parseCanvasDraft(JSON.parse(await file.text()), projectId);
       const entry = { key: crypto.randomUUID(), name: "导入文件 · " + file.name, document };
       setImported(items => [entry, ...items]); setSelected(entry.key); setError("");
@@ -61,7 +68,7 @@ export default function DraftRecovery({ projectId, draftPrefix, onClose, onResto
     <p>恢复内容会以副本加入当前画布，保留当前已保存的内容和原始备份。生成任务不会重复提交。</p>
     <button className="canvas-small-button" disabled={busy} onClick={() => file.current?.click()}><Upload size={15} />导入画布草稿 JSON</button>
     <input ref={file} type="file" accept=".json,application/json" hidden onChange={e => { void load(e.target.files?.[0]); e.target.value = ""; }} />
-    <div className="canvas-draft-content"><nav aria-label="可恢复草稿">{entries.map(entry => <button key={entry.key} className={active?.key === entry.key ? "active" : ""} onClick={() => setSelected(entry.key)}><strong>{entry.name}</strong><small>{entry.document.nodes.length} 个节点 · {entry.document.edges.length} 条连线</small></button>)}{!entries.length && <p>暂无本机草稿，可以导入之前下载的 JSON。</p>}</nav>
+    <div className="canvas-draft-content"><nav aria-label="可恢复草稿">{entries.map(entry => <button key={entry.key} className={active?.key === entry.key ? "active" : ""} onClick={() => setSelected(entry.key)}><strong>{entry.name}</strong><small>{entry.document.nodes.length} 个节点 · {entry.document.edges.length} 条连线</small></button>)}{!entries.length && <p>{loading ? "正在读取本机草稿…" : "暂无本机草稿，可以导入之前下载的 JSON。"}</p>}</nav>
       {active && <div className="canvas-draft-preview"><strong>草稿预览</strong>{active.document.nodes.slice(0, 40).map(node => <article key={node.id}><b>{String(node.data.title || node.type || "节点")}</b><p>{String(node.data.text || node.data.note || (node.data.generation as { prompt?: string } | undefined)?.prompt || "媒体 / 布局节点").slice(0, 500)}</p></article>)}{active.document.nodes.length > 40 && <small>其余 {active.document.nodes.length - 40} 个节点也会一同恢复。</small>}</div>}
     </div>
     {error && <p className="error" role="alert">{error}</p>}

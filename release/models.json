@@ -1,0 +1,524 @@
+{
+  "schema_version": 1,
+  "scope": "Bundled workflows and local standard H3 preset. Imported user workflows require a separate dependency audit. Not a license approval or content-integrity guarantee.",
+  "packs": [
+    {
+      "id": "01-qwen-image",
+      "name": "Qwen Image 2.1"
+    },
+    {
+      "id": "02-h3-image",
+      "name": "MiniMax H3 Image"
+    },
+    {
+      "id": "03-h3-video",
+      "name": "MiniMax H3 standard video and voice design"
+    },
+    {
+      "id": "04-h3-turbo",
+      "name": "MiniMax H3 Turbo"
+    },
+    {
+      "id": "05-indextts",
+      "name": "IndexTTS 2.5"
+    },
+    {
+      "id": "06-indextts-emotion",
+      "name": "IndexTTS text emotion (optional)"
+    },
+    {
+      "id": "07-latentsync",
+      "name": "LatentSync 1.5"
+    },
+    {
+      "id": "08-video-enhance",
+      "name": "RIFE 4.26 and upscalers"
+    }
+  ],
+  "files": [
+    {
+      "path": "diffusion_models/qwen_image_2.1_turbo_int8_convrot.safetensors",
+      "packs": [
+        "01-qwen-image"
+      ],
+      "evidence": "backend/manju/workflows.py and workflow_templates",
+      "source_review": "verified",
+      "size": 7256783064,
+      "source_record": "model-sources.json#diffusion_models/qwen_image_2.1_turbo_int8_convrot.safetensors"
+    },
+    {
+      "path": "text_encoders/qwen3vl_8b_int8_convrot.safetensors",
+      "packs": [
+        "01-qwen-image"
+      ],
+      "evidence": "backend/manju/workflows.py and workflow_templates",
+      "source_review": "verified",
+      "size": 9350798360,
+      "source_record": "model-sources.json#text_encoders/qwen3vl_8b_int8_convrot.safetensors"
+    },
+    {
+      "path": "vae/qwen_image_2.1_vae_bf16.safetensors",
+      "packs": [
+        "01-qwen-image"
+      ],
+      "evidence": "backend/manju/workflows.py and workflow_templates",
+      "source_review": "verified",
+      "size": 675509688,
+      "source_record": "model-sources.json#vae/qwen_image_2.1_vae_bf16.safetensors"
+    },
+    {
+      "path": "diffusion_models/minimax_h3_image_pruned_int8_convrot.safetensors",
+      "packs": [
+        "02-h3-image"
+      ],
+      "evidence": "backend/manju/workflows.py and workflow_templates",
+      "source_review": "verified",
+      "size": 20979314802,
+      "source_record": "model-sources.json#diffusion_models/minimax_h3_image_pruned_int8_convrot.safetensors"
+    },
+    {
+      "path": "text_encoders/qwen3vl_32b_minimax_h3_int8_convrot.safetensors",
+      "packs": [
+        "02-h3-image",
+        "03-h3-video"
+      ],
+      "evidence": "backend/manju/workflows.py and workflow_templates",
+      "source_review": "verified",
+      "size": 27141342152,
+      "source_record": "model-sources.json#text_encoders/qwen3vl_32b_minimax_h3_int8_convrot.safetensors"
+    },
+    {
+      "path": "vae/minimax_h3_image_vae_fp16.safetensors",
+      "packs": [
+        "02-h3-image"
+      ],
+      "evidence": "backend/manju/workflows.py and workflow_templates",
+      "source_review": "verified",
+      "size": 1168505312,
+      "source_record": "model-sources.json#vae/minimax_h3_image_vae_fp16.safetensors"
+    },
+    {
+      "path": "text_encoders/qwen3.5_9b_w4a8_gptq.safetensors",
+      "packs": [
+        "02-h3-image"
+      ],
+      "evidence": "backend/manju/workflows.py and workflow_templates",
+      "source_review": "verified",
+      "size": 7343591088,
+      "source_record": "model-sources.json#text_encoders/qwen3.5_9b_w4a8_gptq.safetensors"
+    },
+    {
+      "path": "diffusion_models/minimax_h3_fl2va_int8_convrot.safetensors",
+      "packs": [
+        "03-h3-video",
+        "04-h3-turbo"
+      ],
+      "evidence": "backend/manju/video_turbo.py",
+      "source_review": "verified",
+      "size": 34038892334,
+      "source_record": "model-sources.json#diffusion_models/minimax_h3_fl2va_int8_convrot.safetensors"
+    },
+    {
+      "path": "text_encoders/qwen3vl_32b_minimax_h3_ultra_uncensored_heretic_int8_convrot.safetensors",
+      "packs": [
+        "04-h3-turbo"
+      ],
+      "evidence": "backend/manju/video_turbo.py",
+      "source_review": "verified",
+      "size": 26363476151,
+      "source_record": "model-sources.json#text_encoders/qwen3vl_32b_minimax_h3_ultra_uncensored_heretic_int8_convrot.safetensors"
+    },
+    {
+      "path": "vae/minimax_h3_video_vae_int8_convrot.safetensors",
+      "packs": [
+        "03-h3-video",
+        "04-h3-turbo"
+      ],
+      "evidence": "backend/manju/video_turbo.py",
+      "source_review": "verified",
+      "size": 3171670912,
+      "source_record": "model-sources.json#vae/minimax_h3_video_vae_int8_convrot.safetensors"
+    },
+    {
+      "path": "vae/minimax_h3_audio_vae_fp32.safetensors",
+      "packs": [
+        "03-h3-video",
+        "04-h3-turbo"
+      ],
+      "evidence": "backend/manju/video_turbo.py",
+      "source_review": "verified",
+      "size": 605254808,
+      "source_record": "model-sources.json#vae/minimax_h3_audio_vae_fp32.safetensors"
+    },
+    {
+      "path": "loras/minimax_h3_turbo_v4_step600_ema.safetensors",
+      "packs": [
+        "04-h3-turbo"
+      ],
+      "evidence": "backend/manju/video_turbo.py",
+      "source_review": "verified",
+      "size": 779849816,
+      "source_record": "model-sources.json#loras/minimax_h3_turbo_v4_step600_ema.safetensors"
+    },
+    {
+      "path": "diffusion_models/minimax_h3_ref2va_int8_convrot.safetensors",
+      "packs": [
+        "03-h3-video"
+      ],
+      "evidence": "Local INT8 preset; select these in H3 settings, alternative compatible models supported",
+      "source_review": "verified",
+      "size": 34038894550,
+      "source_record": "model-sources.json#diffusion_models/minimax_h3_ref2va_int8_convrot.safetensors"
+    },
+    {
+      "path": "tts/IndexTTS-2.5/LICENSE",
+      "packs": [
+        "05-indextts"
+      ],
+      "evidence": "scripts/install_speech_models.py; local manju-models.json",
+      "source_review": "verified",
+      "size": 10553,
+      "source_record": "model-sources.json#tts/IndexTTS-2.5/LICENSE"
+    },
+    {
+      "path": "tts/IndexTTS-2.5/codec.pth",
+      "packs": [
+        "05-indextts"
+      ],
+      "evidence": "scripts/install_speech_models.py; local manju-models.json",
+      "source_review": "verified",
+      "size": 607290935,
+      "source_record": "model-sources.json#tts/IndexTTS-2.5/codec.pth"
+    },
+    {
+      "path": "tts/IndexTTS-2.5/config.yaml",
+      "packs": [
+        "05-indextts"
+      ],
+      "evidence": "scripts/install_speech_models.py; local manju-models.json",
+      "source_review": "verified",
+      "size": 2860,
+      "source_record": "model-sources.json#tts/IndexTTS-2.5/config.yaml"
+    },
+    {
+      "path": "tts/IndexTTS-2.5/feat1.pt",
+      "packs": [
+        "05-indextts"
+      ],
+      "evidence": "scripts/install_speech_models.py; local manju-models.json",
+      "source_review": "verified",
+      "size": 57170,
+      "source_record": "model-sources.json#tts/IndexTTS-2.5/feat1.pt"
+    },
+    {
+      "path": "tts/IndexTTS-2.5/feat2.pt",
+      "packs": [
+        "05-indextts"
+      ],
+      "evidence": "scripts/install_speech_models.py; local manju-models.json",
+      "source_review": "verified",
+      "size": 374866,
+      "source_record": "model-sources.json#tts/IndexTTS-2.5/feat2.pt"
+    },
+    {
+      "path": "tts/IndexTTS-2.5/gpt.pth",
+      "packs": [
+        "05-indextts"
+      ],
+      "evidence": "scripts/install_speech_models.py; local manju-models.json",
+      "source_review": "verified",
+      "size": 3259599833,
+      "source_record": "model-sources.json#tts/IndexTTS-2.5/gpt.pth"
+    },
+    {
+      "path": "tts/IndexTTS-2.5/multilingual_zh_ja_yue_char_del.tiktoken",
+      "packs": [
+        "05-indextts"
+      ],
+      "evidence": "scripts/install_speech_models.py; local manju-models.json",
+      "source_review": "verified",
+      "size": 907395,
+      "source_record": "model-sources.json#tts/IndexTTS-2.5/multilingual_zh_ja_yue_char_del.tiktoken"
+    },
+    {
+      "path": "tts/IndexTTS-2.5/s2mel.pth",
+      "packs": [
+        "05-indextts"
+      ],
+      "evidence": "scripts/install_speech_models.py; local manju-models.json",
+      "source_review": "verified",
+      "size": 414908601,
+      "source_record": "model-sources.json#tts/IndexTTS-2.5/s2mel.pth"
+    },
+    {
+      "path": "tts/IndexTTS-2.5/wav2vec2bert_stats.pt",
+      "packs": [
+        "05-indextts"
+      ],
+      "evidence": "scripts/install_speech_models.py; local manju-models.json",
+      "source_review": "verified",
+      "size": 9343,
+      "source_record": "model-sources.json#tts/IndexTTS-2.5/wav2vec2bert_stats.pt"
+    },
+    {
+      "path": "tts/IndexTTS-2.5/hf_cache/w2v-bert-2.0/config.json",
+      "packs": [
+        "05-indextts"
+      ],
+      "evidence": "scripts/install_speech_models.py; local manju-models.json",
+      "source_review": "verified",
+      "size": 1874,
+      "source_record": "model-sources.json#tts/IndexTTS-2.5/hf_cache/w2v-bert-2.0/config.json"
+    },
+    {
+      "path": "tts/IndexTTS-2.5/hf_cache/w2v-bert-2.0/model.safetensors",
+      "packs": [
+        "05-indextts"
+      ],
+      "evidence": "scripts/install_speech_models.py; local manju-models.json",
+      "source_review": "verified",
+      "size": 2322063736,
+      "source_record": "model-sources.json#tts/IndexTTS-2.5/hf_cache/w2v-bert-2.0/model.safetensors"
+    },
+    {
+      "path": "tts/IndexTTS-2.5/hf_cache/w2v-bert-2.0/preprocessor_config.json",
+      "packs": [
+        "05-indextts"
+      ],
+      "evidence": "scripts/install_speech_models.py; local manju-models.json",
+      "source_review": "verified",
+      "size": 275,
+      "source_record": "model-sources.json#tts/IndexTTS-2.5/hf_cache/w2v-bert-2.0/preprocessor_config.json"
+    },
+    {
+      "path": "tts/IndexTTS-2.5/hf_cache/campplus_cn_common.bin",
+      "packs": [
+        "05-indextts"
+      ],
+      "evidence": "scripts/install_speech_models.py; local manju-models.json",
+      "source_review": "verified",
+      "size": 28036335,
+      "source_record": "model-sources.json#tts/IndexTTS-2.5/hf_cache/campplus_cn_common.bin"
+    },
+    {
+      "path": "tts/IndexTTS-2.5/hf_cache/bigvgan/bigvgan_generator.pt",
+      "packs": [
+        "05-indextts"
+      ],
+      "evidence": "scripts/install_speech_models.py; local manju-models.json",
+      "source_review": "verified",
+      "size": 449228171,
+      "source_record": "model-sources.json#tts/IndexTTS-2.5/hf_cache/bigvgan/bigvgan_generator.pt"
+    },
+    {
+      "path": "tts/IndexTTS-2.5/hf_cache/bigvgan/config.json",
+      "packs": [
+        "05-indextts"
+      ],
+      "evidence": "scripts/install_speech_models.py; local manju-models.json",
+      "source_review": "verified",
+      "size": 1405,
+      "source_record": "model-sources.json#tts/IndexTTS-2.5/hf_cache/bigvgan/config.json"
+    },
+    {
+      "path": "tts/IndexTTS-2.5/manju-models.json",
+      "packs": [
+        "05-indextts"
+      ],
+      "evidence": "Required by the speech bridge",
+      "source_review": "local-generated",
+      "size": 2986,
+      "source_record": "model-sources.json#tts/IndexTTS-2.5/manju-models.json"
+    },
+    {
+      "path": "tts/IndexTTS-2.5/qwen0.6bemo4-merge/added_tokens.json",
+      "packs": [
+        "06-indextts-emotion"
+      ],
+      "evidence": "config.yaml qwen_emo_path; optional text emotion tokenizer and weights",
+      "source_review": "verified",
+      "size": 707,
+      "source_record": "model-sources.json#tts/IndexTTS-2.5/qwen0.6bemo4-merge/added_tokens.json"
+    },
+    {
+      "path": "tts/IndexTTS-2.5/qwen0.6bemo4-merge/chat_template.jinja",
+      "packs": [
+        "06-indextts-emotion"
+      ],
+      "evidence": "config.yaml qwen_emo_path; optional text emotion tokenizer and weights",
+      "source_review": "verified",
+      "size": 550,
+      "source_record": "model-sources.json#tts/IndexTTS-2.5/qwen0.6bemo4-merge/chat_template.jinja"
+    },
+    {
+      "path": "tts/IndexTTS-2.5/qwen0.6bemo4-merge/config.json",
+      "packs": [
+        "06-indextts-emotion"
+      ],
+      "evidence": "config.yaml qwen_emo_path; optional text emotion tokenizer and weights",
+      "source_review": "verified",
+      "size": 727,
+      "source_record": "model-sources.json#tts/IndexTTS-2.5/qwen0.6bemo4-merge/config.json"
+    },
+    {
+      "path": "tts/IndexTTS-2.5/qwen0.6bemo4-merge/generation_config.json",
+      "packs": [
+        "06-indextts-emotion"
+      ],
+      "evidence": "config.yaml qwen_emo_path; optional text emotion tokenizer and weights",
+      "source_review": "verified",
+      "size": 117,
+      "source_record": "model-sources.json#tts/IndexTTS-2.5/qwen0.6bemo4-merge/generation_config.json"
+    },
+    {
+      "path": "tts/IndexTTS-2.5/qwen0.6bemo4-merge/merges.txt",
+      "packs": [
+        "06-indextts-emotion"
+      ],
+      "evidence": "config.yaml qwen_emo_path; optional text emotion tokenizer and weights",
+      "source_review": "verified",
+      "size": 1671853,
+      "source_record": "model-sources.json#tts/IndexTTS-2.5/qwen0.6bemo4-merge/merges.txt"
+    },
+    {
+      "path": "tts/IndexTTS-2.5/qwen0.6bemo4-merge/model.safetensors",
+      "packs": [
+        "06-indextts-emotion"
+      ],
+      "evidence": "config.yaml qwen_emo_path; optional text emotion tokenizer and weights",
+      "source_review": "verified",
+      "size": 1192135096,
+      "source_record": "model-sources.json#tts/IndexTTS-2.5/qwen0.6bemo4-merge/model.safetensors"
+    },
+    {
+      "path": "tts/IndexTTS-2.5/qwen0.6bemo4-merge/Modelfile",
+      "packs": [
+        "06-indextts-emotion"
+      ],
+      "evidence": "config.yaml qwen_emo_path; optional text emotion tokenizer and weights",
+      "source_review": "verified",
+      "size": 360,
+      "source_record": "model-sources.json#tts/IndexTTS-2.5/qwen0.6bemo4-merge/Modelfile"
+    },
+    {
+      "path": "tts/IndexTTS-2.5/qwen0.6bemo4-merge/special_tokens_map.json",
+      "packs": [
+        "06-indextts-emotion"
+      ],
+      "evidence": "config.yaml qwen_emo_path; optional text emotion tokenizer and weights",
+      "source_review": "verified",
+      "size": 616,
+      "source_record": "model-sources.json#tts/IndexTTS-2.5/qwen0.6bemo4-merge/special_tokens_map.json"
+    },
+    {
+      "path": "tts/IndexTTS-2.5/qwen0.6bemo4-merge/tokenizer.json",
+      "packs": [
+        "06-indextts-emotion"
+      ],
+      "evidence": "config.yaml qwen_emo_path; optional text emotion tokenizer and weights",
+      "source_review": "verified",
+      "size": 11422654,
+      "source_record": "model-sources.json#tts/IndexTTS-2.5/qwen0.6bemo4-merge/tokenizer.json"
+    },
+    {
+      "path": "tts/IndexTTS-2.5/qwen0.6bemo4-merge/tokenizer_config.json",
+      "packs": [
+        "06-indextts-emotion"
+      ],
+      "evidence": "config.yaml qwen_emo_path; optional text emotion tokenizer and weights",
+      "source_review": "verified",
+      "size": 5433,
+      "source_record": "model-sources.json#tts/IndexTTS-2.5/qwen0.6bemo4-merge/tokenizer_config.json"
+    },
+    {
+      "path": "tts/IndexTTS-2.5/qwen0.6bemo4-merge/vocab.json",
+      "packs": [
+        "06-indextts-emotion"
+      ],
+      "evidence": "config.yaml qwen_emo_path; optional text emotion tokenizer and weights",
+      "source_review": "verified",
+      "size": 2776833,
+      "source_record": "model-sources.json#tts/IndexTTS-2.5/qwen0.6bemo4-merge/vocab.json"
+    },
+    {
+      "path": "lipsync/LatentSync-1.5/latentsync_unet.pt",
+      "packs": [
+        "07-latentsync"
+      ],
+      "evidence": "integrations/comfyui_manju_lipsync/__init__.py",
+      "source_review": "verified",
+      "size": 5072348184,
+      "source_record": "model-sources.json#lipsync/LatentSync-1.5/latentsync_unet.pt"
+    },
+    {
+      "path": "lipsync/LatentSync-1.5/whisper/tiny.pt",
+      "packs": [
+        "07-latentsync"
+      ],
+      "evidence": "integrations/comfyui_manju_lipsync/__init__.py",
+      "source_review": "verified",
+      "size": 75572083,
+      "source_record": "model-sources.json#lipsync/LatentSync-1.5/whisper/tiny.pt"
+    },
+    {
+      "path": "lipsync/LatentSync-1.5/vae/config.json",
+      "packs": [
+        "07-latentsync"
+      ],
+      "evidence": "integrations/comfyui_manju_lipsync/__init__.py",
+      "source_review": "verified",
+      "size": 547,
+      "source_record": "model-sources.json#lipsync/LatentSync-1.5/vae/config.json"
+    },
+    {
+      "path": "lipsync/LatentSync-1.5/vae/diffusion_pytorch_model.safetensors",
+      "packs": [
+        "07-latentsync"
+      ],
+      "evidence": "integrations/comfyui_manju_lipsync/__init__.py",
+      "source_review": "verified",
+      "size": 334643276,
+      "source_record": "model-sources.json#lipsync/LatentSync-1.5/vae/diffusion_pytorch_model.safetensors"
+    },
+    {
+      "path": "detection/face_detection_yunet_2023mar.onnx",
+      "packs": [
+        "07-latentsync"
+      ],
+      "evidence": "Local runtime face_detector; required by lipsync worker",
+      "source_review": "verified",
+      "size": 232589,
+      "source_record": "model-sources.json#detection/face_detection_yunet_2023mar.onnx"
+    },
+    {
+      "path": "frame_interpolation/DRBA-RIFE/train_log_rife_426_heavy/flownet.pkl",
+      "packs": [
+        "08-video-enhance"
+      ],
+      "evidence": "backend/manju/video_enhance.py",
+      "source_review": "verified",
+      "size": 24925133,
+      "source_record": "model-sources.json#frame_interpolation/DRBA-RIFE/train_log_rife_426_heavy/flownet.pkl"
+    },
+    {
+      "path": "upscale_models/RealESRGAN_x4plus_anime_6B.pth",
+      "packs": [
+        "08-video-enhance"
+      ],
+      "evidence": "backend/manju/video_enhance.py",
+      "source_review": "verified",
+      "size": 17938799,
+      "source_record": "model-sources.json#upscale_models/RealESRGAN_x4plus_anime_6B.pth"
+    },
+    {
+      "path": "upscale_models/4x_foolhardy_Remacri.pth",
+      "packs": [
+        "08-video-enhance"
+      ],
+      "evidence": "backend/manju/video_enhance.py",
+      "source_review": "verified",
+      "size": 67025055,
+      "source_record": "model-sources.json#upscale_models/4x_foolhardy_Remacri.pth"
+    }
+  ]
+}

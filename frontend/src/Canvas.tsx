@@ -1,4 +1,5 @@
 import StudioSelect from "./StudioSelect";
+import ExitApplication from "./ExitApplication";
 import { useRightButtonPan } from "./useRightButtonPan";
 import ImageViewer from "./ImageViewer";
 import ImageVersionComparison from "./ImageVersionComparison";
@@ -27,7 +28,6 @@ import {
   addEdge,
   reconnectEdge,
   useReactFlow,
-  useViewport,
   useStore,
   useNodeConnections,
 } from "@xyflow/react";
@@ -123,6 +123,7 @@ import type {
 import SubjectNodeView from "./SubjectNodeView";
 import SaveToCanvasDialog, { cloneCanvasSelection, mergeCanvasSelection } from "./SaveToCanvasDialog";
 import DraftRecovery from "./DraftRecovery";
+import { listCanvasDrafts, readCanvasDraft, removeCanvasDraft, writeCanvasDraft } from "./canvasDraftStore";
 import CanvasProjectMenu from "./CanvasProjectMenu";
 import SharePanel from "./SharePanel";
 import type { RecoverableCanvas } from "./DraftRecovery";
@@ -154,6 +155,8 @@ import "./review-experience.css";
 import { cameraMotionRole, canConnectCameraMotion, canReference, edgeLocked, edgeRole, reconcileReferences, resolveVideoEnhanceInput } from "./canvasReferences";
 import { CameraMotionFields, CameraMotionPicker, cameraMotionLabel, cameraPresets } from "./CameraMotion";
 import type { CameraMotion } from "./CameraMotion";
+import FrameComparison from "./FrameComparison";
+import type { FrameComparisonLink, FrameComparisonSources } from "./FrameComparison";
 
 type CanvasData = Record<string, unknown> & {
   title?: string;
@@ -170,6 +173,7 @@ type CanvasData = Record<string, unknown> & {
   image_history?: ImageHistoryItem[];
   subject?: SubjectSnapshot;
   camera_motion?: CameraMotion;
+  frame_comparison?: FrameComparisonLink;
 };
 type CanvasNode = Node<CanvasData>;
 
@@ -223,6 +227,7 @@ type CanvasActions = {
   flushCanvas: () => Promise<void>;
   getCanvasMedia: () => SubjectMediaCandidate[];
   preview: (versionId: string) => void;
+  compareFrames: (link: FrameComparisonLink) => void;
   updateSubject: (id: string, snapshot: SubjectSnapshot) => void;
   selectNode: (id: string) => void;
   beginEdit: () => void;
@@ -463,6 +468,7 @@ function NodeHeading({
 
 const MediaNode = memo(function MediaNode(props: NodeProps<CanvasNode>) {
   const { data } = props;
+  const comparison = data.frame_comparison;
   const generationJob = useGenerationJob(data.generation?.last_job_id);
   const needsOriginal = useStore(state =>
     Math.max(props.width || 264, props.height || 220) * state.transform[2] * (window.devicePixelRatio || 1) > 480,
@@ -580,7 +586,8 @@ const MediaNode = memo(function MediaNode(props: NodeProps<CanvasNode>) {
         )}
         {isVideo && visibleVersion ? (
           <CanvasVideoPlayer key={visibleVersion} versionId={visibleVersion} selected={!!props.selected}
-            previewOpen={!!largePreview} onOpen={() => setLargePreview(visibleVersion)} />
+            previewOpen={!!largePreview} onOpen={() => setLargePreview(visibleVersion)}
+            onCompare={comparison && (() => actions.compareFrames(comparison))} />
         ) : data.kind==="audio" && playing && visibleVersion ? <audio className="inline-audio nodrag nopan nowheel" src={mediaUrl(visibleVersion,"original")} autoPlay controls preload="metadata" onPointerDown={e=>e.stopPropagation()}/> : data.asset_version_id && !failed ? (
           <img
             src={`${mediaUrl(visibleVersion || data.asset_version_id, imageVariant)}&refresh=${mediaRevision}`}
@@ -816,7 +823,7 @@ function CanvasEditor({
   onOpenTasks,
 }: CanvasProps) {
   const flow = useReactFlow<CanvasNode>();
-  const liveViewport = useViewport();
+  const [liveViewport, setLiveViewport] = useState<Viewport>(initialViewport);
   const [editorSessionId] = useState(() => {
     try {
       const existing = sessionStorage.getItem("manju:canvas-editor-session");
@@ -831,6 +838,17 @@ function CanvasEditor({
   const [recoverableDraft, setRecoverableDraft] = useState<string | null>(null);
   const [nodes, setNodes] = useState<CanvasNode[]>([]);
   const [edges, setEdges] = useState<Edge[]>([]);
+  const [frameComparison, setFrameComparison] = useState<FrameComparisonLink>();
+  const frameComparisonSources = useMemo<FrameComparisonSources | null>(() => {
+    if (!frameComparison) return null;
+    const { original_node_id, remake_node_id, fps, first_master_frame, frame_count } = frameComparison;
+    const original = nodes.find((node) => node.id === original_node_id && node.data.kind === "video");
+    const remake = nodes.find((node) => node.id === remake_node_id && node.data.kind === "video");
+    if (!original?.data.asset_version_id || !remake?.data.asset_version_id || !Number.isFinite(fps) || fps <= 0 ||
+      !Number.isSafeInteger(first_master_frame) || first_master_frame < 0 || !Number.isSafeInteger(frame_count) || frame_count < 1) return null;
+    return { originalVersionId: original.data.asset_version_id, remakeVersionId: remake.data.asset_version_id,
+      title: original.data.title || "", fps, firstMasterFrame: first_master_frame, frameCount: frame_count };
+  }, [frameComparison, nodes]);
   const workbenchNodes = useMemo(() => {
     const auditions = legacyVoiceAuditionIds(nodes, edges);
     return auditions.size ? nodes.filter(node => !auditions.has(node.id)) : nodes;
@@ -916,6 +934,8 @@ function CanvasEditor({
   const nodesRef = useRef(nodes);
   const edgesRef = useRef(edges);
   const viewportRef = useRef<Viewport>(initialViewport);
+  const draftTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const viewportTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const revisionRef = useRef(project.revision || 0);
   const dirtyRef = useRef(false);
   const savingRef = useRef(false);
@@ -996,10 +1016,9 @@ function CanvasEditor({
   );
 
   const persistDraft = useCallback(() => {
-    try {
-      localStorage.setItem(
-        draftKey,
-        JSON.stringify({
+    clearTimeout(draftTimer.current);
+    draftTimer.current = undefined;
+    return writeCanvasDraft(draftKey, {
           revision: revisionRef.current,
           nodes: cleanNodes(nodesRef.current),
           edges: edgesRef.current.map(
@@ -1008,25 +1027,50 @@ function CanvasEditor({
           viewport: viewportRef.current,
           pending_request: pendingSaveRef.current?.document,
           saved_at: Date.now(),
-        }),
-      );
-    } catch {
-      setNotice("浏览器草稿空间不足，请保持页面打开并完成保存。");
-    }
+        }).then(() => true).catch(() => {
+      setNotice("本机草稿暂时无法写入，请保持页面打开，保存到服务端或下载草稿备份。");
+      return false;
+    });
   }, [draftKey]);
 
   const changed = useCallback(() => {
     dirtyRef.current = true;
     localVersionRef.current += 1;
     if (!conflictRef.current) setSaveState("pending");
-    persistDraft();
-    setChangeSerial((value) => value + 1);
+    // Drag/resize updates stay in memory. Persist once at gesture end, not
+    // once per pointer event for a multi-megabyte document.
+    if (!interactingRef.current) {
+      clearTimeout(draftTimer.current);
+      draftTimer.current = setTimeout(() => void persistDraft(), 350);
+      setChangeSerial((value) => value + 1);
+    }
   }, [persistDraft]);
+
+  const finishInteraction = useCallback(() => {
+    interactingRef.current = false;
+    if (dirtyRef.current) {
+      void persistDraft();
+      setChangeSerial(value => value + 1);
+    }
+  }, [persistDraft]);
+
+  // React Flow owns the live transform. Floating editors catch up after the
+  // gesture, so moving the camera doesn't rerender the entire workbench.
+  const settleViewport = useCallback((viewport: Viewport) => {
+    stage.current?.classList.add("canvas-navigating");
+    clearTimeout(viewportTimer.current);
+    viewportTimer.current = setTimeout(() => {
+      viewportTimer.current = undefined;
+      stage.current?.classList.remove("canvas-navigating");
+      setLiveViewport(viewport);
+      setZoom(viewport.zoom);
+    }, 100);
+  }, []);
 
   const remember = useCallback(() => {
     const snapshot = {
-      nodes: clone(nodesRef.current),
-      edges: clone(edgesRef.current),
+      nodes: nodesRef.current,
+      edges: edgesRef.current,
     };
     history.current.past.push(snapshot);
     if (history.current.past.length > 80) history.current.past.shift();
@@ -1076,11 +1120,11 @@ function CanvasEditor({
         let hasConflict = false;
         if (preserveDraft) {
           try {
-            const raw = localStorage.getItem(draftKey);
-            if (raw) {
-              const draft = JSON.parse(raw) as CanvasDocument & {
+            const draft = await readCanvasDraft<CanvasDocument & {
                 pending_request?: SaveRequest;
-              };
+              }>(draftKey);
+            if (activeProjectRef.current !== projectId || sequence !== loadSequence.current) return;
+            if (draft) {
               if (
                 Array.isArray(draft.nodes) &&
                 Array.isArray(draft.edges) &&
@@ -1113,17 +1157,7 @@ function CanvasEditor({
               }
             } else {
               const otherDrafts: { key: string; savedAt: number }[] = [];
-              for (let index = 0; index < localStorage.length; index += 1) {
-                const key = localStorage.key(index);
-                if (
-                  !key ||
-                  (key !== draftPrefix && !key.startsWith(`${draftPrefix}:`))
-                )
-                  continue;
-                try {
-                  const candidate = JSON.parse(
-                    localStorage.getItem(key) || "null",
-                  );
+              for (const { key, document: candidate } of await listCanvasDrafts<CanvasDocument & { saved_at?: number }>(draftPrefix)) {
                   if (
                     candidate &&
                     Array.isArray(candidate.nodes) &&
@@ -1133,9 +1167,6 @@ function CanvasEditor({
                       key,
                       savedAt: Number(candidate.saved_at) || 0,
                     });
-                } catch {
-                  /* Skip unreadable drafts from older sessions. */
-                }
               }
               otherDrafts.sort(
                 (first, second) => second.savedAt - first.savedAt,
@@ -1148,6 +1179,7 @@ function CanvasEditor({
         }
         // Older clients also wrote drafts for camera-only changes. If all content
         // already matches the server, there is no outstanding edit to recover.
+        if (activeProjectRef.current !== projectId || sequence !== loadSequence.current) return;
         if (hasDraft &&
           JSON.stringify(cleanNodes(restored.nodes)) === JSON.stringify(cleanNodes(document.nodes)) &&
           JSON.stringify(restored.edges.map(({ selected: _selected, ...edge }) => edge)) ===
@@ -1156,7 +1188,7 @@ function CanvasEditor({
           hasDraft = false;
           hasConflict = false;
           pendingSaveRef.current = null;
-          try { localStorage.removeItem(draftKey); } catch { /* A matching draft is harmless if storage is unavailable. */ }
+          void removeCanvasDraft(draftKey).catch(() => {});
           setNotice("");
         }
         revisionRef.current =
@@ -1170,6 +1202,7 @@ function CanvasEditor({
             localView = value;
         } catch { /* The shared document remains usable without local view storage. */ }
         viewportRef.current = !preserveDraft ? flow.getViewport() : localView || restored.viewport || initialViewport;
+        setLiveViewport(viewportRef.current);
         dirtyRef.current = hasDraft;
         conflictRef.current = hasConflict;
         history.current = { past: [], future: [] };
@@ -1291,7 +1324,7 @@ function CanvasEditor({
     pendingSaveRef.current = pending;
     savingRef.current = true;
     ownRequests.current.add(requestId);
-    persistDraft();
+    await persistDraft();
     setSaveState("saving");
     let savedSuccessfully = false;
     try {
@@ -1309,7 +1342,8 @@ function CanvasEditor({
         setSaveState("conflict");
       } else if (localVersionRef.current === localVersion) {
         dirtyRef.current = false;
-        localStorage.removeItem(draftKey);
+        clearTimeout(draftTimer.current);
+        void removeCanvasDraft(draftKey).catch(() => {});
         setSaveState("saved");
       } else {
         persistDraft();
@@ -1350,11 +1384,11 @@ function CanvasEditor({
     while (savingRef.current && Date.now() < deadline)
       await new Promise((resolve) => setTimeout(resolve, 50));
     if (conflictRef.current)
-      throw new Error("请先处理画布版本冲突，再提交生成任务。");
-    if (savingRef.current) throw new Error("画布仍在保存，请稍后重试提交。");
+      throw new Error("请先处理画布版本冲突，再继续操作。");
+    if (savingRef.current) throw new Error("画布仍在保存，请稍后重试。");
     if (dirtyRef.current) await save();
     if (dirtyRef.current || conflictRef.current)
-      throw new Error("画布尚未保存成功，生成请求已保留，请恢复保存后重试。");
+      throw new Error("画布尚未保存成功，请保持页面打开，恢复保存后再试。");
   }, [save]);
 
   const synchronizeGeneration: (updatedNodeIds?: string[]) => Promise<void> =
@@ -1362,7 +1396,7 @@ function CanvasEditor({
       async (updatedNodeIds = []) => {
         updatedNodeIds.forEach((id) => generationUpdatedNodes.current.add(id));
         if (activeProjectRef.current !== project.id) return;
-        if (savingRef.current) {
+        if (savingRef.current || interactingRef.current || viewportTimer.current) {
           clearTimeout(generationSyncTimer.current);
           generationSyncTimer.current = setTimeout(
             () => void synchronizeGeneration(),
@@ -1379,7 +1413,7 @@ function CanvasEditor({
             remote.revision <= revisionRef.current
           )
             return;
-          if (savingRef.current) {
+          if (savingRef.current || interactingRef.current || viewportTimer.current) {
             generationSyncTimer.current = setTimeout(
               () => void synchronizeGeneration(),
               150,
@@ -1387,6 +1421,10 @@ function CanvasEditor({
             return;
           }
           const base = savedDocumentRef.current;
+          const remoteNodes = new Map(remote.nodes.map(node => [node.id, node]));
+          const remoteEdges = new Map(remote.edges.map(edge => [edge.id, edge]));
+          const baseNodes = new Map(base?.nodes.map(node => [node.id, node]) || []);
+          const baseEdges = new Set(base?.edges.map(edge => edge.id) || []);
           const same = (first: unknown, second: unknown) =>
             JSON.stringify(first) === JSON.stringify(second);
           const withoutGeneratedImage = (node: CanvasNode) => {
@@ -1401,7 +1439,7 @@ function CanvasEditor({
           const resultUpdates = new Map<string, CanvasNode>();
           if (base)
             for (const node of base.nodes) {
-              const next = remote.nodes.find((item) => item.id === node.id);
+              const next = remoteNodes.get(node.id);
               if (
                 next &&
                 generationUpdatedNodes.current.has(node.id) &&
@@ -1421,13 +1459,13 @@ function CanvasEditor({
                 resultUpdates.has(node.id) ||
                 same(
                   node,
-                  remote.nodes.find((item) => item.id === node.id),
+                  remoteNodes.get(node.id),
                 ),
             ) &&
             base.edges.every((edge) =>
               same(
                 edge,
-                remote.edges.find((item) => item.id === edge.id),
+                remoteEdges.get(edge.id),
               ),
             ) &&
             same(base.viewport, remote.viewport);
@@ -1443,15 +1481,17 @@ function CanvasEditor({
             return;
           }
           const newNodes = remote.nodes.filter(
-            (node) => !base.nodes.some((item) => item.id === node.id),
+            (node) => !baseNodes.has(node.id),
           );
           const newEdges = remote.edges.filter(
-            (edge) => !base.edges.some((item) => item.id === edge.id),
+            (edge) => !baseEdges.has(edge.id),
           );
           const append = (
             snapshot: Snapshot,
             preserveSelection = false,
           ): Snapshot => {
+            const snapshotIds = new Set(snapshot.nodes.map(node => node.id));
+            const snapshotEdges = new Set(snapshot.edges.map(edge => edge.id));
             const mergedNodes = [
               ...snapshot.nodes.map((node) => {
                 const updated = resultUpdates.get(node.id);
@@ -1478,9 +1518,7 @@ function CanvasEditor({
                       ...item,
                     };
                 }
-                const baseVersion = base.nodes.find(
-                  (item) => item.id === node.id,
-                )?.data.asset_version_id;
+                const baseVersion = baseNodes.get(node.id)?.data.asset_version_id;
                 const selectedVersion =
                   node.data.asset_version_id &&
                   (preserveSelection ||
@@ -1506,7 +1544,7 @@ function CanvasEditor({
                 };
               }),
               ...newNodes.filter(
-                (node) => !snapshot.nodes.some((item) => item.id === node.id),
+                (node) => !snapshotIds.has(node.id),
               ),
             ];
             const ids = new Set(mergedNodes.map((node) => node.id));
@@ -1514,7 +1552,7 @@ function CanvasEditor({
               ...snapshot.edges,
               ...newEdges.filter(
                 (edge) =>
-                  !snapshot.edges.some((item) => item.id === edge.id) &&
+                  !snapshotEdges.has(edge.id) &&
                   ids.has(edge.source) &&
                   ids.has(edge.target),
               ),
@@ -1573,7 +1611,15 @@ function CanvasEditor({
       event.returnValue = "";
     };
     window.addEventListener("beforeunload", beforeUnload);
-    return () => window.removeEventListener("beforeunload", beforeUnload);
+    const hidden = () => { if (document.visibilityState === "hidden" && dirtyRef.current) void persistDraft(); };
+    document.addEventListener("visibilitychange", hidden);
+    return () => {
+      window.removeEventListener("beforeunload", beforeUnload);
+      document.removeEventListener("visibilitychange", hidden);
+      clearTimeout(viewportTimer.current);
+      if (dirtyRef.current) void persistDraft();
+      else clearTimeout(draftTimer.current);
+    };
   }, [persistDraft]);
 
   useEffect(() => {
@@ -1672,8 +1718,8 @@ function CanvasEditor({
     const snapshot = history.current.past.pop();
     if (!snapshot) return;
     history.current.future.push({
-      nodes: clone(nodesRef.current),
-      edges: clone(edgesRef.current),
+      nodes: nodesRef.current,
+      edges: edgesRef.current,
     });
     replace(snapshot.nodes, snapshot.edges);
     changed();
@@ -1684,8 +1730,8 @@ function CanvasEditor({
     const snapshot = history.current.future.pop();
     if (!snapshot) return;
     history.current.past.push({
-      nodes: clone(nodesRef.current),
-      edges: clone(edgesRef.current),
+      nodes: nodesRef.current,
+      edges: edgesRef.current,
     });
     replace(snapshot.nodes, snapshot.edges);
     changed();
@@ -2499,9 +2545,10 @@ function CanvasEditor({
 
   const onNodesChange = useCallback(
     (changes: NodeChange<CanvasNode>[]) => {
+      const byId = new Map(nodesRef.current.map(node => [node.id, node]));
       const contentChanged = changes.some(change => {
         if (change.type !== "position" && change.type !== "dimensions") return false;
-        const node = nodesRef.current.find(item => item.id === change.id);
+        const node = byId.get(change.id);
         if (!node) return false;
         if (change.type === "position")
           return !!change.position && (change.position.x !== node.position.x || change.position.y !== node.position.y);
@@ -2744,7 +2791,10 @@ function CanvasEditor({
         ]
       : [];
   });
+  const edgePresentation = useRef(new Map<string, { source: Edge; signature: string; rendered: Edge }>());
+  const previousEdges = useRef<Edge[]>([]);
   const displayedEdges = useMemo(() => {
+    const byId = new Map(nodes.map(node => [node.id, node]));
     const images = new Set(
       nodes
         .filter((node) => node.type === "media" && (node.data.kind === "image" || node.data.kind === "video" || node.data.kind === "audio"))
@@ -2760,19 +2810,28 @@ function CanvasEditor({
     const selectedNodes = new Set(
       nodes.filter((node) => node.selected).map((node) => node.id),
     );
-    return edges.map((edge) => {
+    const cache = new Map<string, { source: Edge; signature: string; rendered: Edge }>();
+    const result = edges.map((edge) => {
       const cameraMotion = edgeRole(edge) === cameraMotionRole;
       const reference =
         edgeRole(edge)==="reference" && imageSources.has(edge.source) && images.has(edge.target);
       const active = edge.selected || selectedNodes.has(edge.target) || hoveredNodeId === edge.target;
-      return {
+      const locked = !!(byId.get(edge.source)?.data.locked || byId.get(edge.target)?.data.locked);
+      const kind = byId.get(edge.target)?.data.kind;
+      const signature = `${cameraMotion}:${reference}:${!!active}:${locked}:${kind}`;
+      const previous = edgePresentation.current.get(edge.id);
+      if (previous?.source === edge && previous.signature === signature) {
+        cache.set(edge.id, previous);
+        return previous.rendered;
+      }
+      const rendered: Edge = {
         ...edge,
         type: "canvasConnection",
         animated: false,
-        reconnectable: !edgeLocked(edge,nodes),
+        reconnectable: !locked,
         zIndex: edge.selected ? 1001 : 0,
-        deletable: !edgeLocked(edge,nodes),
-        label: edge.label || (cameraMotion ? "运镜" : edgeRole(edge)==="pending" ? "用途待确认" : reference ? (nodes.find(node=>node.id===edge.target)?.data.kind==="audio"?"音色参考":nodes.find(node=>node.id===edge.target)?.data.kind==="video"?"素材参考":"图片参考") : ""),
+        deletable: !locked,
+        label: edge.label || (cameraMotion ? "运镜" : edgeRole(edge)==="pending" ? "用途待确认" : reference ? (kind==="audio"?"音色参考":kind==="video"?"素材参考":"图片参考") : ""),
         className: `${edge.className || ""} canvas-connection-edge ${cameraMotion ? "canvas-camera-edge" : reference ? "canvas-reference-edge" : ""} ${active ? "is-active-connection" : ""}`,
         style: {
           ...edge.style,
@@ -2782,7 +2841,13 @@ function CanvasEditor({
         markerStart: undefined,
         markerEnd: undefined,
       };
+      cache.set(edge.id, { source: edge, signature, rendered });
+      return rendered;
     });
+    edgePresentation.current = cache;
+    if (result.length === previousEdges.current.length && result.every((edge, index) => edge === previousEdges.current[index])) return previousEdges.current;
+    previousEdges.current = result;
+    return result;
   }, [edges, nodes, hoveredNodeId]);
 
   useEffect(() => {
@@ -3045,16 +3110,31 @@ function CanvasEditor({
     },
     [project.id, remember, updateData, onAssetsChange],
   );
+  const nodePresentation = useRef(new Map<string, { source: CanvasNode; hidden: boolean; picking: string; rendered: CanvasNode }>());
   const displayedNodes = useMemo(() => {
-    const collapsedGroups = nodes.filter(
-      (node) => node.type === "group" && node.data.collapsed,
-    );
-    return workbenchNodes.map((node) => {
-      const hidden = !!node.hidden || !!node.data.production_settings || collapsedGroups.some((parent) =>
-        isDescendant(node, parent.id, nodes),
-      );
+    const byId = new Map(nodes.map(node => [node.id, node]));
+    const collapsedParents = new Map<string, boolean>();
+    const insideCollapsed = (node: CanvasNode, visiting = new Set<string>()): boolean => {
+      if (!node.parentId || visiting.has(node.id)) return false;
+      const cached = collapsedParents.get(node.id);
+      if (cached !== undefined) return cached;
+      visiting.add(node.id);
+      const parent = byId.get(node.parentId);
+      const hidden = !!parent && (!!(parent.type === "group" && parent.data.collapsed) || insideCollapsed(parent, visiting));
+      collapsedParents.set(node.id, hidden);
+      return hidden;
+    };
+    const cache = new Map<string, { source: CanvasNode; hidden: boolean; picking: string; rendered: CanvasNode }>();
+    const picking = canvasPick?.kind || "";
+    const result = workbenchNodes.map((node) => {
+      const hidden = !!node.hidden || !!node.data.production_settings || insideCollapsed(node);
+      const previous = nodePresentation.current.get(node.id);
+      if (previous?.source === node && previous.hidden === hidden && previous.picking === picking) {
+        cache.set(node.id, previous);
+        return previous.rendered;
+      }
       const collapsed = node.type === "group" && node.data.collapsed;
-      return {
+      const rendered: CanvasNode = {
         ...node,
         hidden,
         className:[node.className,canvasPick && (canvasPick.kind==="image" ? !!node.data.asset_version_id && (node.type==="subject" || node.data.kind==="image") : node.data.kind==="audio" || !!node.data.subject?.voice_version_id) ? "canvas-pick-compatible":""].filter(Boolean).join(" "),
@@ -3066,7 +3146,11 @@ function CanvasEditor({
           ? { ...node.style, width: 260, height: 54 }
           : node.style,
       };
+      cache.set(node.id, { source: node, hidden, picking, rendered });
+      return rendered;
     });
+    nodePresentation.current = cache;
+    return result;
   }, [nodes, workbenchNodes, canvasPick]);
   const actions: CanvasActions = useMemo(
     () => ({
@@ -3074,6 +3158,7 @@ function CanvasEditor({
       flushCanvas,
       getCanvasMedia,
       preview: onPreview,
+      compareFrames: setFrameComparison,
       updateSubject,
       selectNode: (id) => replace(
         nodesRef.current.map((item) => ({ ...item, selected: item.id === id })),
@@ -3090,10 +3175,7 @@ function CanvasEditor({
         remember();
         interactingRef.current = true;
       },
-      resizeEnd: () => {
-        interactingRef.current = false;
-        if (dirtyRef.current) setChangeSerial(value => value + 1);
-      },
+      resizeEnd: finishInteraction,
     }),
     [
       project.id,
@@ -3105,6 +3187,7 @@ function CanvasEditor({
       remember,
       updateData,
       changed,
+      finishInteraction,
     ],
   );
 
@@ -3149,15 +3232,27 @@ function CanvasEditor({
     anchor.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
-  const reloadAfterConflict = () => {
+  const reloadAfterConflict = async () => {
+    const localVersion = localVersionRef.current;
     try {
-      const draft = localStorage.getItem(draftKey);
+      if (!await persistDraft()) throw new Error("Draft backup unavailable");
+      const draft = await readCanvasDraft(draftKey);
       if (draft) {
         const backupKey = `${draftKey}:backup:${Date.now()}`;
-        localStorage.setItem(backupKey, draft);
+        await writeCanvasDraft(backupKey, draft);
         setRecoverableDraft(backupKey);
       }
-      localStorage.removeItem(draftKey);
+      if (localVersionRef.current !== localVersion) {
+        void persistDraft();
+        setNotice("备份期间画布有新修改，已保留当前草稿，请停止编辑后重试加载最新。");
+        return;
+      }
+      await removeCanvasDraft(draftKey);
+      if (localVersionRef.current !== localVersion) {
+        void persistDraft();
+        setNotice("备份期间画布有新修改，已保留当前草稿，请停止编辑后重试加载最新。");
+        return;
+      }
     } catch {
       setNotice("本机草稿备份失败，请先下载草稿。");
       return;
@@ -3540,17 +3635,21 @@ function CanvasEditor({
 
   return (
     <div className="canvas-workspace" data-history={historySerial}>
+      {frameComparison && <FrameComparison
+        key={`${frameComparisonSources?.originalVersionId}:${frameComparisonSources?.remakeVersionId}`}
+        sources={frameComparisonSources} onClose={() => setFrameComparison(undefined)} />}
       <header className="canvas-topbar">
         <div className="canvas-title-area">
           <button
-            className="canvas-icon-button back-button"
+            className="canvas-icon-button back-button canvas-back-projects"
             title="返回项目"
+            aria-label="保存并返回项目列表"
             onClick={() => {
-              if (dirtyRef.current) persistDraft();
-              onBack();
+              void flushCanvas().then(onBack).catch(error => setNotice(errorText(error)));
             }}
           >
             <ArrowLeft size={19} />
+            <span>返回项目</span>
           </button>
           <CanvasProjectMenu
             project={project}
@@ -3567,6 +3666,7 @@ function CanvasEditor({
           />
         </div>
         <div className="canvas-header-actions">
+          <ExitApplication beforeExit={flushCanvas} />
           <div className="canvas-command-bar" role="group" aria-label="画布命令">
             <span className={`canvas-save-status ${saveState}`}>
               {saveState === "saved" ? (
@@ -3993,18 +4093,12 @@ function CanvasEditor({
                   remember();
                   interactingRef.current = true;
                 }}
-                onNodeDragStop={() => {
-                  interactingRef.current = false;
-                  if (dirtyRef.current) setChangeSerial(value => value + 1);
-                }}
+                onNodeDragStop={finishInteraction}
                 onSelectionDragStart={() => {
                   remember();
                   interactingRef.current = true;
                 }}
-                onSelectionDragStop={() => {
-                  interactingRef.current = false;
-                  if (dirtyRef.current) setChangeSerial(value => value + 1);
-                }}
+                onSelectionDragStop={finishInteraction}
                 onNodeDoubleClick={(_, node) => {
                   if(node.data.generation?.workflow_id==='builtin-latentsync15-local'){void flushCanvas().then(()=>{setLipSyncNodeId(node.id);setShowLipSync(true);}).catch(error=>setNotice(errorText(error)));return;}
                   if (node.type === "media" && node.data.asset_version_id)
@@ -4018,7 +4112,7 @@ function CanvasEditor({
                   }
                 }}
                 onMoveEnd={(_, viewport) => {
-                  setZoom(viewport.zoom);
+                  settleViewport(viewport);
                   if (
                     !loading &&
                     JSON.stringify(viewportRef.current) !==
@@ -4029,7 +4123,7 @@ function CanvasEditor({
                     catch { /* Browsing does not depend on storage availability. */ }
                   }
                 }}
-                onMove={(_, viewport) => setZoom(viewport.zoom)}
+                onMove={(_, viewport) => settleViewport(viewport)}
                 defaultViewport={initialViewport}
                 minZoom={0.12}
                 maxZoom={8}
