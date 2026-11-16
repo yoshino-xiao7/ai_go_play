@@ -697,6 +697,7 @@ a svg {
   margin-bottom: 42px;
 }
 .projects-page .page-heading .button-row {
+  flex-wrap: wrap;
   margin-bottom: 2px;
 }
 .project-toolbar {
