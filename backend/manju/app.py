@@ -32,6 +32,7 @@ from .frames import render_frame
 from .openai_images import PREFIX as OPENAI_PREFIX, estimate_cost
 from .screenplay import get_screenplay, save_screenplay
 from .share import ShareService
+from .share_import import export_public_canvas
 from .setup_service import SetupService
 from .setup_api import router as setup_router
 from .system_api import router as system_router
@@ -184,6 +185,7 @@ def create_app(data_dir: str | Path | None = None, config_file: str | Path | Non
         writing = request.method in ('POST', 'PUT', 'PATCH', 'DELETE') and request.url.path != '/api/system/shutdown'
         transferring = request.method == 'GET' and (
             (request.url.path.startswith('/api/projects/') and request.url.path.endswith('/export'))
+            or request.url.path == '/api/share/export'
             or (request.url.path.startswith('/api/media/') and request.query_params.get('download', '').lower() in ('true', '1', 'yes', 'on'))
         )
         active_operation = writing or transferring
@@ -556,6 +558,25 @@ def create_app(data_dir: str | Path | None = None, config_file: str | Path | Non
     @application.get("/api/share/status")
     def share_status(request: Request):
         return request.app.state.share.status()
+
+    @application.get("/api/share/export")
+    def export_shared_canvas(request: Request, link: str = Query(..., max_length=2048)):
+        path, title, _ = export_public_canvas(request.app.state.share, link)
+        filename = re.sub(r'[<>:"/\\|?*\x00-\x1f]', "_", title)
+        return FileResponse(path, media_type="application/zip", filename=filename + ".manju",
+                            headers={"Cache-Control": "no-store"},
+                            background=BackgroundTask(path.unlink, missing_ok=True))
+
+    @application.post("/api/share/import", status_code=201)
+    def import_shared_canvas(request: Request, link: str = Body(..., embed=True, max_length=2048)):
+        store = get_store(request)
+        if store.maintenance:
+            raise DomainError(409, "资产库正在迁移", "storage_migrating")
+        path, _, omitted = export_public_canvas(request.app.state.share, link)
+        try:
+            return {**import_project(store, path), "omitted_history": omitted}
+        finally:
+            path.unlink(missing_ok=True)
 
     @application.post("/api/share/connect")
     def share_connect(request: Request):
