@@ -7,6 +7,8 @@ import shutil
 import uuid
 from .store import DomainError
 
+IMPORT_HEADROOM = 256 * 1024**2
+
 
 def local_path(value, *, directory=False):
     if not isinstance(value, str) or not value.strip() or value.startswith(('\\\\', '//')) or '\0' in value:
@@ -30,7 +32,7 @@ def model_target(root, relative):
 def source_candidates(root, item):
     relative = Path(item['path'])
     # Handles both merged models and the unmodified ai-go-play Quark folder.
-    for base in (root, root / 'models', root / 'ai-go-play'):
+    for base in (root, root / 'models', root / 'ai-go-play', root / 'ai-go-play/models'):
         yield base / relative
         for pack in item['packs']:
             yield base / pack / 'models' / relative
@@ -58,6 +60,27 @@ def inspect_files(files, root, sources):
         source = locate(item, sources) if state != 'unverified' else target
         rows.append({**item, 'status': state, 'source': str(source) if source else None})
     return rows
+
+
+def reusable_model_roots(files, sources):
+    """Find folders with the catalog's installed layout, without hashing or copying."""
+    candidates = {}
+    for source in sources:
+        for path in (source, source / 'models', source / 'ai-go-play', source / 'ai-go-play/models'):
+            try:
+                root = path.resolve()
+                if root in candidates or root == Path(root.anchor) or not root.is_dir():
+                    continue
+                matches = 0
+                for item in files:
+                    target = model_target(root, item['path'])
+                    if target.is_file() and target.stat().st_size == item['size']:
+                        matches += 1
+                candidates[root] = matches
+            except (OSError, ValueError, RuntimeError, DomainError):
+                continue
+    return [{'path': str(root), 'matched': matches, 'total': len(files)}
+            for root, matches in sorted(candidates.items(), key=lambda pair: -pair[1]) if matches]
 
 
 def hash_file(path, job, report=None):
@@ -108,8 +131,8 @@ def import_files(files, root, sources, job):
     root.mkdir(parents=True, exist_ok=True)
     resolved = [(f, locate(f, sources)) for f in files]
     required = sum(f['size'] for f, p in resolved if p and not (root / f['path']).exists())
-    if shutil.disk_usage(root).free < required + 256 * 1024**2:
-        raise DomainError(409, '目标磁盘空间不足，请更换目录或减少模型选择。', 'setup_disk_full')
+    if required and shutil.disk_usage(root).free < required + IMPORT_HEADROOM:
+        raise DomainError(409, '目标磁盘空间不足。若已有整理好的 models 目录，可直接使用并校验；也可以更换存放位置或减少模型选择。', 'setup_disk_full')
     imported, conflicts, unavailable = [], [], []
     total = sum(f['size'] for f in files) or 1
     done = 0

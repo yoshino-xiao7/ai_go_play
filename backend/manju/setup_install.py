@@ -11,7 +11,9 @@ import uuid
 import zipfile
 import httpx
 import psutil
+from urllib.parse import urlsplit
 from .comfy import detect_installation
+from .download_sources import artifact_urls, run_from_registry
 from .setup_jobs import atomic_json
 from .store import DomainError
 
@@ -45,7 +47,8 @@ def install_nodes(project, installation, selected, sources, directory, job):
             wheel = download(spec, directory / 'downloads', job, '.whl')
             named = wheel.parent / spec['filename']
             shutil.copy2(wheel, named)
-            run_installer([python, '-s', '-m', 'pip', 'install', '-c', constraints, named, 'triton-windows==3.8.0.post29'], directory / 'logs', job, cwd=comfy, env=env)
+            install_from_pypi([python, '-s', '-m', 'pip', 'install', '-c', constraints, named, 'triton-windows==3.8.0.post29'],
+                              directory / 'logs', job, cwd=comfy, env=env)
         headers = subprocess.run([python, '-s', '-c', "import sys,json,platform; print(json.dumps({'version':platform.python_version(),'prefix':sys.base_prefix}))"],
                                  capture_output=True, text=True, env=env, timeout=30, check=True, creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
         headers = json.loads(headers.stdout)
@@ -105,7 +108,8 @@ def install_nodes(project, installation, selected, sources, directory, job):
         # Other Goohai workflows aren't exposed by ai-go-play; do not add dlib/mediapipe.
         requirements = ['opencv-python-headless'] if spec['name'] == 'Goohaitools-comfyui' else ['-r', target / 'requirements.txt'] if (target / 'requirements.txt').is_file() else []
         if requirements:
-            run_installer([python, '-s', '-m', 'pip', 'install', '-c', constraints, *requirements], directory / 'logs', job, cwd=comfy, env=env)
+            install_from_pypi([python, '-s', '-m', 'pip', 'install', '-c', constraints, *requirements],
+                              directory / 'logs', job, cwd=comfy, env=env)
     if '08-video-enhance' in selected:
         source = project / 'integrations/comfyui_manju_enhance/__init__.py'
         target = custom / 'comfyui_manju_enhance/__init__.py'
@@ -142,29 +146,63 @@ def download(spec, directory, job, suffix):
     if target.is_file() and sha(target) == spec['sha256']:
         return target
     part = target.with_suffix(target.suffix + '.partial')
-    offset = part.stat().st_size if part.exists() else 0
-    with httpx.Client(follow_redirects=True, timeout=httpx.Timeout(60, read=30)) as client:
-        with client.stream('GET', spec['url'], headers={'Range': f'bytes={offset}-'} if offset else {}) as response:
-            if response.status_code == 416:
-                offset = 0
-            else:
-                response.raise_for_status()
-                if response.status_code != 206: offset = 0
-                total = int(response.headers.get('content-length', 0)) + offset
-                if not total: total = spec.get('size', 0)
-                with part.open('ab' if offset else 'wb') as stream:
-                    for chunk in response.iter_bytes(1024**2):
-                        job.check_cancelled()
-                        stream.write(chunk)
-                        offset += len(chunk)
-                        job.update(message='下载 ' + spec['url'].rsplit('/', 1)[-1], progress=min(.85, offset / total * .85) if total else 0,
-                                   completed_bytes=offset, total_bytes=total)
-    job.update(message='校验下载文件', progress=.87)
-    if not part.is_file() or sha(part) != spec['sha256']:
-        part.unlink(missing_ok=True)
-        raise ValueError('下载文件校验失败，已移除损坏的临时文件，请重试。')
-    part.replace(target)
-    return target
+    failures = []
+    filename = urlsplit(spec['url']).path.rsplit('/', 1)[-1]
+    with httpx.Client(follow_redirects=True, timeout=httpx.Timeout(30, connect=8)) as client:
+        for url in artifact_urls(spec):
+            host = urlsplit(url).hostname
+            job.check_cancelled()
+            job.update(message=f'连接下载源 {host}')
+            try:
+                for _ in range(2):
+                    offset = part.stat().st_size if part.exists() else 0
+                    headers = {'Accept-Encoding': 'identity'}
+                    if offset:
+                        headers['Range'] = f'bytes={offset}-'
+                    with client.stream('GET', url, headers=headers) as response:
+                        if response.status_code == 416 and offset:
+                            if sha(part) == spec['sha256']:
+                                part.replace(target)
+                                return target
+                            part.unlink()
+                            continue
+                        response.raise_for_status()
+                        if response.status_code != 206:
+                            offset = 0
+                        elif not response.headers.get('content-range', '').startswith(f'bytes {offset}-'):
+                            raise ValueError('下载源返回了无效的续传范围')
+                        size = int(response.headers.get('content-length', 0))
+                        total = offset + size if size else spec.get('size', 0)
+                        with part.open('ab' if offset else 'wb') as stream:
+                            for chunk in response.iter_raw(1024**2):
+                                job.check_cancelled()
+                                stream.write(chunk)
+                                offset += len(chunk)
+                                job.update(message=f'下载 {filename} · {host}',
+                                           progress=min(.85, offset / total * .85) if total else 0,
+                                           completed_bytes=offset, total_bytes=total)
+                    break
+                job.update(message='校验下载文件', progress=.87)
+                if not part.is_file() or sha(part) != spec['sha256']:
+                    part.unlink(missing_ok=True)
+                    raise ValueError('SHA-256 校验失败')
+                part.replace(target)
+                return target
+            except httpx.HTTPStatusError as error:
+                failures.append(f'{host}: HTTP {error.response.status_code}')
+            except httpx.RequestError as error:
+                failures.append(f'{host}: {type(error).__name__}')
+            except ValueError as error:
+                failures.append(f'{host}: {error}')
+    raise RuntimeError('所有下载源均失败：\n' + '\n'.join(failures))
+
+
+def install_from_pypi(command, directory, job, *, cwd, env):
+    def attempt(child, host):
+        job.check_cancelled()
+        job.update(message=f'连接 Python 安装源 {host}')
+        return run_installer(command, directory, job, cwd=cwd, env=child)
+    return run_from_registry('pypi', env, attempt)
 
 
 def run_installer(command, directory, job, *, cwd=None, env=None, timeout=7200):

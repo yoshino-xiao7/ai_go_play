@@ -4,10 +4,12 @@ from __future__ import annotations
 import argparse
 from datetime import datetime, timezone
 import hashlib
+import http.client
 import json
 import os
 from pathlib import Path, PurePosixPath
 import platform
+import re
 import shutil
 import stat
 import subprocess
@@ -17,9 +19,12 @@ import time
 import urllib.request
 import uuid
 import zipfile
+from urllib.parse import unquote, urlsplit
 
 
 PROJECT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(PROJECT / 'backend'))
+from manju.download_sources import artifact_urls, managed_python_sources, run_from_registry
 SUPPORT = PROJECT / "scripts" / "local_ai"
 OWNER = "ai-go-play-local-ai-v1"
 
@@ -35,6 +40,53 @@ def write_json(path, value):
     temporary = path.with_name(path.name + "." + uuid.uuid4().hex + ".tmp")
     temporary.write_text(json.dumps(value, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     temporary.replace(path)
+
+
+def load_media_settings(path):
+    try:
+        value = json.loads(path.read_text(encoding='utf-8'))
+        return value if isinstance(value, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def usable_media_binary(path, name, env):
+    try:
+        result = subprocess.run(
+            [str(path), '-version'], env=env, stdin=subprocess.DEVNULL,
+            capture_output=True, timeout=8,
+            creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0),
+        )
+        return result.returncode == 0 and result.stdout.startswith(f'{name} version '.encode())
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+
+
+def find_system_media(env, saved_paths=None):
+    names = ('ffmpeg', 'ffprobe')
+    configured = {name: env.get(f'MANJU_{name.upper()}') for name in names}
+    search_path = [Path(value.strip('"')) for value in env.get('PATH', '').split(os.pathsep) if value.strip('"')]
+    winget = Path(env['LOCALAPPDATA']) / 'Microsoft/WinGet/Packages' if env.get('LOCALAPPDATA') else None
+    found = {}
+    for name, sibling in (names, names[::-1]):
+        executable = name + '.exe'
+        candidates = [configured[name]]
+        if configured[sibling]:
+            candidates.append(Path(configured[sibling]).with_name(executable))
+        candidates.extend(folder / executable for folder in search_path)
+        if winget:
+            for package in sorted(winget.glob('*FFmpeg*')):
+                candidates.extend(sorted(package.rglob(executable)))
+        candidates.extend(Path(drive) / 'ffmpeg/bin' / executable for drive in ('C:/', 'D:/'))
+        if saved_paths and isinstance(saved_paths.get(name), str):
+            candidates.append(saved_paths[name])
+        for path in dict.fromkeys(Path(item).absolute() for item in candidates if item):
+            if path.is_file() and usable_media_binary(path, name, env):
+                found[name] = str(path)
+                break
+        else:
+            return None
+    return found
 
 
 def child_environment(root, ffmpeg=None, offline=False):
@@ -55,6 +107,13 @@ def child_environment(root, ffmpeg=None, offline=False):
     if offline:
         env.update(HF_HUB_OFFLINE="1", TRANSFORMERS_OFFLINE="1")
     return env
+
+
+def install_packages(command, *, log, env, cwd=None, timeout=3600):
+    def attempt(child, host):
+        print('Python package index:', host, flush=True)
+        return run(command, log=log, env=child, cwd=cwd, timeout=timeout)
+    return run_from_registry('pypi', env, attempt)
 
 
 def run(command, *, log, env, cwd=None, timeout=3600):
@@ -90,33 +149,89 @@ def run(command, *, log, env, cwd=None, timeout=3600):
         raise RuntimeError(f"Command failed ({code}). Log: {log}\n{tail}")
 
 
-def download(spec, cache):
+def download(spec, cache, *, on_progress=None, timeout=90, env=None):
     cache.mkdir(parents=True, exist_ok=True)
     target = cache / (spec["sha256"] + ".zip")
-    if target.is_file() and digest(target) == spec["sha256"]:
-        return target
+    if target.is_file():
+        if on_progress:
+            on_progress("verify")
+        if digest(target) == spec["sha256"]:
+            return target
     part = target.with_suffix(".partial")
-    print("Downloading:", spec["url"], flush=True)
+    urls = artifact_urls(spec, env)
+    attempt_count = max(3, len(urls))
+    failures = []
     # A failed download is never accepted as a finished archive.
-    for attempt in range(3):
+    for attempt in range(attempt_count):
+        url = urls[attempt % len(urls)]
+        host = urlsplit(url).hostname
+        print("Downloading from:", host, flush=True)
         try:
-            with urllib.request.urlopen(spec["url"], timeout=90) as response, part.open("wb") as output:
+            if on_progress:
+                on_progress("connect", attempt=attempt + 1, attempts=attempt_count, host=host)
+            with urllib.request.urlopen(url, timeout=timeout) as response, part.open("wb") as output:
+                length = response.headers.get("Content-Length", "")
+                total = int(length) if length.isdecimal() and int(length) > 0 else None
                 received, last_update = 0, time.monotonic()
-                while chunk := response.read(1024 * 1024):
+                if on_progress:
+                    on_progress("download", received=received, total=total)
+                update_interval = 0.5 if on_progress else 15
+                while chunk := response.read1(1024 * 1024):
                     output.write(chunk)
                     received += len(chunk)
-                    if time.monotonic() - last_update >= 15:
-                        print(f"  Downloaded {received / 1024**2:.1f} MiB", flush=True)
+                    if time.monotonic() - last_update >= update_interval:
+                        if on_progress:
+                            on_progress("download", received=received, total=total)
+                        else:
+                            print(f"  Downloaded {received / 1024**2:.1f} MiB", flush=True)
                         last_update = time.monotonic()
+            if total is not None and received != total:
+                raise OSError(f"下载提前结束：收到 {received} / {total} 字节")
+            if on_progress:
+                on_progress("download", received=received, total=total)
+                on_progress("verify")
             if digest(part) != spec["sha256"]:
-                raise ValueError("Archive SHA256 differs from the release lock")
+                raise ValueError("下载的压缩包 SHA-256 校验失败")
             part.replace(target)
             return target
-        except (OSError, ValueError):
-            if attempt == 2:
-                raise
-            print(f"  Download failed; retry {attempt + 1}/2", flush=True)
+        except (OSError, ValueError, http.client.HTTPException) as exc:
+            failures.append(f'{host}: {exc}')
+            part.unlink(missing_ok=True)
+            if attempt + 1 == attempt_count:
+                if len(urls) == 1:
+                    raise
+                raise RuntimeError('所有下载源均失败：\n' + '\n'.join(failures)) from exc
+            print(f"  Download failed; switching to the next source: {exc}", flush=True)
+            if on_progress:
+                on_progress("retry", attempt=attempt + 2, attempts=attempt_count, host=host, error=str(exc))
             time.sleep(2)
+
+
+def pinned_wheels(lock, cache, env):
+    """Resolve direct wheel URLs locally while retaining the lock's hashes."""
+    source = lock.read_text(encoding='utf-8')
+    direct = re.compile(r'(?m)(^[\w-]+ @ )(https://[^\s]+)( \\\n[ \t]+--hash=sha256:([a-f0-9]{64}))')
+
+    def local_wheel(match):
+        url, expected = match[2], match[4]
+        name = unquote(urlsplit(url).path.rsplit('/', 1)[-1])
+        if not re.fullmatch(r'[A-Za-z0-9_+.-]+\.whl', name):
+            raise ValueError('固定 wheel 的文件名无效。')
+        source_file = download({'url': url, 'sha256': expected}, cache, env=env, timeout=45)
+        named = cache / expected / name
+        named.parent.mkdir(exist_ok=True)
+        if not named.is_file() or digest(named) != expected:
+            named.unlink(missing_ok=True)
+            try:
+                os.link(source_file, named)
+            except OSError:
+                shutil.copyfile(source_file, named)
+        return match[1] + named.resolve().as_uri() + match[3]
+
+    resolved = cache / ('verified-' + lock.name)
+    resolved.parent.mkdir(parents=True, exist_ok=True)
+    resolved.write_text(direct.sub(local_wheel, source), encoding='utf-8')
+    return resolved
 
 
 def unpack(archive, destination, expected_hash):
@@ -230,6 +345,25 @@ def install_bridge(config, destination, root):
     return str(target)
 
 
+def prepare_runtime_media(configured, root, spec, env):
+    if configured:
+        ffmpeg = Path(configured).resolve()
+        paths = ffmpeg, ffmpeg.with_name('ffprobe.exe')
+    else:
+        saved = load_media_settings(PROJECT / '.manju/local-ai-paths.json')
+        binaries = find_system_media(env, saved)
+        if binaries:
+            return Path(binaries['ffmpeg']), Path(binaries['ffprobe'])
+        archive = download(spec, root / 'downloads', env=env)
+        folder = unpack(archive, root / 'ffmpeg', spec['sha256']) / 'bin'
+        paths = folder / 'ffmpeg.exe', folder / 'ffprobe.exe'
+    for path, name in zip(paths, ('ffmpeg', 'ffprobe'), strict=True):
+        run([path, '-version'], log=root / 'logs/ffmpeg.log', env=env, timeout=30)
+        if not usable_media_binary(path, name, env):
+            raise ValueError(f'{path} did not return valid {name} version information')
+    return paths
+
+
 def install(args):
     if os.name != "nt" or platform.machine().lower() not in {"amd64", "x86_64"}:
         raise ValueError("This installer supports Windows x64 with an NVIDIA GPU")
@@ -264,15 +398,17 @@ def install(args):
             raise ValueError("Unmanaged installation state")
     else:
         state = {"owner": OWNER, "components": {}, "checks": {}}
-    ffmpeg = Path(args.ffmpeg).resolve() if args.ffmpeg else None
-    if not ffmpeg:
-        spec = manifest["ffmpeg"]
-        ffmpeg_dir = unpack(download(spec, root / "downloads"), root / "ffmpeg", spec["sha256"])
-        ffmpeg = ffmpeg_dir / "bin/ffmpeg.exe"
-    ffprobe = ffmpeg.with_name("ffprobe.exe")
-    for binary in (ffmpeg, ffprobe):
-        run([binary, "-version"], log=root / "logs/ffmpeg.log", env=env, timeout=30)
-    run([uv, "python", "install", manifest["python_version"], "--no-bin", "--no-registry"], log=root / "logs/python.log", env=env)
+    ffmpeg, ffprobe = prepare_runtime_media(args.ffmpeg, root, manifest['ffmpeg'], env)
+    failures = []
+    for mirror in managed_python_sources(env):
+        try:
+            run([uv, 'python', 'install', manifest['python_version'], '--no-bin', '--no-registry'],
+                log=root / 'logs/python.log', env={**env, 'UV_PYTHON_INSTALL_MIRROR': mirror, 'UV_HTTP_TIMEOUT': '30'})
+            break
+        except RuntimeError as error:
+            failures.append(str(error))
+    else:
+        raise RuntimeError('\n'.join(failures))
     result = subprocess.run([str(uv), "python", "find", manifest["python_version"]], env=env, capture_output=True, text=True, check=True, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
     python = Path(result.stdout.strip()).resolve()
     if not python.is_relative_to((root / "python").resolve()):
@@ -283,7 +419,7 @@ def install(args):
         if available.returncode:
             # The official portable build doesn't include SoundFile. Add only
             # this lightweight bridge dependency; Torch/CUDA stay untouched.
-            run([uv, 'pip', 'install', '--python', comfy_python, '--only-binary', ':all:', 'soundfile==0.13.1'],
+            install_packages([uv, 'pip', 'install', '--python', comfy_python, '--only-binary', ':all:', 'soundfile==0.13.1'],
                 log=root / 'logs/comfy-dependencies.log', env=env, cwd=comfy, timeout=300)
     run([comfy_python, "-X", "utf8", "-u", "-c", "import torch, numpy, yaml; assert torch.cuda.is_available(), 'ComfyUI cannot access an NVIDIA CUDA GPU'; print('ComfyUI bridge dependencies OK')"],
         log=root / "logs/comfy-dependencies.log", env=env, cwd=comfy, timeout=120)
@@ -301,8 +437,8 @@ def install(args):
             run([uv, "venv", "--python", python, environment], log=root / "logs" / (kind + "-install.log"), env=env)
             write_json(ownership, {"owner": OWNER})
         runtime_python = environment / "Scripts/python.exe"
-        lock = SUPPORT / (kind + ".lock")
-        run([uv, "pip", "sync", "--python", runtime_python, "--require-hashes", "--build-constraints", SUPPORT / "build-constraints.txt", lock],
+        lock = pinned_wheels(SUPPORT / (kind + ".lock"), root / "downloads", env)
+        install_packages([uv, "pip", "sync", "--python", runtime_python, "--require-hashes", "--build-constraints", SUPPORT / "build-constraints.txt", lock],
             log=root / "logs" / (kind + "-install.log"), env=env)
         run([uv, "pip", "check", "--python", runtime_python], log=root / "logs" / (kind + "-install.log"), env=env, timeout=60)
         config = {"kind": kind, "python": str(runtime_python), "repo": str(repo),
