@@ -33,7 +33,7 @@ git push origin dev
 # 创建 dev → integration PR
 ```
 
-多人工作使用独立 feat/*、fix/*、docs/* 任务分支，Agent 默认使用 codex/*。所有任务分支仍向 integration 提交 PR。不要在同一工作目录并行覆盖用户改动。
+上游仓库只保留 `main`、`dev`、`integration`。维护者和 Agent 在本地 `dev` 提交，推送到上游 `dev` 后发起 `dev` → `integration` PR。一次审查一个独立需求时，先完成当前 PR 的审查和合并，再推送下一项。社区在自己的 fork 开发。
 
 ## 本地检查
 

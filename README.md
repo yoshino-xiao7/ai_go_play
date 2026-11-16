@@ -206,7 +206,7 @@ flowchart TB
   API --> Cloud[按需授权的云端服务]
 ```
 
-开发基准为 **Python 3.12、Node.js 22.12+、FFmpeg / FFprobe**。在 dev 或自己的任务分支工作，使用独立资料库与端口，避免开发操作影响创作项目。
+开发基准为 **Python 3.12、Node.js 22.12+、FFmpeg / FFprobe**。维护者使用上游 `dev`，社区贡献者使用自己的 fork。开发测试使用独立资料库与端口。
 
 ```powershell
 py -3.12 -m venv .venv

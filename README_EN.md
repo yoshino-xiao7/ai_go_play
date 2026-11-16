@@ -98,7 +98,7 @@ Model mirrors: [Baidu Netdisk](https://pan.baidu.com/s/5nO-pzE6K3be3-t0zkpm1Pw) 
 | Community fork of main, with a feature branch | integration | Owner confirmation of the current head SHA |
 | This repository's integration | main | Owner-opened and owner-merged release PR with explicit version confirmation |
 
-Ordinary PRs targeting main or dev are rejected with an explanation. Do not push directly to main or integration. After a release PR is merged, the merger manually confirms its version in the GitHub Release workflow. A tag alone is not a release.
+The upstream repository keeps three branches: main, dev, and integration. Maintainers commit and push to dev, then open a dev → integration PR. Contributors work in their own forks and target integration. After a release PR is merged, the merger manually confirms its version in the GitHub Release workflow.
 
 Read [governance](docs/GOVERNANCE.md), [development](docs/DEVELOPMENT.md), [testing](docs/TESTING.md), and [releasing](docs/RELEASING.md).
 

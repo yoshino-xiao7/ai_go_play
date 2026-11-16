@@ -5,7 +5,16 @@ const VERSION = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
 
 function route(pr, policy = config) {
   if (pr.base.repo.full_name !== policy.repository) return { ok: false, reason: '仓库不匹配。' };
-  if (pr.base.ref === policy.integration_branch) return { ok: true, release: false };
+  if (pr.base.ref === policy.integration_branch) {
+    if (pr.head.repo?.full_name === policy.repository) {
+      return pr.head.ref === policy.development_branch && pr.user.login === policy.owner
+        ? { ok: true, release: false }
+        : { ok: false, reason: '上游开发 PR 须由仓库所有者从 dev 提交到 integration。社区请从自己的 fork 提交到 integration。' };
+    }
+    return pr.head.repo?.full_name
+      ? { ok: true, release: false }
+      : { ok: false, reason: '无法确认 PR 的来源仓库，请从有效的 fork 重新提交到 integration。' };
+  }
   if (pr.base.ref === policy.release_branch && pr.head.ref === policy.integration_branch &&
       pr.head.repo?.full_name === policy.repository && pr.user.login === policy.owner) {
     const version = /^Release-Version:\s*(\S+)\s*$/m.exec(pr.body || '')?.[1];

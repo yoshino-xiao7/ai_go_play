@@ -9,9 +9,8 @@
 | main | 对外发布线 | 仅所有者合并本仓库 integration → main 发布 PR |
 | dev | 维护者开发与创作相关开发 | 开发提交；PR 到 integration |
 | integration | 唯一集成与验收分支 | 审核通过的 PR，禁止直接推送 |
-| fork / 任务分支 | 社区与独立任务开发 | 自己的分支提交；PR 到 integration |
 
-社区从 main fork，但目标为 integration。fork 内名为 integration 的分支没有发布权限。所有 PR 目标为 integration，唯一例外是上述所有者发布 PR。
+上游只保留以上三个分支。维护者与 Agent 从本仓库 `dev` 向 `integration` 提交 PR。社区从 `main` fork 后在自己的仓库开发，PR 目标为上游 `integration`。发布 PR 由所有者从本仓库 `integration` 发往 `main`。
 
 ## 审核确认
 
@@ -25,7 +24,7 @@
 
 ## 门禁与权限
 
-integration 必需检查为 `policy/integration/route`、`policy/integration/review`、`quality`；main 对应 `policy/main/route`、`policy/main/review`、`quality`。按目标分支分开，防止同一个提交在不同 PR 中复用普通审核作为发布确认。保护要求 PR、检查通过、基线最新、讨论解决，禁止强推和删除。独立更新限制规则仅允许仓库管理员通过 PR 更新 main / integration；当前个人仓库的管理员为所有者。
+integration 必需检查为 `policy/integration/route`、`policy/integration/review`、`quality`；main 对应 `policy/main/route`、`policy/main/review`、`quality`。按目标分支分开，防止同一个提交在不同 PR 中复用普通审核作为发布确认。保护要求 PR、检查通过、基线最新、讨论解决，禁止强推和删除。独立更新限制规则仅允许仓库管理员通过 PR 更新 main / integration；当前个人仓库的管理员为所有者。上游分支创建规则对三个固定分支以外的分支生效，社区分支留在各自的 fork 中。
 
 为支持唯一维护者自审，原生 approving-review 数量为 0，实际审核由绑定 SHA 和目标分支的 policy 检查承担，不能免审。将来增加管理员或迁移组织时，先调整权限模型再授权。
 
@@ -33,9 +32,9 @@ integration 必需检查为 `policy/integration/route`、`policy/integration/rev
 
 ## 发布后同步与紧急修复
 
-main 使用 merge commit 保留来源关系。发布后通过 main → integration 基线同步 PR 更新祖先关系，仍在 integration 审查；随后 dev 合并 integration。不要删除固定分支。
+main 使用 merge commit 保留来源关系。发布后把 main 的发布基线合入本地 dev，再通过 dev → integration PR 同步祖先关系。保留三个固定分支。
 
-紧急修复从 main 建任务分支，经 integration 验收，再由所有者合并发布 PR 并发布补丁 Release。不得直接推送 main 或覆盖旧标签。
+紧急修复先在 dev 确认发布基线和修复范围，再经 integration 验收，由所有者合并发布 PR 并发布补丁 Release。保留既有版本标签。
 
 ## 首次启用
 

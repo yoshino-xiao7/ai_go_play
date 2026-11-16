@@ -2,7 +2,7 @@
 
 Read README.md, CONTRIBUTING.md and docs/GOVERNANCE.md before making changes.
 
-- Work on dev or a task branch. Agent-created branches default to codex/*.
+- Keep exactly three upstream branches: main, dev, and integration. Maintainers and agents commit to dev and submit dev → integration PRs. Community contributors work in their own forks and target integration.
 - Preserve user changes, private assets, production data and active jobs.
 - All development/community PRs target integration. Never push directly to main or integration.
 - main only accepts owner-opened integration → main release PRs from this repository.
