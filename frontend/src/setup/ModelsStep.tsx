@@ -18,7 +18,7 @@ export default function ModelsStep({ view }: { view: OnboardingView }) {
     modelPath,
     setModelPath,
     files,
-    freeBytes,
+    modelScan,
     setPicker,
     copyDone,
     setCopyDone,
@@ -27,11 +27,17 @@ export default function ModelsStep({ view }: { view: OnboardingView }) {
     act,
     save,
     job,
+    useExistingModels,
     togglePack,
     selectedFiles,
     bytes,
     iconFor,
   } = view;
+  const reusableRoots = modelScan?.reusable_roots || [];
+  const copyBytes = modelScan?.copy_bytes ?? 0;
+  const copyBlocked = !!modelScan?.import_disk_full;
+  const importError = state.job?.kind === "import" && state.job.status === "failed"
+    && (state.job.error_code === "setup_disk_full" || state.job.error?.startsWith("目标磁盘空间不足"));
   return (
     <>
       <div className="setup-share-banner">
@@ -189,9 +195,9 @@ export default function ModelsStep({ view }: { view: OnboardingView }) {
         >
           使用默认位置
         </button>
-        {freeBytes !== null && (
+        {modelScan && (
           <small className="setup-soft-note">
-            目标磁盘可用 {sizeText(freeBytes)} · 所选模型需要 {sizeText(bytes)}
+            目标磁盘可用 {sizeText(modelScan.free_bytes)} · 待复制 {sizeText(copyBytes)}
           </small>
         )}
       </div>
@@ -232,6 +238,33 @@ export default function ModelsStep({ view }: { view: OnboardingView }) {
           </button>
         </div>
       ))}
+      {(copyBlocked || importError) && (
+        <p className="setup-soft-note setup-model-space-notice" role="status">
+          目标磁盘空间不足。{reusableRoots.length
+            ? "可直接使用下方的现有模型目录并校验。"
+            : "可选择一个已合并的 models 目录直接使用并校验，也可以更换存放位置或减少所选模型。"}
+        </p>
+      )}
+      {reusableRoots.map((root) => (
+        <div className="setup-model-reuse" key={root.path}>
+          <div>
+            <strong>可直接使用的模型目录</strong>
+            <span>{root.path}</span>
+            <small>
+              找到 {root.matched} / {root.total} 个大小匹配的文件
+              {root.matched < root.total ? "，缺失项将在校验后列出。" : "，下一步核对文件内容。"}
+            </small>
+          </div>
+          <button
+            className="btn setup-secondary"
+            disabled={busy}
+            onClick={() => void useExistingModels(root.path)}
+          >
+            <FolderOpen size={16} />
+            直接使用并校验
+          </button>
+        </div>
+      ))}
       <div className="setup-import-summary">
         <span>
           <strong>
@@ -239,13 +272,13 @@ export default function ModelsStep({ view }: { view: OnboardingView }) {
           </strong>{" "}
           已在目标位置 <span className="setup-summary-separator" />{" "}
           <strong>
-            {files.filter((f) => f.source && f.status !== "unverified").length}
+            {files.filter((f) => f.source && f.status === "missing").length}
           </strong>{" "}
           可导入
         </span>
         <button
           className="btn setup-primary"
-          disabled={busy || !files.some((f) => f.source)}
+          disabled={busy || copyBlocked || !copyBytes}
           onClick={() => void job("import")}
         >
           <Download size={16} />

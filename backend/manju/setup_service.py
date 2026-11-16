@@ -11,7 +11,7 @@ import uuid
 import httpx
 from .setup_catalog import PROJECT, catalog, share_inventory, match_share
 from .setup_jobs import SetupJobs, atomic_json
-from .setup_models import local_path, model_target, inspect_files, import_files, verify_files
+from .setup_models import IMPORT_HEADROOM, local_path, model_target, inspect_files, import_files, reusable_model_roots, verify_files
 from .setup_install import install_comfy, install_nodes, install_setup_revision, run_installer
 from .store import DomainError, now
 
@@ -89,13 +89,20 @@ class SetupService:
         return [f for f in self.catalog['files'] if packs.intersection(f['packs'])]
 
     def model_scan(self):
-        sources = [Path(p) for p in self.state['import_sources']]
-        sources += [Path.home() / 'Downloads/ai-go-play', Path.home() / 'Downloads']
+        with self.lock:
+            selected = self.selected_files()
+            chosen_sources = [Path(p) for p in self.state['import_sources']]
+            root = Path(self.state['models_root'])
+        sources = [*chosen_sources, Path.home() / 'Downloads/ai-go-play', Path.home() / 'Downloads']
         installation = self.comfy.status().get('installation')
         if installation: sources.append(Path(installation['comfy_path']) / 'models')
-        root = Path(self.state['models_root'])
-        return {'files': inspect_files(self.selected_files(), root, sources), 'sources': [str(p) for p in sources if p.is_dir()],
-                'models_root': str(root), 'free_bytes': shutil.disk_usage(next(p for p in (root, *root.parents) if p.exists())).free}
+        files = inspect_files(selected, root, sources)
+        free = shutil.disk_usage(next(p for p in (root, *root.parents) if p.exists())).free
+        copy_bytes = sum(item['size'] for item in files if item['status'] == 'missing' and item['source'])
+        return {'files': files, 'sources': [str(p) for p in sources if p.is_dir()],
+                'models_root': str(root), 'free_bytes': free, 'copy_bytes': copy_bytes,
+                'import_disk_full': bool(copy_bytes and free < copy_bytes + IMPORT_HEADROOM),
+                'reusable_roots': reusable_model_roots(selected, chosen_sources)}
 
     def browse(self, path=None):
         if not path:
