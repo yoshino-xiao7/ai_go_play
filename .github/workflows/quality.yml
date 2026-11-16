@@ -14,7 +14,7 @@ jobs:
   quality:
     name: quality
     runs-on: windows-latest
-    timeout-minutes: 35
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -44,4 +44,13 @@ jobs:
       - name: Validate release candidate before merging main
         if: github.event_name == 'pull_request' && github.base_ref == 'main'
         run: python scripts/check_release.py --release --pull-request
+      - name: Build and cold-start the Windows release package
+        if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+        shell: pwsh
+        timeout-minutes: 15
+        run: |
+          $output = Join-Path $env:RUNNER_TEMP 'ai-go-play-release'
+          python scripts/package_release.py --output $output
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          ./scripts/check_windows_release.ps1 -PackageDir $output
       - run: python -m pytest -q

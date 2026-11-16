@@ -40,4 +40,4 @@ if __name__ == '__main__':
         if args.write:
             (ROOT / name).write_text(content, encoding='utf-8')
         print(('Updated ' if args.write else 'Would update ') + name)
-    print('Also prepare CHANGELOG.md and release/release-approval.json; this does not confirm or publish a release.')
+    print('Prepare the dated CHANGELOG.md section and disclose unverified coverage before release review.')
