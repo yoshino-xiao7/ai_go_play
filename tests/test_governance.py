@@ -45,13 +45,7 @@ def candidate(tmp_path):
     write(tmp_path, 'backend/manju/__init__.py', '__version__ = "1.2.3"\n')
     write(tmp_path, 'frontend/package.json', '{"version":"1.2.3"}')
     write(tmp_path, 'frontend/package-lock.json', '{"version":"1.2.3","packages":{"":{"version":"1.2.3"}}}')
-    write(tmp_path, 'CHANGELOG.md', '## [1.2.3] - 2026-11-14\nTest release only.\n')
-    write(tmp_path, 'release/evidence.md', 'Fixture acceptance evidence.\n')
-    write(tmp_path, 'release/release-approval.json', json.dumps({
-        'version': '1.2.3', 'ready': True,
-        'checks': {key: True for key in ('fresh_install', 'core_regression', 'generation_scope', 'license_disclosures', 'backup_and_rollback')},
-        'evidence': ['release/evidence.md'],
-    }))
+    write(tmp_path, 'CHANGELOG.md', '## [1.2.3] - 2026-11-14\n### 验收范围\n- 未验证：实体电脑和 GPU。\n')
     git(tmp_path, 'init', '--initial-branch=dev')
     git(tmp_path, 'config', 'user.email', 'test@example.invalid')
     git(tmp_path, 'config', 'user.name', 'Governance test')
@@ -69,45 +63,22 @@ def test_release_rejects_inconsistent_or_unconfirmed_version(candidate):
         release.validate(candidate)
 
 
-@pytest.mark.parametrize('change', [
-    {'ready': False}, {'ready': 'false'}, {'version': '1.2.2'},
-    {'checks': {}}, {'evidence': []}, {'evidence': 'passed'},
-    {'evidence': ['missing.md']}, {'evidence': ['../outside.md']},
+@pytest.mark.parametrize('notes', [
+    '### 验收范围\n- 未验证：\n',
+    '### 验收范围\n- 未验证：  \n### 升级\n下一行有内容\n',
+    '### 验收范围\n- Windows CI\n### 安装\n- 未验证：实体电脑和 GPU。\n',
+    '### 安装\n- 未验证：实体电脑和 GPU。\n',
+    '测试发布。\n## [1.2.2] - 2026-11-13\n### 验收范围\n- 未验证：实体电脑和 GPU。\n',
 ])
-def test_release_requires_real_readiness_and_evidence(candidate, change):
-    path = candidate / 'release/release-approval.json'
-    approval = json.loads(path.read_text(encoding='utf-8'))
-    approval.update(change)
-    path.write_text(json.dumps(approval), encoding='utf-8')
-    with pytest.raises(ValueError):
+def test_release_requires_unverified_scope_in_current_version(candidate, notes):
+    write(candidate, 'CHANGELOG.md', '## [1.2.3] - 2026-11-14\n' + notes)
+    with pytest.raises(ValueError, match='disclose unverified coverage'):
         release.validate(candidate, release=True)
 
 
 def test_release_requires_dated_notes(candidate):
     write(candidate, 'CHANGELOG.md', '## [Unreleased]\n')
     with pytest.raises(ValueError, match='dated section'):
-        release.validate(candidate, release=True)
-
-
-@pytest.mark.parametrize('kind', ['absolute', 'private', 'untracked', 'staged'])
-def test_release_evidence_must_be_public_and_committed(candidate, kind):
-    evidence = 'release/new-evidence.md'
-    if kind == 'absolute':
-        evidence = str(candidate / 'release/evidence.md')
-    elif kind == 'private':
-        evidence = '.qa/local-log.txt'
-        write(candidate, evidence, 'Private evidence must never satisfy release readiness.\n')
-        git(candidate, 'add', evidence)
-        git(candidate, 'commit', '-m', 'private fixture')
-    else:
-        write(candidate, evidence, 'Not in the candidate commit.\n')
-        if kind == 'staged':
-            git(candidate, 'add', evidence)
-    path = candidate / 'release/release-approval.json'
-    approval = json.loads(path.read_text(encoding='utf-8'))
-    approval['evidence'] = [evidence]
-    write(candidate, 'release/release-approval.json', json.dumps(approval))
-    with pytest.raises(ValueError, match='Evidence must'):
         release.validate(candidate, release=True)
 
 
@@ -123,13 +94,13 @@ def test_push_allows_development():
         push.blocked_updates(['invalid input'])
 
 
-def test_version_preparation_does_not_approve_release(candidate):
+def test_version_preparation_still_requires_release_notes(candidate):
     changes = versions.prepare(candidate, '2.0.0')
     assert (candidate / 'VERSION').read_text().strip() == '1.2.3'
     for name, contents in changes.items():
         write(candidate, name, contents)
     assert release.validate(candidate) == '2.0.0'
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='dated section'):
         release.validate(candidate, release=True)
 
 
@@ -183,7 +154,7 @@ def test_package_rejects_accidentally_committed_private_data(repository, name):
 
 
 def test_documentation_check_catches_missing_and_escaping_links(repository):
-    write(repository, 'README.md', '[valid](release/evidence.md)\n[missing](absent.md)\n[escape](../outside.md)\n[web](https://example.invalid)\n<img src="missing.svg">\n```\n[example](ignored.md)\n```\n')
+    write(repository, 'README.md', '[valid](VERSION)\n[missing](absent.md)\n[escape](../outside.md)\n[web](https://example.invalid)\n<img src="missing.svg">\n```\n[example](ignored.md)\n```\n')
     _, errors = docs.check(repository)
     assert len(errors) == 3
     assert any('absent.md' in error for error in errors)

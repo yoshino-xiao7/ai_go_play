@@ -19,6 +19,8 @@
 
 发布 PR 必须来自本仓库 integration、目标为 main、作者为所有者，正文包含 `Release-Version: X.Y.Z`。所有者验收后评论 `/release-confirm <X.Y.Z> <40 位 integration head SHA>`。版本、分支、来源仓库或 head 变化后须重新确认。main 的合并按钮由所有者操作，Agent 不代替选择版本或合并 main。
 
+发布版本号须与 main 当前版本不同。发布验收依据 GitHub Windows `quality` 结果，未验证范围列入当前版本说明。详见[发布手册](RELEASING.md)。
+
 ## 拒绝和修正
 
 路由工作流只读取元数据。普通 PR 指向 main / dev 时先解释 integration 为唯一集成入口，再关闭 PR，并链接贡献指南。改为 integration 后可重新打开或重新提交。合法发布来源但缺少版本字段时，检查失败但保留 PR 打开，等待补齐。
