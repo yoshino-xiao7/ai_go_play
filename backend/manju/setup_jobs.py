@@ -110,7 +110,9 @@ class SetupJobs:
                     self.update(status='cancelled', message='已取消，已完成的文件会保留。', finished_at=now())
                 except Exception as error:
                     message = error.detail['message'] if isinstance(error, DomainError) else str(error)
-                    self.update(status='failed', error=message, message='未完成，请检查原因后重试。', finished_at=now())
+                    code = error.detail.get('code') if isinstance(error, DomainError) else None
+                    self.update(status='failed', error=message, error_code=code,
+                                message='未完成，请检查原因后重试。', finished_at=now())
             self.thread = threading.Thread(target=execute, name='manju-setup-' + kind, daemon=True)
             self.thread.start()
             return self.snapshot()
