@@ -6,6 +6,7 @@ export type Job = {
   progress: number;
   message: string;
   error?: string;
+  error_code?: string | null;
   log_tail?: string;
   result?: { conflicts?: string[]; unavailable?: string[] };
   completed_bytes?: number;
@@ -18,6 +19,13 @@ export type ModelFile = {
   status: string;
   source?: string | null;
   download_path?: string;
+};
+export type ModelScan = {
+  files: ModelFile[];
+  free_bytes: number;
+  copy_bytes: number;
+  import_disk_full: boolean;
+  reusable_roots: { path: string; matched: number; total: number }[];
 };
 export type SetupState = {
   step: Step;

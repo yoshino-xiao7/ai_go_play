@@ -34,9 +34,18 @@ try {
                 $type = 'text/html; charset=utf-8'
                 $body = [IO.File]::ReadAllText($PagePath).Replace('__RETRY_TOKEN__', $Token)
             } elseif ($parts[0] -eq 'GET' -and $parts[1] -eq '/status') {
-                try { $body = [IO.File]::ReadAllText((Join-Path $StateDir 'status.json')) } catch { $body = '{"phase":"正在准备启动","status":"running","progress":0}' }
-            } elseif ($parts[0] -eq 'POST' -and $parts[1] -eq "/retry/$Token") {
-                [IO.File]::WriteAllText((Join-Path $StateDir 'retry.request'), 'retry')
+                try {
+                    $statusFile = [IO.File]::Open((Join-Path $StateDir 'status.json'), [IO.FileMode]::Open, [IO.FileAccess]::Read, ([IO.FileShare]::ReadWrite -bor [IO.FileShare]::Delete))
+                    try {
+                        $statusReader = New-Object IO.StreamReader($statusFile, [Text.Encoding]::UTF8)
+                        try { $body = $statusReader.ReadToEnd() } finally { $statusReader.Dispose() }
+                    } finally { $statusFile.Dispose() }
+                } catch { $body = '{"phase":"正在准备启动","status":"running","progress":0}' }
+            } elseif ($parts[0] -eq 'POST' -and $parts[1] -match ('^/retry/' + [regex]::Escape($Token) + '(?:/(auto|china|overseas))?$')) {
+                $retryPath = Join-Path $StateDir 'retry.request'
+                $pending = "$retryPath.$([guid]::NewGuid().ToString('N')).tmp"
+                [IO.File]::WriteAllText($pending, $Matches[1])
+                Move-Item -LiteralPath $pending -Destination $retryPath -Force
             } else { $status = '404 Not Found' }
             $bytes = [Text.Encoding]::UTF8.GetBytes($body)
             $head = [Text.Encoding]::ASCII.GetBytes("HTTP/1.1 $status`r`nContent-Type: $type`r`nContent-Length: $($bytes.Length)`r`nCache-Control: no-store`r`nX-Content-Type-Options: nosniff`r`nConnection: close`r`n`r`n")

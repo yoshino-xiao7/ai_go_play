@@ -27,6 +27,8 @@ Invoke-RestMethod http://127.0.0.1:8780/api/health
 
 错误通常含 detail.code、detail.message 及相关字段；调用方按状态和错误码处理，不仅匹配中文文案。上传使用 multipart，素材路径由服务管理。CLI 的非零退出码不能忽略。
 
+`GET /api/setup/models` 返回 `copy_bytes`、`import_disk_full` 和 `reusable_roots`。`reusable_roots` 中的 `matched` 表示大小与清单一致的文件数。客户端可使用 `PATCH /api/setup` 设置该目录为 `models_root`，再提交 `verify` 任务以核对完整 SHA-256。
+
 接口路径、字段、默认值、错误码或状态机变化须说明迁移方式并测试。旧后端与新前端并存要提供明确兼容或更新提示；退出先保存，有任务时拒绝，不用强杀替代。
 
 ## GitHub 更新检查

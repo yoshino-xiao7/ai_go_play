@@ -4,6 +4,38 @@
 </style><main class="shell"><div class="brand"><span class="mark">↗</span>ai-go-play</div><small>LOCAL CREATIVE WORKSPACE</small><h1>正在准备你的创作空间</h1><p>第一次启动会自动准备运行环境。保持此页面打开，完成后将进入安装向导。</p><div class="track" role="progressbar" aria-label="环境准备进度"><span id="bar"></span></div><div class="meta"><span id="phase" aria-live="polite">正在检查本机环境</span><span id="percent">0%</span></div><pre id="error" hidden></pre><button id="retry" hidden>重试准备环境</button><footer>运行环境保存在项目目录 · 无需手动执行命令</footer></main>
 <script>
 const phase=document.getElementById('phase'),error=document.getElementById('error'),retry=document.getElementById('retry');
-retry.onclick=async()=>{try{const r=await fetch('/retry/__RETRY_TOKEN__',{method:'POST'});if(!r.ok)throw Error('重试请求失败');retry.hidden=true;phase.textContent='正在重试'}catch(e){error.textContent=String(e);error.hidden=false}};
-async function poll(){try{const r=await fetch('/status',{cache:'no-store'});if(!r.ok)throw Error();const s=await r.json();phase.textContent=s.phase||'正在准备';const p=Math.round((s.progress||0)*100);document.getElementById('bar').style.width=p+'%';document.getElementById('percent').textContent=p+'%';error.hidden=!s.error;error.textContent=s.error||'';retry.hidden=s.status!=='failed';if(s.status==='ready'&&s.url){location.replace(s.url);return}}catch{phase.textContent='正在连接本机启动服务…'}setTimeout(poll,800)}poll();
+const source=document.createElement('select');
+source.setAttribute('aria-label','重试下载源');
+source.hidden=true;
+source.style.cssText='margin:24px 12px 0 0;padding:12px;background:#242022;color:inherit;border:1px solid #54454d;border-radius:8px;font:inherit';
+for(const [value,label] of [['auto','自动选择下载源'],['china','优先国内源'],['overseas','优先海外源']])source.add(new Option(label,value));
+retry.before(source);
+const track=document.querySelector('.track'),bar=document.getElementById('bar'),percent=document.getElementById('percent');
+const detail=document.createElement('p');
+detail.hidden=true;
+detail.style.fontSize='13px';
+error.before(detail);
+retry.onclick=async()=>{try{const r=await fetch('/retry/__RETRY_TOKEN__/'+source.value,{method:'POST'});if(!r.ok)throw Error('重试请求失败');retry.hidden=true;source.hidden=true;phase.textContent='正在重试'}catch(e){error.textContent=String(e);error.hidden=false}};
+async function poll(){
+    try {
+        const r=await fetch('/status',{cache:'no-store'});
+        if(!r.ok)throw Error();
+        const s=await r.json();
+        const p=Math.round((s.progress||0)*100);
+        phase.textContent=s.phase||'正在准备';
+        bar.style.width=p+'%';
+        percent.textContent=s.indeterminate?'':p+'%';
+        if(s.indeterminate)track.removeAttribute('aria-valuenow');
+        else track.setAttribute('aria-valuenow',String(p));
+        detail.hidden=!s.detail;
+        detail.textContent=s.detail||'';
+        error.hidden=!s.error;
+        error.textContent=s.error||'';
+        retry.hidden=s.status!=='failed';
+        source.hidden=retry.hidden;
+        if(s.status==='ready'&&s.url){location.replace(s.url);return}
+    }catch{phase.textContent='正在连接本机启动服务…'}
+    setTimeout(poll,800);
+}
+poll();
 </script></html>
