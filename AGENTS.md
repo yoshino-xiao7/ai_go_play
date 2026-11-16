@@ -12,6 +12,6 @@ Read README.md, CONTRIBUTING.md and docs/GOVERNANCE.md before making changes.
 - Keep docs and tests consistent. Do not claim unrun checks passed or prepared rules are enforced.
 - Keep credentials, signed URLs, databases, weights, .qa and .manju out of Git.
 - Preserve upstream license originals. Identity, functionality and redistribution rights are distinct.
-- Follow docs/RELEASING.md and release/release-approval.json; never change pending evidence to approved merely to pass a gate.
+- Follow docs/RELEASING.md. Release acceptance runs in GitHub Windows CI. Disclose unverified coverage in the versioned CHANGELOG.md section.
 
 Validate relevant pytest tests, frontend builds for UI, node --test tests/governance.test.cjs for governance, python scripts/check_docs.py for docs, and python scripts/check_release.py for version metadata.

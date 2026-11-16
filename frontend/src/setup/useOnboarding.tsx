@@ -6,7 +6,7 @@ import type {
   Catalog,
   ComfyState,
   Installation,
-  ModelFile,
+  ModelScan,
   Readiness,
   SetupState,
   Step,
@@ -35,8 +35,7 @@ export default function useOnboarding(
     [manualPath, setManualPath] = useState(""),
     [port, setPort] = useState(8188);
   const [modelPath, setModelPath] = useState(initial.models_root),
-    [files, setFiles] = useState<ModelFile[]>([]),
-    [freeBytes, setFreeBytes] = useState<number | null>(null),
+    [modelScan, setModelScan] = useState<ModelScan | null>(null),
     [readiness, setReadiness] = useState<Readiness | null>(null);
   const [picker, setPicker] = useState<
       "comfy" | "install" | "models" | "source" | null
@@ -60,6 +59,7 @@ export default function useOnboarding(
   const step = state.step,
     index = steps.findIndex((s) => s.id === step),
     busy = acting || state.busy;
+  const files = modelScan?.files || [];
   const refresh = useCallback(async () => {
     setState(await api<SetupState>("/api/setup"));
   }, []);
@@ -67,11 +67,7 @@ export default function useOnboarding(
     setComfy(await api<ComfyState>("/api/comfy"));
   }, []);
   const scanModels = useCallback(async () => {
-    const r = await api<{ files: ModelFile[]; free_bytes: number }>(
-      "/api/setup/models",
-    );
-    setFiles(r.files);
-    setFreeBytes(r.free_bytes);
+    setModelScan(await api<ModelScan>("/api/setup/models"));
   }, []);
   const checkReady = useCallback(async () => {
     setReadiness(await api<Readiness>("/api/setup/readiness"));
@@ -103,13 +99,22 @@ export default function useOnboarding(
       mainRef.current?.scrollTo({ top: 0 });
     });
   }
-  async function job(kind: string, extra: Record<string, unknown> = {}) {
-    await act(async () => {
-      await api("/api/setup/jobs", {
-        method: "POST",
-        body: JSON.stringify({ kind, ...extra }),
-      });
-      await refresh();
+  async function startJob(kind: string, extra: Record<string, unknown> = {}) {
+    await api("/api/setup/jobs", {
+      method: "POST",
+      body: JSON.stringify({ kind, ...extra }),
+    });
+    await refresh();
+  }
+  function job(kind: string, extra: Record<string, unknown> = {}) {
+    return act(() => startJob(kind, extra));
+  }
+  function useExistingModels(path: string) {
+    return act(async () => {
+      const next = await save({ models_root: path, step: "verify" });
+      setModelPath(next.models_root);
+      mainRef.current?.scrollTo({ top: 0 });
+      await startJob("verify");
     });
   }
   async function scanComfy(path?: string) {
@@ -361,7 +366,7 @@ export default function useOnboarding(
     modelPath,
     setModelPath,
     files,
-    freeBytes,
+    modelScan,
     readiness,
     picker,
     setPicker,
@@ -393,6 +398,7 @@ export default function useOnboarding(
     save,
     go,
     job,
+    useExistingModels,
     scanComfy,
     selectComfy,
     chooseDirectory,

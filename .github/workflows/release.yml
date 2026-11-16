@@ -11,7 +11,7 @@ on:
         required: true
         type: string
       confirm:
-        description: 'I am the release merger and confirm this version and the acceptance evidence'
+        description: 'I am the release merger and confirm the version, Windows CI result and disclosed coverage'
         required: true
         default: false
         type: boolean

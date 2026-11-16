@@ -9,6 +9,7 @@ from check_release import ROOT, validate
 
 REQUIRED = ('start.cmd', 'start.ps1', 'scripts/bootstrap.ps1', 'scripts/bootstrap_core.py',
             'backend/manju/setup_api.py', 'backend/manju/system_api.py',
+            'LICENSE', 'release/NOTICE.txt', 'release/MODEL-LICENSES.md',
             'release/models.json', 'release/model-checksums.sha256',
             '首次启动先看我.md', '首次启动先看我.txt')
 FORBIDDEN_PARTS = {'.qa', '.manju', '.venv', 'node_modules', '__pycache__'}

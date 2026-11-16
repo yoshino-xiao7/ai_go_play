@@ -453,7 +453,15 @@ def isolated_launcher(tmp_path):
     # exercised separately with a source-only checkout and pinned downloads.
     scripts = isolated / 'scripts'
     scripts.mkdir()
-    (scripts / 'bootstrap.ps1').write_text("param([string]$Workspace, [switch]$NoBrowser)\nNew-Item -ItemType Directory -Force -Path (Join-Path $Workspace '.manju/bootstrap') | Out-Null\n", encoding='utf-8')
+    (scripts / 'bootstrap.ps1').write_text(
+        "param([string]$Workspace, [switch]$NoBrowser)\n"
+        "$state = Join-Path $Workspace '.manju'\n"
+        "New-Item -ItemType Directory -Force -Path (Join-Path $state 'bootstrap') | Out-Null\n"
+        "$paths = @{ ffmpeg = (Get-Command ffmpeg -CommandType Application).Source; "
+        "ffprobe = (Get-Command ffprobe -CommandType Application).Source } | ConvertTo-Json\n"
+        "[IO.File]::WriteAllText((Join-Path $state 'local-ai-paths.json'), $paths)\n",
+        encoding='utf-8',
+    )
     environment = isolated / ".venv"
     venv.EnvBuilder(with_pip=False).create(environment)
     packages = environment / "Lib" / "site-packages"
