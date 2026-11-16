@@ -13,6 +13,7 @@ import {
   ArrowDownToLine,
   ArrowRight,
   AudioLines,
+  BookOpen,
   Check,
   CheckCircle2,
   Clapperboard,
@@ -542,6 +543,8 @@ export default function App() {
               onAssetsChange={changed}
               onOpenComfy={openComfy}
               onOpenTasks={() => setTasksOpen(true)}
+              guideEnabled={route === `/canvas/${project.id}/guide`}
+              onCloseGuide={() => navigate(`/canvas/${project.id}`)}
             />
             </Suspense>
           ) : (
@@ -727,6 +730,7 @@ function Projects({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [editing, setEditing] = useState<Project | "new" | null>(null);
+  const [creatingGuide, setCreatingGuide] = useState(false);
   const [name, setName] = useState("");
   const [aspect, setAspect] = useState("free");
   const [busy, setBusy] = useState(false);
@@ -758,9 +762,10 @@ function Projects({
       active = false;
     };
   }, [refresh]);
-  const startEdit = (project: Project | "new") => {
+  const startEdit = (project: Project | "new", guide = false) => {
+    setCreatingGuide(guide);
     setEditing(project);
-    setName(project === "new" ? "" : project.name);
+    setName(project === "new" ? (guide ? "我的第一个 AI 镜头" : "") : project.name);
     setAspect(project === "new" ? "free" : project.aspect_ratio);
     setMenu(null);
   };
@@ -778,7 +783,7 @@ function Projects({
       );
       setEditing(null);
       onChanged();
-      if (editing === "new") navigate(`/canvas/${value.id}`);
+      if (editing === "new") navigate(`/canvas/${value.id}${creatingGuide ? "/guide" : ""}`);
     } catch (e) {
       notify((e as Error).message, true);
     } finally {
@@ -882,6 +887,10 @@ function Projects({
           <p>创建画布，整理素材、参考与分镜。</p>
         </div>
         <div className="button-row">
+          <button className="button secondary btn" onClick={() => startEdit("new", true)}>
+            <BookOpen size={17} />
+            新手引导
+          </button>
           <button
             className="button secondary btn"
             onClick={() => {
@@ -1073,11 +1082,12 @@ function Projects({
       )}
       {editing && (
         <Modal
-          title={editing === "new" ? "新建画布" : "项目设置"}
+          title={creatingGuide ? "创建练习画布" : editing === "new" ? "新建画布" : "项目设置"}
           onClose={() => setEditing(null)}
         >
           <form onSubmit={save}>
             <div className="modal-body form-stack">
+              {creatingGuide && <p>做一段简单的视频。你可以先生成一张图，也可以用本机图片。不想继续时，随时跳过引导。</p>}
               <label>
                 项目名称
                 <input
@@ -1107,13 +1117,13 @@ function Projects({
                 className="button secondary"
                 onClick={() => setEditing(null)}
               >
-                取消
+                {creatingGuide ? "暂不开始" : "取消"}
               </button>
               <button
                 className="button primary"
                 disabled={busy || !name.trim()}
               >
-                {busy ? "保存中…" : editing === "new" ? "创建画布" : "保存"}
+                {busy ? "保存中…" : creatingGuide ? "创建画布并开始" : editing === "new" ? "创建画布" : "保存"}
               </button>
             </footer>
           </form>
