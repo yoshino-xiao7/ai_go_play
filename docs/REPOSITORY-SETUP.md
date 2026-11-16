@@ -2,7 +2,7 @@
 
 负责人：@yoshino-xiao7。目标仓库：yoshino-xiao7/ai_go_play。本文区分规范、已准备的配置和实际启用状态，不能以文件存在代替服务器保护。
 
-## 初次接入记录（2026-11-14）
+## 当前状态（2026-11-14）
 
 | 项目 | 状态 |
 | --- | --- |
@@ -13,7 +13,7 @@
 | GitHub 规则集 | 尚未启用；读取接口返回 403，提示私有仓库需升级 GitHub Pro 或改为公开 |
 | GitHub Releases | 本次未创建或发布；当前 VERSION 仅为一致性元数据 |
 
-上表记录初次接入时的状态。上游三分支创建限制已启用，可在 GitHub 核对规则的实时状态。[上游分支规则](https://github.com/yoshino-xiao7/ai_go_play/rules/27385877)
+继续保持仓库私有。启用保护所需的套餐变更由所有者决定；不得为了启用保护擅自公开仓库。[GitHub 官方规则集说明](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/about-rulesets)列明免费公开仓库和付费私有仓库的适用范围。
 
 ## 配置来源
 
@@ -25,7 +25,6 @@
 | integration-quality.json | integration 同样必须经 PR 和检查；不接受直接推送 |
 | owner-merges.json | 仅管理员可通过 PR 更新 main / integration；不豁免以上质量规则 |
 | release-tags.json | v* 标签建立后不可更新或删除 |
-| core-branch-names.json | 上游只允许创建 `main`、`dev`、`integration` |
 
 main 必需检查为 `policy/main/route`、`policy/main/review`、`quality`；integration 使用 `policy/integration/route`、`policy/integration/review`、`quality`。采用 merge commit，不使用 squash / rebase，不自动删除固定分支。
 
@@ -37,7 +36,7 @@ main 必需检查为 `policy/main/route`、`policy/main/review`、`quality`；in
 2. 工作流尚未进入默认 main 时，人工执行同一审查流程，并记录完整 head SHA 和检查结果。所有者审查后合并 integration；不能把缺失的自动检查记为通过。
 3. 达到真实发布条件后，由所有者选定版本、补齐验收记录，创建 integration → main 发布 PR。所有者确认版本和 SHA 后亲自合并。**不直接推送 main 来安装工作流。**
 4. 工作流进入默认分支后，确认 Actions 已启用。PR 元数据检查只执行默认分支代码，绝不运行 PR head 的脚本；普通质量检查只使用只读令牌，不配置生产密钥或 GPU。
-5. 导入并启用规则文件，验证实际生效状态。首次安装前开启必需但尚不存在的检查会阻塞首个 PR，应按以上顺序完成引导。
+5. 如当前账户支持私有仓库规则集，导入并启用四份规则，验证实际生效状态。首次安装前开启必需但尚不存在的检查会阻塞首个 PR，应按以上顺序完成引导。
 6. 创建 `release` environment，将允许部署分支限制为 main。若启用环境人工审批，唯一维护者场景不要同时禁止本人审批而造成死锁；工作流仍强制所有者、真实合并者和版本确认。
 7. 待 main 的 quality 成功，按[发布手册](RELEASING.md)手动运行 Release 工作流。接入流程本身不构成发布授权。
 

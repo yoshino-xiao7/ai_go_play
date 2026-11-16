@@ -33,8 +33,8 @@ if __name__ == '__main__':
     parser.add_argument('--write', action='store_true', help='Without this flag only list planned changes')
     args = parser.parse_args()
     branch = subprocess.check_output(['git', 'branch', '--show-current'], cwd=ROOT, text=True).strip()
-    if branch != 'dev':
-        parser.exit(1, 'Prepare versions on dev, then submit a dev-to-integration PR.\n')
+    if branch in ('main', 'integration', ''):
+        parser.exit(1, 'Prepare versions on dev or a development branch, then submit to integration.\n')
     changes = prepare(ROOT, args.version)
     for name, content in changes.items():
         if args.write:

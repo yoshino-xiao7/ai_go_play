@@ -36,7 +36,7 @@ Vite 默认代理 8765，显式设置 MANJU_DEV_API 可避免误操作正式服�
 
 ## 日常工作
 
-维护者在本地 dev 更新 integration 基线、实现修改并提交，推送 dev 后向 integration 提 PR。社区在自己的 fork 实现修改，向上游 integration 提 PR。执行相关测试并同步文档。UI 修改验证实际交互；任务修改验证失败、取消、重试和重启；存储修改验证迁移、兼容与回退。详见 [测试手册](TESTING.md)。
+更新 integration 基线，在 dev / 任务分支实现修改，执行 [相关测试](TESTING.md)，同步文档，再提交 integration PR。UI 修改验证实际交互；任务修改验证失败、取消、重试和重启；存储修改验证迁移、兼容与回退。
 
 frontend/dist、.qa、.manju、虚拟环境、真实模型、个人素材和令牌不进入 Git。创作可使用 dev，但实验修改应使用独立数据目录。
 

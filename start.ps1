@@ -99,16 +99,12 @@ except ImportError:
     $anchorPath = Join-Path $workspace '.manju\launcher.json'
     $launcher = @'
 import json
-import os
 from pathlib import Path
 import subprocess
 import sys
 
 settings = json.loads(sys.stdin.buffer.read())
 try:
-    media_paths = json.loads((Path(settings['cwd']) / '.manju/local-ai-paths.json').read_text(encoding='utf-8'))
-    child_env = dict(os.environ)
-    child_env.update(MANJU_FFMPEG=media_paths['ffmpeg'], MANJU_FFPROBE=media_paths['ffprobe'])
     config_file = None
     if settings['default_configuration']:
         anchor = Path(settings['anchor_path'])
@@ -130,7 +126,6 @@ try:
         process = subprocess.Popen(
             settings['arguments'],
             cwd=settings['cwd'],
-            env=child_env,
             stdin=subprocess.DEVNULL,
             stdout=output,
             stderr=errors,

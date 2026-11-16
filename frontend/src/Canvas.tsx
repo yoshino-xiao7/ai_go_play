@@ -125,8 +125,6 @@ import SaveToCanvasDialog, { cloneCanvasSelection, mergeCanvasSelection } from "
 import DraftRecovery from "./DraftRecovery";
 import { listCanvasDrafts, readCanvasDraft, removeCanvasDraft, writeCanvasDraft } from "./canvasDraftStore";
 import CanvasProjectMenu from "./CanvasProjectMenu";
-import CanvasBeginnerGuide, { beginnerImagePrompt, beginnerVideoPrompt } from "./CanvasBeginnerGuide";
-import type { BeginnerGuideStep } from "./CanvasBeginnerGuide";
 import SharePanel from "./SharePanel";
 import type { RecoverableCanvas } from "./DraftRecovery";
 import ProductionPanel from "./ProductionPanel";
@@ -223,8 +221,6 @@ type CanvasProps = {
   onAssetsChange: () => void;
   onOpenComfy: () => void;
   onOpenTasks: () => void;
-  guideEnabled: boolean;
-  onCloseGuide: () => void;
 };
 type CanvasActions = {
   projectId: string;
@@ -825,8 +821,6 @@ function CanvasEditor({
   onAssetsChange,
   onOpenComfy,
   onOpenTasks,
-  guideEnabled,
-  onCloseGuide,
 }: CanvasProps) {
   const flow = useReactFlow<CanvasNode>();
   const [liveViewport, setLiveViewport] = useState<Viewport>(initialViewport);
@@ -844,25 +838,6 @@ function CanvasEditor({
   const [recoverableDraft, setRecoverableDraft] = useState<string | null>(null);
   const [nodes, setNodes] = useState<CanvasNode[]>([]);
   const [edges, setEdges] = useState<Edge[]>([]);
-  const guideStorageKey = `manju:beginner-guide:${project.id}`;
-  const [guideProgress, setGuideProgress] = useState<{ imageId?: string; videoId?: string }>(() => {
-    if (!guideEnabled) return {};
-    try {
-      const saved = JSON.parse(sessionStorage.getItem(guideStorageKey) || "{}");
-      return {
-        imageId: typeof saved?.imageId === "string" ? saved.imageId : undefined,
-        videoId: typeof saved?.videoId === "string" ? saved.videoId : undefined,
-      };
-    } catch {
-      return {};
-    }
-  });
-  useEffect(() => {
-    if (!guideEnabled) return;
-    try { sessionStorage.setItem(guideStorageKey, JSON.stringify(guideProgress)); } catch { /* The canvas still autosaves. */ }
-  }, [guideEnabled, guideProgress, guideStorageKey]);
-  const [guidePreparingVideo, setGuidePreparingVideo] = useState(false);
-  const guideFileInput = useRef<HTMLInputElement>(null);
   const [frameComparison, setFrameComparison] = useState<FrameComparisonLink>();
   const frameComparisonSources = useMemo<FrameComparisonSources | null>(() => {
     if (!frameComparison) return null;
@@ -1821,7 +1796,7 @@ function CanvasEditor({
 
   const importFiles = useCallback(
     async (files: File[], position = centerPosition()) => {
-      if (!files.length) return [];
+      if (!files.length) return;
       const projectId = project.id;
       setUploadProgress(0);
       const imported: CanvasNode[] = [];
@@ -1876,7 +1851,6 @@ function CanvasEditor({
         void reloadAssets();
         onAssetsChange();
       }
-      return imported;
     },
     [centerPosition, edit, onAssetsChange, project.id, reloadAssets],
   );
@@ -2001,7 +1975,7 @@ function CanvasEditor({
   );
 
   const addGeneration = useCallback(
-    (targetPosition?: { x: number; y: number }, prompt = "") => {
+    (targetPosition?: { x: number; y: number }) => {
       const bounds = stage.current?.getBoundingClientRect();
       const position =
         targetPosition ||
@@ -2011,23 +1985,21 @@ function CanvasEditor({
               y: bounds.top + 108,
             })
           : centerPosition());
-      const id = uid();
       edit([
         ...nodesRef.current.map((node) => ({ ...node, selected: false })),
         {
-          id,
+          id: uid(),
           type: "media",
           position,
           style: { width: 360, height: 240 },
           data: {
             title: "图片创作",
             kind: "image",
-            generation: { ...defaultGenerationDraft(), prompt },
+            generation: defaultGenerationDraft(),
           },
           selected: true,
         },
       ]);
-      return id;
     },
     [centerPosition, edit, flow],
   );
@@ -2045,7 +2017,7 @@ function CanvasEditor({
     setCameraPicker(null);
   };
 
-  const addVideoGeneration = async (targetPosition?: {x:number;y:number}, sourceId?:string, starterPrompt?: string) => {
+  const addVideoGeneration = async (targetPosition?: {x:number;y:number}, sourceId?:string) => {
     const source=nodesRef.current.find(node=>node.id===sourceId);
     const bounds=stage.current?.getBoundingClientRect();
     const position=targetPosition || (bounds?flow.screenToFlowPosition({x:bounds.left+bounds.width/2-190,y:bounds.top+110}):centerPosition());
@@ -2057,8 +2029,7 @@ function CanvasEditor({
     if(activeProjectRef.current!==projectId)return;
     if(source&&!nodesRef.current.some(node=>node.id===source.id))return;
     const draft=defaultVideoDraft(profile.defaults);
-    if(source?.data.asset_version_id || starterPrompt !== undefined)draft.video_mode="frames";
-    if (starterPrompt !== undefined) draft.prompt = starterPrompt;
+    if(source?.data.asset_version_id)draft.video_mode="frames";
     const character=source?.data.subject;
     if(character){
       draft.audio=true;
@@ -2069,7 +2040,6 @@ function CanvasEditor({
     const card:CanvasNode={id,type:"media",position,style:{width:380,height:240},data:{title:"视频创作",kind:"video",generation:draft},selected:true};
     const role = source?.type === cameraMotionRole ? cameraMotionRole : source?.data.asset_version_id && !character ? "reference" : null;
     edit([...nodesRef.current.map(node=>({...node,selected:false})),card],source && role ? [...edgesRef.current,{id:uid(),source:source.id,target:id,sourceHandle:"out",targetHandle:"in",type:"default",data:{role}}] : edgesRef.current);
-    return id;
   };
   useEffect(()=>{const handler=(event:Event)=>{void addVideoGeneration(undefined,(event as CustomEvent<{nodeId:string}>).detail.nodeId);};window.addEventListener("manju:create-native-video",handler);return()=>window.removeEventListener("manju:create-native-video",handler);});
 
@@ -3313,40 +3283,6 @@ function CanvasEditor({
     const point=absolutePosition(node,nodesRef.current),size=dimensions(node);
     void flow.setCenter(point.x+size.width/2,point.y+size.height/2,{zoom:Math.min(1,stageDimensions.width/(size.width+180),stageDimensions.height/(size.height+180)),duration:250});
   };
-  const guideImage = guideEnabled ? nodes.find(node => node.id === guideProgress.imageId) : undefined;
-  const guideVideo = guideEnabled ? nodes.find(node => node.id === guideProgress.videoId) : undefined;
-  const guideLink = guideVideo?.data.generation?.references.some(reference =>
-    reference.node_id === guideImage?.id && reference.source === "connection" && reference.role === "first_frame"
-  );
-  const guideStep: BeginnerGuideStep = !guideImage ? "image"
-    : !guideImage.data.asset_version_id ? "image-result"
-    : !guideVideo ? "video-node"
-    : guideVideo.data.asset_version_id ? "done"
-    : !guideLink ? "connect" : "video-result";
-  const guideConnectionNodes = guideEnabled && guideStep === "connect"
-    ? displayedNodes.map(node => {
-      const marker = node.id === guideImage?.id ? "canvas-guide-source"
-        : node.id === guideVideo?.id ? "canvas-guide-target" : "";
-      return marker ? { ...node, className: [node.className, marker].filter(Boolean).join(" ") } : node;
-    })
-    : displayedNodes;
-
-  const prepareGuideVideo = async () => {
-    if (!guideImage || guidePreparingVideo) return;
-    const start = absolutePosition(guideImage, nodesRef.current);
-    const { width } = dimensions(guideImage);
-    setGuidePreparingVideo(true);
-    try {
-      const id = await addVideoGeneration({ x: start.x + width + 130, y: start.y }, undefined, beginnerVideoPrompt);
-      if (!id) return;
-      setGuideProgress(current => current.imageId === guideImage.id ? { ...current, videoId: id } : current);
-      requestAnimationFrame(() => {
-        void flow.fitView({ nodes: [{ id: guideImage.id }, { id }], padding: .22, maxZoom: .92, duration: 240 });
-      });
-    } finally {
-      setGuidePreparingVideo(false);
-    }
-  };
   const renderFrame = async (frameId:string) => {
     setRenderingFrame(true);
     try {
@@ -4103,7 +4039,7 @@ function CanvasEditor({
                 onlyRenderVisibleElements
                 reconnectRadius={Math.max(12,14/zoom)}
                 elevateEdgesOnSelect
-                nodes={guideConnectionNodes}
+                nodes={displayedNodes}
                 edges={displayedEdges}
                 nodeTypes={nodeTypes}
                 edgeTypes={edgeTypes}
@@ -4213,51 +4149,7 @@ function CanvasEditor({
               </ReactFlow>
             </Actions.Provider>
           </MediaRevisions.Provider>
-          {guideEnabled && !loading && !loadError && (
-            <>
-              <CanvasBeginnerGuide
-                step={guideStep}
-                busy={uploadProgress !== null || guidePreparingVideo}
-                onImage={() => {
-                  setGuideProgress({ imageId: addGeneration(undefined, beginnerImagePrompt) });
-                }}
-                onImport={() => guideFileInput.current?.click()}
-                onVideo={() => void prepareGuideVideo()}
-                onConnect={() => {
-                  if (!guideImage || !guideVideo || guideLink) return;
-                  onConnect({ source: guideImage.id, target: guideVideo.id, sourceHandle: "out", targetHandle: "in" });
-                }}
-                onLocate={() => {
-                  const id = guideStep === "image-result" ? guideImage?.id : guideVideo?.id;
-                  if (id) locateNode(id);
-                }}
-                onSetup={() => window.open("#/setup", "_blank", "noopener")}
-                onClose={() => {
-                  try { sessionStorage.removeItem(guideStorageKey); } catch { /* Storage can be unavailable. */ }
-                  setGuideProgress({});
-                  onCloseGuide();
-                }}
-              />
-              <input hidden ref={guideFileInput} type="file" accept="image/*" aria-label="选择引导图片"
-                onChange={async event => {
-                  const file = event.currentTarget.files?.[0];
-                  event.currentTarget.value = "";
-                  if (!file) return;
-                  if (file.type && !file.type.startsWith("image/")) {
-                    setNotice("请选择一张图片作为视频首帧。");
-                    return;
-                  }
-                  const [image] = await importFiles([file]);
-                  if (image?.data.kind === "image") {
-                    setGuideProgress({ imageId: image.id });
-                  } else if (image) {
-                    setNotice("素材已添加到画布，请再选择一张图片作为视频首帧。");
-                  }
-                }}
-              />
-            </>
-          )}
-          {!guideEnabled && !loading && !workbenchNodes.length && !loadError && (
+          {!loading && !workbenchNodes.length && !loadError && (
             <div className="canvas-empty-state">
               <div className="canvas-empty-art">
                 <ImageIcon size={31} strokeWidth={1.2} />

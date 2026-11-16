@@ -8,13 +8,6 @@ test('dev and fork contributions use integration', () => {
   assert.equal(route(pr()).ok,true);
   assert.equal(route(pr('integration','feat/a','contributor/fork','contributor')).ok,true);
 });
-test('same-repository integration PRs must come from the owner’s dev', () => {
-  for (const p of [pr('integration','main'),pr('integration','feat/a'),pr('integration','dev',repo,'contributor')]) {
-    assert.equal(route(p).ok,false);
-  }
-  const missing = pr('integration','dev'); missing.head.repo = null;
-  assert.equal(route(missing).ok,false);
-});
 test('direct main/dev PRs are rejected including fork branches named integration', () => {
   for (const p of [pr('main','dev'),pr('main','feat/a'),pr('main','integration','other/fork'),pr('dev','feat/a'),pr('main','integration',repo,'contributor')]) assert.equal(route(p).ok,false);
 });
