@@ -20,17 +20,12 @@ Invoke-RestMethod http://127.0.0.1:8780/api/health
 | /api/workflows、/api/comfy | 工作流与本机引擎 |
 | /api/setup | 引导与模型准备 |
 | /api/share | 用户授权的账号和分享 |
-| /api/share/import、/api/share/export | 从亦可广场公开作品生成本地可编辑副本或 `.manju` 项目包 |
 | /api/system/shutdown | 退出预检与显式确认 |
 | /api/events | SSE 变化通知 |
 
 服务不应直接暴露公网，浏览器跨站请求受来源检查。写入前读取现有文档并遵循 revision / request ID；冲突后处理差异。HTTP 成功不一定表示后台生成完成，应跟踪任务状态。
 
 错误通常含 detail.code、detail.message 及相关字段；调用方按状态和错误码处理，不仅匹配中文文案。上传使用 multipart，素材路径由服务管理。CLI 的非零退出码不能忽略。
-
-`GET /api/setup/models` 返回 `copy_bytes`、`import_disk_full` 和 `reusable_roots`。`reusable_roots` 中的 `matched` 表示大小与清单一致的文件数。客户端可使用 `PATCH /api/setup` 设置该目录为 `models_root`，再提交 `verify` 任务以核对完整 SHA-256。
-
-亦可广场导入使用 `POST /api/share/import`，请求体为 `{"link":"亦可公开作品链接"}`，返回新建的本地项目及跳过的历史素材数 `omitted_history`。`GET /api/share/export?link=…` 返回含素材的 `.manju` 文件，适用于既有项目包导入接口。服务只读取所配置亦可站点的公开快照，并校验对象存储下载的内容哈希。只有封面而无可下载文件的历史视频会省略。缺少画布正在引用的素材时，导入失败且不会建立项目。
 
 接口路径、字段、默认值、错误码或状态机变化须说明迁移方式并测试。旧后端与新前端并存要提供明确兼容或更新提示；退出先保存，有任务时拒绝，不用强杀替代。
 

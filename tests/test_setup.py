@@ -57,43 +57,6 @@ def test_import_quark_layout_verified_without_moving_or_overwriting(tmp_path):
     assert (root / 'vae/demo.bin').read_bytes() == b'other-model'
 
 
-def test_scan_offers_only_merged_root_and_verify_reuses_it_on_a_full_disk(client, tmp_path, monkeypatch):
-    service = client.app.state.setup
-    fixture = model()
-    service.catalog['files'] = [fixture]
-    packed = tmp_path / 'packed/02-h3-image/models/vae/demo.bin'
-    merged = tmp_path / 'download/models/vae/demo.bin'
-    for file in (packed, merged):
-        file.parent.mkdir(parents=True)
-        file.write_bytes(b'valid-model')
-    destination = tmp_path / 'destination'
-    monkeypatch.setattr('manju.setup_models.shutil.disk_usage', lambda _: type('Disk', (), {'free': 0})())
-    assert client.patch('/api/setup', json={
-        'step': 'models', 'packs': fixture['packs'], 'models_root': str(destination),
-        'import_sources': [str(tmp_path / 'packed'), str(tmp_path / 'download')],
-    }).is_success
-
-    scan = client.get('/api/setup/models').json()
-    assert scan['import_disk_full'] is True
-    assert scan['copy_bytes'] == fixture['size']
-    assert scan['reusable_roots'] == [{'path': str(merged.parents[1]), 'matched': 1, 'total': 1}]
-
-    assert client.post('/api/setup/jobs', json={'kind': 'import'}).status_code == 202
-    service.jobs.thread.join(timeout=3)
-    failed = client.get('/api/setup').json()['job']
-    assert failed['error_code'] == 'setup_disk_full'
-    assert '直接使用并校验' in failed['error']
-
-    assert client.patch('/api/setup', json={'step': 'verify', 'models_root': str(merged.parents[1])}).is_success
-    assert client.post('/api/setup/jobs', json={'kind': 'verify'}).status_code == 202
-    service.jobs.thread.join(timeout=3)
-    result = client.get('/api/setup').json()
-    assert result['step'] == 'verify'
-    assert result['validation']['verified'] == 1
-    assert not (destination / fixture['path']).exists()
-    assert merged.read_bytes() == b'valid-model'
-
-
 def test_corrupt_source_is_not_committed(tmp_path):
     source = tmp_path / 'download/vae/demo.bin'
     source.parent.mkdir(parents=True)

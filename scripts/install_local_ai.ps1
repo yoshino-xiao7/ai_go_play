@@ -18,7 +18,6 @@ $OutputEncoding = New-Object Text.UTF8Encoding($false)
 # Use the built-in modules belonging to this PowerShell process.
 $env:PSModulePath = [IO.Path]::Combine($PSHOME, 'Modules')
 $projectRoot = Split-Path $PSScriptRoot -Parent
-. (Join-Path $PSScriptRoot 'bootstrap-sources.ps1')
 function Select-Directory([string]$Description) {
     Add-Type -AssemblyName System.Windows.Forms
     $dialog = New-Object System.Windows.Forms.FolderBrowserDialog
@@ -40,8 +39,19 @@ try {
     New-Item -ItemType Directory -Force -Path $bootstrapDir | Out-Null
     # Exclusive handle prevents concurrent installers. The file can remain after a crash.
     $installLock = [IO.File]::Open((Join-Path $RuntimeRoot '.install.lock'), 'OpenOrCreate', 'ReadWrite', 'None')
-    Initialize-DownloadSource
-    $uvExe = Get-PinnedUv $spec.uv $bootstrapDir { param($detail) Write-Host $detail }
+    $archive = Join-Path $bootstrapDir 'uv.zip'
+    if (!(Test-Path -LiteralPath $archive) -or (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant() -ne $spec.uv.sha256) {
+        Write-Host 'Downloading the pinned uv installer...'
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+        $partial = $archive + '.partial'
+        $webClient = New-Object Net.WebClient
+        try { $webClient.DownloadFile($spec.uv.url, $partial) } finally { $webClient.Dispose() }
+        if ((Get-FileHash -LiteralPath $partial -Algorithm SHA256).Hash.ToLowerInvariant() -ne $spec.uv.sha256) { throw 'uv SHA256 verification failed.' }
+        Move-Item -LiteralPath $partial -Destination $archive -Force
+    }
+    # Always extract from the verified archive, rather than trusting an old executable.
+    Expand-Archive -LiteralPath $archive -DestinationPath $bootstrapDir -Force
+    $uvExe = Join-Path $bootstrapDir 'uv.exe'
     $env:UV_PYTHON_INSTALL_DIR = Join-Path $RuntimeRoot 'python'
     $env:UV_CACHE_DIR = Join-Path $RuntimeRoot 'cache\uv'
     $env:UV_PYTHON_PREFERENCE = 'only-managed'
@@ -55,7 +65,10 @@ try {
     $env:TMP = $env:TEMP
     New-Item -ItemType Directory -Force -Path $env:TEMP,$env:UV_CACHE_DIR | Out-Null
     Remove-Item Env:PYTHONPATH,Env:PYTHONHOME -ErrorAction SilentlyContinue
-    $runtimePython = Install-ManagedPython $uvExe $spec.python_version { param($detail) Write-Host $detail }
+    & $uvExe python install $spec.python_version --no-bin --no-registry
+    if ($LASTEXITCODE -ne 0) { throw 'Managed Python installation failed.' }
+    $runtimePython = & $uvExe python find $spec.python_version
+    if ($LASTEXITCODE -ne 0) { throw 'Managed Python was not found.' }
     $installerArgs = @('-I', '-X', 'utf8', '-u', (Join-Path $PSScriptRoot 'install_local_ai.py'), '--comfy', $ComfyDir, '--models-root', $ModelsDir, '--runtime-root', $RuntimeRoot, '--uv', $uvExe, '--components', $Components, '--emotion', $Emotion)
     if ($CheckOnly) { $installerArgs += '--check-only' }
     if ($StageOnly) { $installerArgs += '--stage-only' }
