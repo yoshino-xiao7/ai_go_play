@@ -14,6 +14,75 @@ SLUG = "AbCdEfGhIjKlMnOpQrStUv"
 SHARE_URL = f"https://yk.test/s/{SLUG}"
 
 
+def test_public_share_round_trips_through_portable_project(client, png_bytes, monkeypatch):
+    content = png_bytes()
+    digest = hashlib.sha256(content).hexdigest()
+    media_url = f"https://test-bucket.oss-cn-shanghai.aliyuncs.com/canvas/media/preview/{digest}?signature=test"
+    project_id = project(client)["id"]
+    _canvas_with_prompt(client, project_id, upload(client, content, project_id=project_id)["current_version_id"])
+    canvas = client.get(f"/api/projects/{project_id}/canvas").json()
+    canvas["nodes"][0]["data"].update(
+        asset_version_id="public-image",
+        image_history=[{"version_id": "video-poster-only"}],
+    )
+    snapshot = {
+        "slug": SLUG, "visibility": "PUBLIC", "project": {"name": "公开作品", "aspectRatio": "16:9"},
+        "canvas": canvas, "media": {
+            "public-image": {"kind": "image", "urls": {"view": media_url}},
+            "video-poster-only": {"kind": "video", "urls": {"thumb": media_url}},
+        },
+    }
+    seen = []
+    served = content
+
+    def upstream(request):
+        seen.append(request)
+        assert "Authorization" not in request.headers
+        if request.url.host == "api.yk.test":
+            assert request.url.path == f"/canvas/public/{SLUG}"
+            return httpx.Response(200, json=snapshot)
+        assert str(request.url) == media_url
+        return httpx.Response(200, content=served)
+
+    monkeypatch.setenv("MANJU_SETU_WEB_BASE", "https://yk.test")
+    monkeypatch.setenv("MANJU_SETU_API_BASE", "https://api.yk.test")
+    client.app.state.share._transport = httpx.MockTransport(upstream)
+
+    exported = client.get("/api/share/export", params={"link": SHARE_URL})
+    assert exported.status_code == 200, exported.text
+    assert ".manju" in exported.headers["Content-Disposition"]
+    uploaded = client.post("/api/projects/import", files={"file": ("square.manju", exported.content)})
+    direct = client.post("/api/share/import", json={"link": SHARE_URL})
+    assert uploaded.status_code == direct.status_code == 201, direct.text
+    assert direct.json()["omitted_history"] == 1
+    assert uploaded.json()["id"] != direct.json()["id"]
+    for response in (uploaded, direct):
+        loaded = client.get(f"/api/projects/{response.json()['id']}/canvas").json()
+        node = loaded["nodes"][0]
+        assert node["data"]["generation"]["prompt"] == "雨夜的站台"
+        assert node["data"]["asset_version_id"] != "public-image"
+        assert node["data"]["image_history"] == []
+        assert loaded["edges"] == canvas["edges"]
+
+    before = len(client.get("/api/projects").json())
+    bad_link = client.post("/api/share/import", json={"link": SHARE_URL.replace("yk.test", "external.invalid")})
+    assert bad_link.status_code == 400
+    assert len(seen) == 4
+    snapshot["media"]["public-image"]["urls"]["view"] = "http://127.0.0.1:1234/image"
+    rejected = client.post("/api/share/import", json={"link": SHARE_URL})
+    assert rejected.status_code == 422
+    assert len(seen) == 5
+    snapshot["media"]["public-image"]["urls"]["view"] = media_url
+    served = b"truncated upstream response"
+    corrupt = client.post("/api/share/import", json={"link": SHARE_URL})
+    assert corrupt.status_code == 400
+    assert corrupt.json()["detail"]["code"] == "share_import_hash_mismatch"
+    assert not list((client.app.state.store.root / "temp").glob("export-*.manju"))
+    snapshot["visibility"] = "LINK"
+    assert client.post("/api/share/import", json={"link": SHARE_URL}).status_code == 403
+    assert len(client.get("/api/projects").json()) == before
+
+
 def _ready(store, version_id: str) -> None:
     with store.tx():
         store.conn.execute("UPDATE versions SET preview_status='ready' WHERE id=?", (version_id,))

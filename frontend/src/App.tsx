@@ -570,7 +570,7 @@ export default function App() {
         ) : route === "/trash" ? (
           <Trash refresh={refresh} onChanged={changed} notify={notify} />
         ) : (
-          <Projects refresh={refresh} onChanged={changed} notify={notify} />
+          <Projects refresh={refresh} onChanged={changed} notify={notify} shareSite={shareStatus?.siteBase} />
         )}
       </main>
       {comfyOpen && (
@@ -715,10 +715,12 @@ function Projects({
   refresh,
   onChanged,
   notify,
+  shareSite = "https://yk.yukiryou.icu",
 }: {
   refresh: number;
   onChanged: () => void;
   notify: Notify;
+  shareSite?: string;
 }) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [search, setSearch] = useState("");
@@ -728,6 +730,10 @@ function Projects({
   const [name, setName] = useState("");
   const [aspect, setAspect] = useState("free");
   const [busy, setBusy] = useState(false);
+  const [shareImportOpen, setShareImportOpen] = useState(false);
+  const [shareLink, setShareLink] = useState("");
+  const [shareImportError, setShareImportError] = useState("");
+  const [shareImporting, setShareImporting] = useState(false);
   const [menu, setMenu] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<Project | null>(null);
   const importRef = useRef<HTMLInputElement>(null);
@@ -809,6 +815,27 @@ function Projects({
       if (importRef.current) importRef.current.value = "";
     }
   };
+  const importSharedCanvas = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!shareLink.trim() || shareImporting) return;
+    setShareImporting(true);
+    setShareImportError("");
+    try {
+      const project = await api<Project & { omitted_history: number }>("/api/share/import", {
+        method: "POST",
+        body: JSON.stringify({ link: shareLink.trim() }),
+      });
+      setShareImportOpen(false);
+      setShareLink("");
+      onChanged();
+      notify(project.omitted_history ? `已导入本地，跳过 ${project.omitted_history} 个无法下载原件的历史素材` : "亦可画布已导入本地");
+      navigate(`/canvas/${project.id}`);
+    } catch (e) {
+      setShareImportError((e as Error).message);
+    } finally {
+      setShareImporting(false);
+    }
+  };
   const filtered = projects.filter((item) =>
     item.name.toLowerCase().includes(search.toLowerCase()),
   );
@@ -855,6 +882,16 @@ function Projects({
           <p>创建画布，整理素材、参考与分镜。</p>
         </div>
         <div className="button-row">
+          <button
+            className="button secondary btn"
+            onClick={() => {
+              setShareImportError("");
+              setShareImportOpen(true);
+            }}
+          >
+            <Cloud size={17} />
+            从亦可导入
+          </button>
           <button
             className="button secondary btn"
             disabled={busy}
@@ -995,6 +1032,44 @@ function Projects({
             </article>
           ))}
         </div>
+      )}
+      {shareImportOpen && (
+        <Modal title="从亦可导入画布" onClose={() => { if (!shareImporting) setShareImportOpen(false); }}>
+          <form onSubmit={importSharedCanvas}>
+            <div className="modal-body form-stack">
+              <p>在亦可画布广场打开作品，复制地址栏中的作品链接。导入后会生成可编辑的本地副本。</p>
+              <a className="button secondary" href={`${shareSite}/canvas`} target="_blank" rel="noreferrer">
+                浏览亦可画布广场 <ExternalLink size={15} />
+              </a>
+              <label>
+                亦可作品链接
+                <input
+                  autoFocus
+                  required
+                  maxLength={2048}
+                  type="url"
+                  placeholder={`${shareSite}/s/…`}
+                  disabled={shareImporting}
+                  value={shareLink}
+                  onChange={(e) => { setShareLink(e.target.value); setShareImportError(""); }}
+                />
+              </label>
+              <p>此处只能获取公开作品。仅发布了封面、没有可下载文件的历史视频会跳过。</p>
+              {shareImporting && <p role="status">正在下载并校验素材。素材较多时需要几分钟。</p>}
+              {shareImportError && <div className="error-banner" role="alert">{shareImportError}</div>}
+            </div>
+            <footer className="modal-footer">
+              {shareLink.trim() && !shareImporting && (
+                <a className="button secondary" href={`/api/share/export?link=${encodeURIComponent(shareLink.trim())}`} target="_blank" rel="noreferrer">
+                  <ArrowDownToLine size={16} /> 下载 .manju
+                </a>
+              )}
+              <button className="button primary" disabled={!shareLink.trim() || shareImporting}>
+                {shareImporting ? "正在导入…" : "导入并打开"}
+              </button>
+            </footer>
+          </form>
+        </Modal>
       )}
       {editing && (
         <Modal
