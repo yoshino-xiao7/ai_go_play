@@ -5,5 +5,6 @@ import "./styles.css";
 import "./studio-theme.css";
 import "./management.css";
 import "./motion/motion.css";
+import "./design/states.css"; // shared interaction states (disabled, status); after the theme files
 
 createRoot(document.getElementById("root")!).render(<Root />);

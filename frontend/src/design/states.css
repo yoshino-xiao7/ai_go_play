@@ -1,0 +1,40 @@
+/*
+  Shared interaction states (design-system phase 1).
+  Spec: docs/design-system/README.md (principle 3) and TOKENS.md.
+
+  Disabled primary actions
+  A disabled primary used to keep its rose fill at 30-45% opacity (inherited from generic
+  `button:disabled` rules), so it still read as the main call to action while the dark label
+  dropped to low contrast. A disabled primary now becomes a neutral, fully opaque surface with
+  readable muted text (6.4:1). Size, position and label stay, so the action is still recognisable;
+  enabled and hover styles are untouched (their rules already use :not(:disabled)).
+
+  Specificity: html[data-theme="studio"] :is(...):disabled is (0,4,2). It must beat the composer
+  submit rule in studio-theme.css (0,4,1) and the inherited `.canvas-workspace button:disabled`
+  opacity (0,2,1). .setup-primary declares its colours with !important, so its disabled override
+  has to as well.
+*/
+
+html[data-theme="studio"] :is(
+  .button.primary,
+  .comfy-button.primary,
+  .screenplay-button.screenplay-primary,
+  .production-modal button.primary,
+  .timeline-modal button.timeline-export,
+  .generation-composer .generation-submit,
+  .video-composer .video-submit
+):disabled {
+  background: var(--color-disabled-surface);
+  border-color: var(--color-disabled-border);
+  color: var(--color-disabled-text);
+  opacity: 1;
+  box-shadow: none;
+  filter: none;
+}
+
+html[data-theme="studio"] .setup-primary:disabled {
+  background: var(--color-disabled-surface) !important;
+  border-color: var(--color-disabled-border) !important;
+  color: var(--color-disabled-text) !important;
+  opacity: 1;
+}

@@ -58,6 +58,10 @@
   --color-warning: #d7ad73;  /* proposed: the most used amber literal */
   --color-info: #9ebfe8;     /* proposed */
   --color-focus: var(--color-accent);
+  /* disabled actions (phase 1): neutral and readable instead of a translucent accent fill */
+  --color-disabled-surface: var(--color-surface-raised); /* #2d282a */
+  --color-disabled-border: var(--color-border);          /* #3b3337 */
+  --color-disabled-text: var(--color-text-muted);        /* #b6a9af: 6.4:1 on the disabled surface */
 
   /* ------------------------------------------------------------------ typography */
   --font-ui: "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
