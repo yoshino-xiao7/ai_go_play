@@ -14,13 +14,13 @@
 .reference-tile .generation-reference-actions>button:hover:not(:disabled){background:#44404a}
 .reference-tile .studio-remove-reference{position:absolute;top:-6px;right:-6px;display:grid;place-items:center;width:18px;height:18px;padding:0;border:1px solid #655766;background:#332c35;color:#eeeef0;border-radius:50%;opacity:0;transition:opacity .12s}
 .reference-tile:hover .studio-remove-reference,.reference-tile:focus-within .studio-remove-reference{opacity:1}
-.studio-reference-preview.reference-media-preview{position:fixed;z-index:1900;box-sizing:border-box;max-width:calc(100vw - 24px);padding:5px;border:1px solid #77707e;border-radius:14px;background:#27232c;box-shadow:0 14px 45px #0009;pointer-events:none;overflow:hidden}
+.studio-reference-preview.reference-media-preview{position:fixed;z-index:var(--z-preview);box-sizing:border-box;max-width:calc(100vw - 24px);padding:5px;border:1px solid #77707e;border-radius:14px;background:#27232c;box-shadow:0 14px 45px #0009;pointer-events:none;overflow:hidden}
 .reference-media-preview>img{display:block;width:100%;max-height:calc(100vh - 110px);object-fit:contain;border-radius:9px;background:#151518}
 .reference-media-preview>div:not(.reference-audio-poster){display:flex;flex-direction:column;gap:5px;padding:9px 7px 6px;min-width:0}
 .reference-media-preview strong{font-size:12px;color:#e8e8ec;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .reference-media-preview span{font-size:10px;color:#b0a6b5}
 .reference-media-preview>.reference-audio-poster{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;background:#201c25;border-radius:9px;color:var(--accent)}
-.reference-audio-dialog .modal-shade{z-index:2000}
+.reference-audio-dialog .modal-shade{z-index:var(--z-nested-modal)}
 .reference-audio-content{display:flex;flex-direction:column;align-items:center;gap:22px;padding:28px;color:var(--accent)}
 .reference-audio-content strong{color:var(--text);overflow-wrap:anywhere;max-width:100%}
 .reference-audio-content audio{max-width:100%;width:100%}

@@ -1029,7 +1029,7 @@
   box-shadow: 0 5px 20px #0004;
   color: #d5dfc7;
   font-size: 11px;
-  z-index: 60;
+  z-index: var(--z-notice);
 }
 .canvas-notice > svg {
   flex-shrink: 0;
@@ -1061,7 +1061,7 @@
   background: #463b26;
   border-bottom: 1px solid #8b7245;
   color: #efdab2;
-  z-index: 55;
+  z-index: var(--z-banner);
   font-size: 11px;
 }
 .canvas-conflict-banner button {
@@ -1083,7 +1083,7 @@
   align-items: center;
   gap: 10px;
   padding: 13px 17px;
-  z-index: 60;
+  z-index: var(--z-notice);
   font-size: 12px;
   color: #d1e2be;
   box-shadow: 0 5px 24px #0004;
@@ -1287,7 +1287,7 @@
 }
 .canvas-more-options {
   position: absolute;
-  z-index: 45;
+  z-index: var(--z-dropdown);
   top: 39px;
   right: 0;
   width: 180px;

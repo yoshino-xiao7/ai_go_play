@@ -1,4 +1,4 @@
-.image-viewer-shell .modal-shade { z-index: 5000; padding: 16px; }
+.image-viewer-shell .modal-shade { z-index: var(--z-image-viewer); padding: 16px; }
 .image-viewer-shell .modal { width: calc(100vw - 32px); height: calc(100dvh - 32px); max-width: none; max-height: none; display: flex; flex-direction: column; overflow: hidden; }
 .image-viewer-toolbar { display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:8px; padding:10px; color:#cbd2dd; flex-shrink:0; }
 .image-viewer-toolbar button,.image-viewer-toolbar a { background:#303641; border:1px solid #495363; border-radius:6px; padding:6px 10px; color:#e1e7f0; cursor:pointer; font-size:12px; text-decoration:none; }
