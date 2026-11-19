@@ -65,7 +65,10 @@
   --color-warning: #d7ad73;
   --color-warning-soft: #d7ad731f;  /* 12% tint */
   --color-warning-line: #d7ad7359;  /* 35% tint */
-  --color-info: #9ebfe8;     /* proposed: no renderable info surface yet (STYLE-DEBT D1) */
+  /* info (phase 1, wired): instructions and modes, e.g. canvas pick mode; never selection or primary */
+  --color-info: #9ebfe8;            /* >= 6.6:1 as text on every surface */
+  --color-info-soft: #9ebfe81f;     /* 12% tint */
+  --color-info-line: #9ebfe859;     /* 35% tint */
   --color-focus: var(--color-accent);
   /* disabled actions (phase 1): neutral and readable instead of a translucent accent fill */
   --color-disabled-surface: var(--color-surface-raised); /* #2d282a */

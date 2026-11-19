@@ -41,7 +41,7 @@ html[data-theme="studio"] .video-duration-track input[type=range]::-moz-range-th
 html[data-theme="studio"] :is(.video-duration-number,.video-model-option){background:var(--panel-raised)}
 html[data-theme="studio"] :is(.video-history,.candidate-review,.subject-media-picker){background:var(--popup-bg);border-color:var(--popup-border)}
 html[data-theme="studio"] :is(.video-history .adopted,.subject-image-strip button.is-cover){border-color:var(--accent)}
-html[data-theme="studio"] .canvas-pick-banner{background:var(--panel-raised);border-color:var(--accent-line);color:var(--text)}
+html[data-theme="studio"] .canvas-pick-banner{background:var(--panel-raised);border-color:var(--color-info);color:var(--text)}
 html[data-theme="studio"] .canvas-pick-compatible .canvas-node{box-shadow:0 0 0 2px var(--accent-line)}
 
 /* Shared dropdown surface. Native fields retain labels and form semantics. */

@@ -19,8 +19,8 @@
 .subject-editor-dock .modal {pointer-events:auto;width:min(440px,calc(100vw - 28px));max-height:100%;border-radius:14px;box-shadow:0 12px 50px #0009}
 .subject-editor-dock .subject-editor-sources {flex-wrap:wrap}
 .subject-editor-dock .subject-editor-section > header {flex-wrap:wrap;gap:8px}
-.canvas-pick-banner {position:fixed;top:76px;left:50%;transform:translateX(-50%);z-index:var(--z-context);padding:12px 16px;border:1px solid #7ea3cf;border-radius:10px;background:#233345;color:#d8eaff;box-shadow:0 8px 32px #0006;font-size:13px}
-.canvas-pick-banner button {color:inherit;border:1px solid #59789d;background:#344b65;padding:5px 9px;border-radius:5px;margin-left:10px;cursor:pointer}
+.canvas-pick-banner {position:fixed;top:76px;left:50%;transform:translateX(-50%);z-index:var(--z-context);padding:12px 16px;border:1px solid var(--color-info);border-radius:10px;background:var(--color-surface-raised);color:var(--color-text);box-shadow:0 8px 32px #0006;font-size:13px}
+.canvas-pick-banner button {color:inherit;border:1px solid var(--color-info-line);background:var(--color-info-soft);padding:5px 9px;border-radius:5px;margin-left:10px;cursor:pointer}
 .canvas-pick-options {display:flex;gap:8px;max-width:620px;overflow:auto;padding-top:12px}
 .canvas-pick-options button {display:flex;flex-direction:column;gap:5px;flex:0 0 95px;margin:0;font-size:10px}
 .canvas-pick-options img {width:80px;height:80px;object-fit:contain}
