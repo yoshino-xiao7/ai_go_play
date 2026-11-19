@@ -674,33 +674,7 @@
   border-radius: 4px;
   font-size: 12px;
 }
-.canvas-zoom-controls {
-  position: absolute;
-  right: 17px;
-  bottom: 29px;
-  display: flex;
-  align-items: center;
-  background: #242829f2;
-  border: 1px solid #383e3b;
-  border-radius: 7px;
-  height: 35px;
-  padding: 0 5px;
-  z-index: 8;
-  box-shadow: 0 4px 14px #0002;
-}
-.canvas-zoom-controls button {
-  display: grid;
-  place-items: center;
-  width: 26px;
-  height: 27px;
-  border: 0;
-  border-radius: 4px;
-  background: none;
-  color: #aeb7b0;
-}
-.canvas-zoom-controls button:hover {
-  background: #394137;
-}
+/* .canvas-zoom-controls box and buttons: single definition further below (design-system phase 0). */
 .canvas-zoom-controls > span:not(.toolbar-divider) {
   min-width: 39px;
   text-align: center;
@@ -1122,9 +1096,6 @@
   .canvas-toolbar {
     bottom: 61px;
   }
-  .canvas-zoom-controls {
-    bottom: 15px;
-  }
   .canvas-conflict-banner {
     left: 205px;
     right: 210px;
@@ -1501,7 +1472,11 @@
   flex-direction: column !important;
   gap: 3px !important;
 }
+/* Single definition of the zoom control (phase 0 merged an earlier, fully overridden block).
+   !important is still required: studio-theme.css sets background/border with higher specificity,
+   and the max-width:860px override below relies on it. Removing it is phase 1 work (STYLE-DEBT.md). */
 .canvas-zoom-controls {
+  position: absolute;
   bottom: 24px !important;
   right: 24px !important;
   height: 40px !important;
