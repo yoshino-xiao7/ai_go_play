@@ -1,0 +1,132 @@
+/*
+  ai-go-play design tokens (design-system phase 0).
+
+  Source of truth for colour, type, space, radius, elevation, layering and motion.
+  Spec and rationale: docs/design-system/README.md and TOKENS.md.
+
+  Rules
+  - Only custom properties live here, so this file is safe at any cascade position.
+  - Phase 0 values equal what the app renders today. A token marked "proposed" is defined for
+    phase 1 and is not referenced yet; changing any value here is a visible design change and needs
+    its own reviewed commit with before/after screenshots.
+  - Components read semantic tokens (--color-*, --z-*, ...), never the primitive ramps directly.
+*/
+
+:root {
+  /* ------------------------------------------------------------------ primitives: warm ink ramp */
+  --ink-0: #161415;   /* canvas ground */
+  --ink-50: #181617;  /* app ground */
+  --ink-100: #1e1b1c; /* rail and chrome bars */
+  --ink-150: #151314; /* admin inputs (sunken) */
+  --ink-200: #242022; /* panels */
+  --ink-300: #2d282a; /* raised surfaces, popovers */
+  --ink-350: #3b3337; /* hairline borders */
+  --ink-400: #3e3037; /* hover fill on raised surfaces */
+  --ink-450: #41383d; /* canvas dot grid */
+  --ink-500: #55464e; /* strong borders */
+  --ink-700: #b6a9af; /* secondary text */
+  --ink-900: #f4eef1; /* primary text */
+
+  /* ------------------------------------------------------------------ primitives: rose (brand) */
+  --rose-300: #ffd0df;
+  --rose-400: #f3abc2;
+  --rose-600: #a96e86;
+  --rose-950: #2d1720;
+  --rose-400-a10: #f3abc21a;
+
+  /* ------------------------------------------------------------------ semantic colour */
+  --color-bg-canvas: var(--ink-0);
+  --color-bg-app: var(--ink-50);
+  --color-surface-chrome: var(--ink-100);
+  --color-surface-sunken: var(--ink-150);
+  --color-surface-panel: var(--ink-200);
+  --color-surface-raised: var(--ink-300);
+  --color-surface-hover: var(--ink-400);
+  --color-canvas-grid: var(--ink-450);
+  --color-border: var(--ink-350);
+  --color-border-strong: var(--ink-500);
+  --color-text: var(--ink-900);
+  --color-text-muted: var(--ink-700);
+  --color-accent: var(--rose-400);
+  --color-accent-hover: var(--rose-300);
+  --color-accent-line: var(--rose-600);
+  --color-accent-soft: var(--rose-400-a10);
+  --color-on-accent: var(--rose-950);
+  --color-success: #adc7bf;
+  /* proposed (phase 1): today danger/warning/info use 5+ competing literals each; see STYLE-DEBT.md */
+  --color-danger: #e5735a;   /* proposed: vermilion, >30deg away from the rose accent */
+  --color-warning: #d7ad73;  /* proposed: the most used amber literal */
+  --color-info: #9ebfe8;     /* proposed */
+  --color-focus: var(--color-accent);
+
+  /* ------------------------------------------------------------------ typography */
+  --font-ui: "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --font-mono: "Cascadia Code", Consolas, "Microsoft YaHei", monospace; /* proposed: 4 mono stacks today */
+  /* type scale (proposed targets; legacy 8-10px sizes are debt) */
+  --text-xs: 11px;   /* numbers, Latin metadata only; never CJK body copy */
+  --text-sm: 12px;   /* labels, captions */
+  --text-md: 13px;   /* UI body */
+  --text-lg: 14px;   /* emphasised UI, settings body */
+  --text-xl: 16px;   /* section titles */
+  --text-2xl: 20px;  /* panel titles */
+  --text-reading: 15px; /* prompt and script reading */
+  --leading-ui: 1.5;
+  --leading-reading: 1.8;
+  --weight-regular: 400;
+  --weight-strong: 600; /* Microsoft YaHei renders 600 as Bold; do not rely on 500/550 for hierarchy */
+
+  /* ------------------------------------------------------------------ space (4px grid) */
+  --space-0-5: 2px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  /* ------------------------------------------------------------------ control sizes */
+  --control-dense: 24px;   /* minimum hit size in dense editors (timeline) */
+  --control-md: 28px;      /* default chrome control */
+  --control-lg: 32px;      /* primary actions */
+  --control-tool: 38px;    /* canvas toolbar */
+
+  /* ------------------------------------------------------------------ radius */
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+  --radius-pill: 9999px;
+
+  /* ------------------------------------------------------------------ elevation (current values) */
+  --shadow-popover: 0 12px 36px #0006, 0 1px 4px #0003;
+  --shadow-panel: 0 20px 48px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --shadow-modal: 0 28px 100px #0008;
+
+  /* ------------------------------------------------------------------ layering
+     Encodes today's global stacking ladder with identical values. Known ordering bugs (toast below
+     viewers; run shade and context menu sharing 1800) are tracked in STYLE-DEBT.md. Component-local
+     z-index values below 40 stay local. */
+  --z-dropdown: 45;
+  --z-banner: 55;
+  --z-notice: 60;
+  --z-floating: 80;
+  --z-modal: 100;
+  --z-toast: 200;
+  --z-project-menu: 1200;
+  --z-media-viewer: 1500;
+  --z-picker: 1750;
+  --z-context: 1800;
+  --z-preview: 1900;
+  --z-nested-modal: 2000;
+  --z-select: 2100;
+  --z-image-viewer: 5000;
+
+  /* ------------------------------------------------------------------ motion */
+  --duration-instant: 90ms;
+  --duration-fast: 140ms;
+  --duration-base: 200ms;
+  --ease-out: cubic-bezier(.2, .8, .2, 1);
+}

@@ -1,3 +1,4 @@
+import "./design/tokens.css"; // design tokens first: custom properties only
 import { createRoot } from "react-dom/client";
 import Root from "./Root";
 import "./styles.css";
