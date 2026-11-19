@@ -46,7 +46,7 @@
   cursor: default;
 }
 .canvas-context-menu > button.danger:not(:disabled) {
-  color: #e99c9c;
+  color: var(--color-danger);
 }
 .canvas-context-icon {
   width: 17px;

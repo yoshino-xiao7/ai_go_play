@@ -159,7 +159,7 @@
 .generation-submit-error { border-color: #a766423d; background: #54322526; }
 .generation-submit-error button { display: inline-flex; align-items: center; gap: 3px; padding: 0; margin-top: 7px; border: 0; background: none; color: #c9ae9e; font-size: 10px; }
 .generation-job { margin: 0 14px 8px; border-top: 1px solid #353940; padding: 8px 0 0; font-size: 11px; color: #a8b8a2; }
-.generation-job.failed,
+.generation-job.failed { color: var(--color-danger); }
 .generation-job.unknown { color: #ceb58b; }
 .generation-job-summary { display: flex; align-items: center; gap: 6px; }
 .generation-job-summary > span { font-size: 10px; }

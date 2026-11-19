@@ -54,7 +54,13 @@
   --color-on-accent: var(--rose-950);
   --color-success: #adc7bf;
   /* proposed (phase 1): today danger/warning/info use 5+ competing literals each; see STYLE-DEBT.md */
-  --color-danger: #e5735a;   /* proposed: vermilion, >30deg away from the rose accent */
+  /* danger (phase 1, wired): vermilion 30.4deg from the rose accent; >= 5.3:1 as text on every
+     surface (the earlier proposal #e5735a fell to 4.1:1 on hover surfaces) */
+  --color-danger: #f0907a;
+  --color-danger-soft: #f0907a24;  /* 14% tint: hover/notice fill; danger text on it >= 4.7:1 */
+  --color-danger-line: #f0907a59;  /* 35% tint: outlines of destructive controls */
+  --color-danger-solid: #be5337;   /* filled destructive button: white text 4.7:1, 3.5:1 to dialog */
+  --color-on-danger-solid: #ffffff;
   --color-warning: #d7ad73;  /* proposed: the most used amber literal */
   --color-info: #9ebfe8;     /* proposed */
   --color-focus: var(--color-accent);

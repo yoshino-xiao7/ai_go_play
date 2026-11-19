@@ -609,8 +609,8 @@ a svg {
   background: #23262b;
 }
 .button.danger {
-  background: #bb514e;
-  color: #fff;
+  background: var(--color-danger-solid);
+  color: var(--color-on-danger-solid);
 }
 .button.compact {
   padding: 7px 11px;
@@ -654,7 +654,7 @@ a svg {
   padding: 0;
 }
 .text-danger {
-  color: #e3918d !important;
+  color: var(--color-danger) !important;
 }
 .muted {
   color: var(--muted);

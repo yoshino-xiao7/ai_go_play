@@ -886,15 +886,15 @@
   justify-content: center;
   gap: 7px;
   background: transparent;
-  border: 1px solid #493b38;
+  border: 1px solid var(--color-danger-line);
   border-radius: 5px;
-  color: #bc9690 !important;
+  color: var(--color-danger) !important;
   width: 100%;
   padding: 8px;
   font-size: 11px !important;
 }
 .canvas-delete-button:hover {
-  background: #3b2927;
+  background: var(--color-danger-soft);
 }
 .canvas-inspector-bottom > span {
   display: block;

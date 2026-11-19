@@ -32,7 +32,7 @@ html[data-theme="studio"] .video-sound-control i{background:var(--accent)}
 html[data-theme="studio"] :is(.canvas-context-menu,.video-parameter-popover,.studio-select-popup,.generation-reference-picker.studio-reference-picker-overlay,.studio-size-panel,.generation-settings,.video-picker){background:var(--popup-bg);border:1px solid var(--popup-border);border-radius:14px;color:var(--text);box-shadow:0 12px 36px #0006,0 1px 4px #0003}
 html[data-theme="studio"] .canvas-context-menu>button{border-radius:8px;min-height:36px}
 html[data-theme="studio"] .canvas-context-menu>button:is(:hover,:focus-visible,.submenu-open):not(:disabled){background:var(--popup-hover);color:var(--text)}
-html[data-theme="studio"] .canvas-context-menu>button.danger{color:#f3a9ac}
+html[data-theme="studio"] .canvas-context-menu>button.danger{color:var(--color-danger)}
 html[data-theme="studio"] :is(.video-mode-option,.video-ratio-options button,.video-resolution-options button)[aria-checked=true]{background:var(--accent-soft);border-color:var(--accent-line);color:var(--text)}
 html[data-theme="studio"] :is(.video-mode-option,.video-ratio-options button,.video-resolution-options button)[aria-checked=true] svg{color:var(--accent)}
 html[data-theme="studio"] .video-duration-track input[type=range]{background:var(--border-light)}
