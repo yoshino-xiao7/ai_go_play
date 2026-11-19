@@ -1,6 +1,6 @@
 .canvas-workspace {
-  --canvas-bg: #161415;
-  --canvas-grid: #41383d;
+  --canvas-bg: var(--color-bg-canvas);
+  --canvas-grid: var(--color-canvas-grid);
   --canvas-panel: var(--panel);
   --canvas-border: var(--border);
   --canvas-text: var(--text);

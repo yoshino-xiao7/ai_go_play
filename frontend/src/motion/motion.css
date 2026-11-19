@@ -15,11 +15,11 @@
 */
 
 :root {
-  --m-in: 140ms;                              /* hover in: buttons, links, nav, tabs */
-  --m-out: 200ms;                             /* hover out, panel close */
-  --m-press: 90ms;                            /* a press */
+  --m-in: var(--duration-fast);               /* hover in: buttons, links */
+  --m-out: var(--duration-base);              /* hover out */
+  --m-press: var(--duration-instant);         /* a press */
   --m-image: 600ms;                           /* a photograph scaling inside its mask */
-  --m-ease: cubic-bezier(.2, .8, .2, 1);      /* ease-out: fast start, soft landing */
+  --m-ease: var(--ease-out);                  /* ease-out: fast start, soft landing */
   --m-lift: -2px;
 }
 

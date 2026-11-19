@@ -3,9 +3,9 @@
   background: var(--bg, #181617);
   color: var(--text, #f4eef1);
   font-size: 14px;
-  --setup-line: #3b3337;
-  --setup-muted: #b6a9af;
-  --setup-pink: #f3abc2;
+  --setup-line: var(--color-border);
+  --setup-muted: var(--color-text-muted);
+  --setup-pink: var(--color-accent);
 }
 .setup-shell * {
   box-sizing: border-box;

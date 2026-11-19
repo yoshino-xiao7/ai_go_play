@@ -2,7 +2,7 @@
 html[data-theme="studio"] :is(.management-modal,.settings-page,.workflows-page) {
   --admin-bg: var(--bg);
   --admin-surface: var(--panel);
-  --admin-input: #151314;
+  --admin-input: var(--color-surface-sunken);
   --admin-line: var(--border);
   --admin-text: var(--text);
   --admin-muted: var(--muted);
