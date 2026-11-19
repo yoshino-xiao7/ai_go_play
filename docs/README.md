@@ -8,6 +8,7 @@ docs 保存长期使用、开发和治理说明；release 保存模型清单、�
 | 模型、语音和口型 | [模型准备](../release/README.md)、[语音与口型安装](../release/语音与口型从零安装.md) |
 | 开发和提交 | [贡献指南](../CONTRIBUTING.md)、[开发环境](DEVELOPMENT.md) |
 | 理解实现 | [架构](ARCHITECTURE.md)、[API / CLI](API.md) |
+| 界面与样式 | [Design System](design-system/README.md)、[Token](design-system/TOKENS.md)、[样式债务](design-system/STYLE-DEBT.md) |
 | 验证修改 | [测试与验收](TESTING.md) |
 | 审查和管理仓库 | [治理](GOVERNANCE.md)、[仓库配置](REPOSITORY-SETUP.md) |
 | 流程验证记录 | [开发与发布流程验收](../release/GOVERNANCE-VALIDATION.md) |
@@ -15,4 +16,4 @@ docs 保存长期使用、开发和治理说明；release 保存模型清单、�
 | 运维与故障 | [运维](OPERATIONS.md)、[支持](../SUPPORT.md)、[安全](../SECURITY.md) |
 | 维护文档 | [文档规范](DOCUMENTATION.md) |
 
-[生成验收](../release/GENERATION-VALIDATION.md)、[首次引导架构](../release/首次启动架构.md)、[画布性能](../release/CANVAS-PERFORMANCE-VALIDATION.md)、[退出验收](../release/EXIT-VALIDATION.md) 保留具体测试范围。模型权利问题以 [许可审计](../release/MODEL-LICENSES.md) 为准，不能用功能测试替代。
+[生成验收](../release/GENERATION-VALIDATION.md)、[首次引导架构](../release/首次启动架构.md)、[画布性能](../release/CANVAS-PERFORMANCE-VALIDATION.md)、[退出验收](../release/EXIT-VALIDATION.md)、[设计系统阶段 0](../release/DESIGN-SYSTEM-PHASE0.md) 保留具体测试范围。模型权利问题以 [许可审计](../release/MODEL-LICENSES.md) 为准，不能用功能测试替代。
