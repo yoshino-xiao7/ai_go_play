@@ -60,15 +60,15 @@
 .canvas-stage .react-flow__edgeupdater-target {transform:translateX(calc(var(--port-size,24px) * -1.5))}
 .canvas-stage .react-flow__edge.selected .react-flow__edgeupdater {fill:#253a54;stroke:#a2c9ff;stroke-width:2;cursor:grab;pointer-events:all}
 .canvas-stage .group-node.is-collapsed .react-flow__handle {pointer-events:none}
-.canvas-node-navigator {position:absolute;z-index:var(--z-floating);top:16px;right:16px;width:min(350px,calc(100% - 100px));border:1px solid #5b5367;border-radius:12px;background:#211f28f5;box-shadow:0 12px 35px #0008;color:#e6e3ed;overflow:hidden}
-.canvas-node-navigator header {display:flex;align-items:center;gap:8px;padding:10px;border-bottom:1px solid #ffffff18}
-.canvas-node-navigator input {min-width:0;width:100%;background:#15141a;border:1px solid #514a5a;border-radius:5px;padding:7px;color:inherit}
+.canvas-node-navigator {position:absolute;z-index:var(--z-floating);top:16px;right:16px;width:min(350px,calc(100% - 100px));border:1px solid var(--popover-border);border-radius:var(--popover-radius);background:var(--popover-surface);box-shadow:var(--shadow-popover);color:var(--popover-text);overflow:hidden}
+.canvas-node-navigator header {display:flex;align-items:center;gap:8px;padding:10px;border-bottom:1px solid var(--color-border)}
+.canvas-node-navigator input {min-width:0;width:100%;background:var(--color-surface-sunken);border:1px solid var(--color-border-strong);border-radius:5px;padding:7px;color:inherit}
 .canvas-node-navigator header button {background:none;border:0;color:inherit}
 .canvas-node-navigator > div {max-height:380px;overflow:auto}
 .canvas-node-navigator > div button {display:flex;justify-content:space-between;gap:10px;width:100%;padding:10px 12px;text-align:left;border:0;border-bottom:1px solid #ffffff0b;color:inherit;background:none}
-.canvas-node-navigator > div button:hover {background:#403447}
-.canvas-node-navigator small {color:#afa4bd;white-space:nowrap}
-.canvas-node-navigator footer {padding:9px 12px;font-size:10px;color:#afa4bd}
+.canvas-node-navigator > div button:hover {background:var(--menu-item-hover)}
+.canvas-node-navigator small {color:var(--color-text-muted);white-space:nowrap}
+.canvas-node-navigator footer {padding:9px 12px;font-size:10px;color:var(--color-text-muted)}
 .canvas-reference-changes {border:1px solid #826f49;border-radius:9px;background:#363022;color:#e5d6ad;font-size:11px;padding:8px 10px;margin-bottom:7px;max-height:115px;overflow:auto}
 .canvas-reference-changes > div {display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:3px 0}
 .canvas-reference-changes span {flex:1 1 220px}
