@@ -14,8 +14,9 @@
     removed .btn hover lift (the background / border change is the hover cue); the .card hover lift,
             border and shadow (decorative, and it suggested the whole card is clickable; the cover's
             open arrow, the name colour and the asset card's action button remain); the 1.03 image
-            zoom; the focus-ring settle animation (it delayed the ring by 200 ms and, because its
-            reduced-motion override was less specific, it also ran under prefers-reduced-motion).
+            zoom; the focus-ring settle animation (its colour fade was already overridden by the theme's
+            !important focus colour, so it only moved the ring's offset 6px -> 3px over 200 ms; because
+            its reduced-motion override was less specific, it also ran under prefers-reduced-motion).
   --m-in is also read by styles.css, generation.css and video.css.
 */
 
