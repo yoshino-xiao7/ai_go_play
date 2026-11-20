@@ -6,15 +6,15 @@
 
 ```text
 main.tsx
-  1. design/tokens.css        只有自定义属性，位置不影响级联
+  1. design/tokens.css        @layer tokens, vendor; 声明层顺序；自定义属性位于 @layer tokens（阶段 1）
   2. Root.tsx → setup/setup.css
-  3. styles.css               全局基础样式与历史别名（含 @xyflow/react 样式）
+  3. styles.css               全局基础样式与历史别名；第 1 行以 layer(vendor) 导入 @xyflow/react 样式（阶段 1）
   4. studio-theme.css         html[data-theme="studio"] 覆盖层
   5. management.css           设置 / 管理页覆盖层
   6. motion/motion.css        遗留交互层（阶段 0 后只剩仍生效的规则）
   7. design/states.css        共享交互状态（阶段 1：禁用的主操作）
 App 及各工作区按需懒加载，组件 CSS 在对应 chunk 加载时插入：
-  Canvas → canvas.css、review-experience.css
+  Canvas → canvas.css、review-experience.css（阶段 1 起不再重复导入 @xyflow/react 样式）
   GenerationComposer → generation.css、studio-composer.css
   VideoComposer / VideoViewer / CanvasVideoPlayer / AudioComposer / VideoEnhanceComposer → video.css
   ……（共 40 个组件级样式文件）
@@ -75,3 +75,17 @@ App 及各工作区按需懒加载，组件 CSS 在对应 chunk 加载时插入�
 ## 关于 `@layer`
 
 把全局样式放进 `@layer` 可以让级联顺序不再依赖加载顺序，但未分层的规则总是优先于分层规则，引入后会整体改变现有的覆盖结果。它适合在 `!important` 和重复定义清理之后作为单独阶段实施，阶段 0 不做。
+
+**阶段 1（2026-11-20）的处理：** 只把可以证明安全的两部分放进层，见 [层记录](../../release/DESIGN-SYSTEM-PHASE1-CSS-LAYERS.md)。
+
+| 层 | 内容 | 依据 |
+| --- | --- | --- |
+| `tokens` | `tokens.css` 的全部自定义属性 | 这些名字在其他地方都没有定义 |
+| `vendor` | React Flow 基础样式，只加载一次 | 没有 `!important`；实验证明它们没有在任何地方胜过应用样式 |
+
+层顺序 `@layer tokens, vendor;` 写在第一个加载的 CSS 开头。应用自己的样式全部保持未分层，原因如下：
+
+- 21 个文件含 `!important`（共 211 处，其中 102 处与同一属性上的其他 `!important` 争夺）。分层会反转 `!important` 的优先级（Edge 实测）。
+- 主题、共享状态和组件样式之间靠特异性和 `!important` 互相覆盖，分层后普通声明会输给所有未分层规则。
+
+要把应用样式放进有顺序的层，需要先清理这些 `!important`。
