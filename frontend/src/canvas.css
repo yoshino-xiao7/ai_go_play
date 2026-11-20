@@ -1168,14 +1168,8 @@
   top: auto;
   bottom: 90px;
 }
-.canvas-comfy-button {
-  border-color: #596d43 !important;
-  background: #3c4a2f26 !important;
-  color: var(--accent) !important;
-}
-.canvas-comfy-button:hover {
-  background: #4657364d !important;
-}
+/* .canvas-comfy-button: styled only by studio-theme.css (html[data-theme="studio"], fixed in index.html).
+   Its earlier !important declarations here always lost to that rule and were removed (phase 1). */
 
 /* The canvas stays open by default; tools and panels appear only when needed. */
 .canvas-topbar {
