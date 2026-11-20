@@ -61,7 +61,7 @@ import type {
   Task,
 } from "./types";
 import { Confirm, EmptyState, Loading, Modal } from "./ui";
-import { Button, IconButton } from "./design/Button";
+import { Button, ButtonLink, IconButton } from "./design/Button";
 const Canvas = lazy(() => import("./Canvas"));
 const ComfyPanel = lazy(() => import("./ComfyPanel"));
 const Workflows = lazy(() => import("./Workflows"));
@@ -1049,9 +1049,9 @@ function Projects({
           <form onSubmit={importSharedCanvas}>
             <div className="modal-body form-stack">
               <p>在亦可画布广场打开作品，复制地址栏中的作品链接。导入后会生成可编辑的本地副本。</p>
-              <a className="button secondary" href={`${shareSite}/canvas`} target="_blank" rel="noreferrer">
+              <ButtonLink variant="secondary" href={`${shareSite}/canvas`} target="_blank" rel="noreferrer">
                 浏览亦可画布广场 <ExternalLink size={15} />
-              </a>
+              </ButtonLink>
               <label>
                 亦可作品链接
                 <input
@@ -1071,13 +1071,13 @@ function Projects({
             </div>
             <footer className="modal-footer">
               {shareLink.trim() && !shareImporting && (
-                <a className="button secondary" href={`/api/share/export?link=${encodeURIComponent(shareLink.trim())}`} target="_blank" rel="noreferrer">
+                <ButtonLink variant="secondary" href={`/api/share/export?link=${encodeURIComponent(shareLink.trim())}`} target="_blank" rel="noreferrer">
                   <ArrowDownToLine size={16} /> 下载 .manju
-                </a>
+                </ButtonLink>
               )}
-              <button className="button primary" disabled={!shareLink.trim() || shareImporting}>
+              <Button variant="primary" disabled={!shareLink.trim() || shareImporting}>
                 {shareImporting ? "正在导入…" : "导入并打开"}
-              </button>
+              </Button>
             </footer>
           </form>
         </Modal>
@@ -1114,19 +1114,19 @@ function Projects({
               </label>
             </div>
             <footer className="modal-footer">
-              <button
+              <Button
                 type="button"
-                className="button secondary"
+                variant="secondary"
                 onClick={() => setEditing(null)}
               >
                 {creatingGuide ? "暂不开始" : "取消"}
-              </button>
-              <button
-                className="button primary"
+              </Button>
+              <Button
+                variant="primary"
                 disabled={busy || !name.trim()}
               >
                 {busy ? "保存中…" : creatingGuide ? "创建画布并开始" : editing === "new" ? "创建画布" : "保存"}
-              </button>
+              </Button>
             </footer>
           </form>
         </Modal>
