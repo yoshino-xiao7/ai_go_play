@@ -1,7 +1,7 @@
 /* Image-first creation surface. Generation/job and mask behavior stays in generation.css. */
 .generation-anchor { filter: none; }
 .generation-composer { border: 1px solid #3d3d3f; border-radius: 22px; background: #222223; color: #e9e9eb; font-size: 14px; box-shadow: 0 16px 56px #0006, 0 2px 8px #0004, inset 0 1px 0 #ffffff08; scrollbar-width: thin; scrollbar-color: #505052 transparent; }
-.generation-composer button:focus-visible, .generation-composer select:focus-visible, .generation-composer summary:focus-visible { outline-color: #83c4ff; }
+.generation-composer button:focus-visible, .generation-composer select:focus-visible, .generation-composer summary:focus-visible { outline-color: var(--color-focus); }
 .studio-preset-rail { display: flex; align-items: center; gap: 6px; padding: 10px 12px 9px; background: #1b1b1c; border-bottom: 1px solid #333335; }
 .studio-preset-rail > button { display: flex; flex: 1; align-items: center; gap: 10px; min-width: 0; height: 38px; padding: 0 12px; color: #bdbdc2; border: 1px solid #353537; background: #252526; border-radius: 10px; font-size: 12px; transition: background .15s, color .15s; }
 .studio-preset-rail > button > svg { margin-left: auto; color: #7b7b81; }

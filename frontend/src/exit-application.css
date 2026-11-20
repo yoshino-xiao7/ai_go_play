@@ -1,7 +1,7 @@
 .exit-application-trigger { flex-shrink: 0; white-space: nowrap; }
 .exit-application-trigger:hover { background: var(--surface-hover, #343035); }
 .exit-application-trigger:active { transform: translateY(1px); }
-.exit-application-trigger:focus-visible { outline: 2px solid #f3aac3; outline-offset: 3px; }
+.exit-application-trigger:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 3px; }
 .exit-application-dialog { width: min(480px, calc(100vw - 32px)); }
 .exit-application-dialog p { line-height: 1.7; }
 .exit-application-option { display: flex; align-items: center; gap: 10px; margin: 20px 0; line-height: 1.6; }

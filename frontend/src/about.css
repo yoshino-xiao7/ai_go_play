@@ -42,7 +42,7 @@
 .about-runtime dt { color: var(--muted); font-size: 12px; margin-bottom: 8px; }
 .about-runtime dd { margin: 0; font-size: 14px; overflow-wrap: anywhere; }
 .about-page summary { font-size: 13px; color: var(--muted); cursor: pointer; padding: 8px 0; }
-.about-page summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+.about-page summary:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 4px; }
 .about-release { padding: 24px; margin-top: 24px; border: 1px solid var(--accent-line); border-radius: 12px; }
 .about-release-heading { margin-bottom: 12px; }
 .about-release-heading > span { color: var(--muted); font-size: 12px; }
