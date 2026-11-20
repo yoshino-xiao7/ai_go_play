@@ -2,12 +2,12 @@
   flex: 1;
   min-height: 0;
   overflow: auto;
-  background: #191c1d;
+  background: var(--color-bg-app);
   padding: 24px 26px 0;
   font-size: 12px;
-  color: #d7dfd8;
+  color: var(--color-text);
   scrollbar-width: thin;
-  scrollbar-color: #3b453b transparent;
+  scrollbar-color: var(--color-border-strong) transparent;
 }
 .comfy-panel button,
 .comfy-panel input,
@@ -29,10 +29,10 @@
   align-items: center;
   justify-content: space-between;
   gap: 20px 16px;
-  border: 1px solid #3c4935;
+  border: 1px solid var(--color-border);
   border-radius: 11px;
   padding: 21px 22px 0;
-  background: linear-gradient(110deg, #253023, #202620 62%, #212622);
+  background: var(--color-surface-panel);
 }
 .comfy-service-heading {
   display: flex;
@@ -63,10 +63,10 @@
   font-weight: 600;
   letter-spacing: -0.7px;
   margin: 0;
-  color: #edf3e9;
+  color: var(--color-text);
 }
 .comfy-service-heading p {
-  color: #a3b09a;
+  color: var(--color-text-muted);
   font-size: 12px;
   line-height: 1.7;
   margin: 7px 0 0;
@@ -77,9 +77,9 @@
   gap: 5px;
   font-size: 12px;
   white-space: nowrap;
-  color: #a7b4a2;
+  color: var(--color-text-muted);
   background: #ffffff06;
-  border: 1px solid #a4c88a22;
+  border: 1px solid var(--color-border-strong);
   border-radius: 5px;
   padding: 4px 7px;
 }
@@ -87,7 +87,7 @@
 .comfy-service-meta > span > i {
   width: 5px;
   height: 5px;
-  background: #8c9887;
+  background: var(--color-text-muted);
   border-radius: 50%;
   display: inline-block;
 }
@@ -151,13 +151,13 @@
   border-color: var(--accent-hover);
 }
 .comfy-button.secondary {
-  color: #bfcab9;
+  color: var(--color-text);
   background: #ffffff04;
-  border-color: #52604b;
+  border-color: var(--color-border-strong);
 }
 .comfy-button.secondary:hover:not(:disabled) {
-  background: #35402f;
-  border-color: #65795a;
+  background: var(--color-surface-hover);
+  border-color: var(--color-border-strong);
 }
 .comfy-button.stop {
   background: #57372d33;
@@ -178,9 +178,9 @@
   gap: 17px;
   flex-wrap: wrap;
   width: 100%;
-  border-top: 1px solid #879f7130;
+  border-top: 1px solid var(--color-border);
   padding: 12px 0;
-  color: #8c9c82;
+  color: var(--color-text-muted);
   font-size: 12px;
 }
 .comfy-service-meta > span {
@@ -199,7 +199,7 @@
   border: 0;
   background: none;
   padding: 0;
-  color: #a8bc99;
+  color: var(--color-accent);
   font-size: 12px !important;
   cursor: pointer;
 }
@@ -226,11 +226,11 @@
   font-size: 12px;
   letter-spacing: 0.02em;
   margin: 0;
-  color: #d2ddd0;
+  color: var(--color-text);
 }
 .comfy-section-heading > span {
   font-size: 12px;
-  color: #84917e;
+  color: var(--color-text-muted);
 }
 .comfy-installations {
   display: flex;
@@ -239,7 +239,7 @@
   max-height: 184px;
   overflow: auto;
   scrollbar-width: thin;
-  scrollbar-color: #46533f transparent;
+  scrollbar-color: var(--color-border-strong) transparent;
 }
 .comfy-installation {
   display: flex;
@@ -247,21 +247,21 @@
   gap: 11px;
   width: 100%;
   min-height: 67px;
-  border: 1px solid #353e33;
-  background: #222823;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-panel);
   border-radius: 7px;
   padding: 11px;
   text-align: left;
-  color: #c7d3c1;
+  color: var(--color-text);
   cursor: pointer;
 }
 .comfy-installation:hover:not(:disabled) {
-  border-color: #617b4d;
-  background: #293427;
+  border-color: var(--color-border-strong);
+  background: var(--color-surface-hover);
 }
 .comfy-installation.selected {
-  background: #2e3928;
-  border-color: #7d9d5f;
+  background: var(--color-accent-soft);
+  border-color: var(--color-accent-line);
 }
 .comfy-panel .comfy-installation:disabled {
   opacity: 1;
@@ -272,8 +272,8 @@
   display: grid;
   place-items: center;
   border-radius: 6px;
-  background: #4b5f3b30;
-  color: #b2c69f;
+  background: var(--color-surface-hover);
+  color: var(--color-text-muted);
   flex-shrink: 0;
 }
 .comfy-installation-info {
@@ -294,15 +294,15 @@
 .comfy-installation-info strong small {
   font-size: 12px;
   font-weight: 400;
-  color: #8fa27e;
-  border: 1px solid #55644655;
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
   padding: 2px 4px;
   border-radius: 3px;
   white-space: nowrap;
 }
 .comfy-installation-info > span {
   font-size: 12px;
-  color: #8e9e85;
+  color: var(--color-text-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -318,10 +318,10 @@
   display: flex;
   align-items: center;
   gap: 14px;
-  border: 1px dashed #3e4938;
+  border: 1px dashed var(--color-border);
   border-radius: 7px;
   padding: 16px;
-  color: #7c9071;
+  color: var(--color-text-muted);
 }
 .comfy-scan-empty > svg {
   flex-shrink: 0;
@@ -329,34 +329,34 @@
 .comfy-scan-empty strong {
   font-size: 12px;
   font-weight: 400;
-  color: #b3c2a8;
+  color: var(--color-text);
 }
 .comfy-scan-empty p {
   font-size: 12px;
   line-height: 1.8;
   margin: 7px 0 0;
-  color: #798c70;
+  color: var(--color-text-muted);
   overflow-wrap: anywhere;
 }
 .comfy-scan-path-toggle {
   display: flex;
   align-items: center;
   gap: 5px;
-  color: #9bad8e;
+  color: var(--color-accent);
   background: transparent;
   border: 0;
   padding: 12px 0 3px;
   font-size: 12px !important;
 }
 .comfy-scan-path-toggle:hover {
-  color: #cee6b9;
+  color: var(--color-accent-hover);
 }
 .comfy-scan-path {
   margin-top: 12px;
 }
 .comfy-scan-path > label {
   display: block;
-  color: #899c7c;
+  color: var(--color-text-muted);
   font-size: 12px;
   margin-bottom: 7px;
 }
@@ -372,30 +372,30 @@
 .comfy-panel input {
   height: 35px;
   padding: 8px 10px;
-  border: 1px solid #3b4636;
+  border: 1px solid var(--color-border);
   border-radius: 5px;
-  background: #161c17;
-  color: #d3dfcd;
+  background: var(--color-surface-sunken);
+  color: var(--color-text);
   outline: none;
   font-size: 12px !important;
   width: 100%;
 }
 .comfy-panel input::placeholder {
-  color: #62765a;
+  color: var(--color-text-muted);
 }
 .comfy-panel input:focus {
   border-color: var(--color-accent-line);
   box-shadow: 0 0 0 2px var(--accent-soft);
 }
 .comfy-panel input:disabled {
-  color: #87917f;
-  border-color: #303b2e;
-  background: #1e231e;
+  color: var(--color-text-muted);
+  border-color: var(--color-border);
+  background: var(--color-surface-panel);
 }
 .comfy-scanned-roots {
   margin-top: 10px;
   font-size: 12px;
-  color: #718568;
+  color: var(--color-text-muted);
 }
 .comfy-scanned-roots summary {
   cursor: pointer;
@@ -405,12 +405,12 @@
   margin-top: 6px;
   overflow-wrap: anywhere;
   line-height: 1.6;
-  color: #8c9e80;
+  color: var(--color-text-muted);
 }
 .comfy-settings-form {
   margin-top: 23px;
   padding-top: 17px;
-  border-top: 1px solid #343d30;
+  border-top: 1px solid var(--color-border);
 }
 .comfy-settings-form .comfy-section-heading {
   margin-bottom: 14px;
@@ -418,7 +418,7 @@
 .comfy-settings-form > label {
   display: block;
   margin-bottom: 8px;
-  color: #95a58b;
+  color: var(--color-text-muted);
   font-size: 12px;
 }
 .comfy-port-row {
@@ -432,7 +432,7 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  color: #95a58b;
+  color: var(--color-text-muted);
   font-size: 12px;
   width: 105px;
 }
@@ -447,7 +447,7 @@
   gap: 6px;
   font-size: 12px;
   line-height: 1.7;
-  color: #b9d79f;
+  color: var(--color-success);
   margin: 13px 0 0;
 }
 .comfy-python-path {
@@ -456,12 +456,12 @@
   display: flex;
   flex-direction: column;
   gap: 7px;
-  color: #718369;
+  color: var(--color-text-muted);
 }
 .comfy-python-path code {
   font-family: inherit;
   font-size: 12px;
-  color: #8c9c83;
+  color: var(--color-text-muted);
   overflow-wrap: anywhere;
   line-height: 1.7;
 }
@@ -470,7 +470,7 @@
   flex-direction: column;
   min-height: 364px;
   min-width: 0;
-  border: 1px solid #313d31;
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   background: #151b17;
   overflow: hidden;
@@ -478,7 +478,7 @@
 .comfy-logs .comfy-section-heading {
   padding: 13px 15px;
   margin: 0;
-  border-bottom: 1px solid #2e3b2d;
+  border-bottom: 1px solid var(--color-border);
   height: 48px;
   flex-shrink: 0;
 }
@@ -486,7 +486,7 @@
   display: flex;
   align-items: center;
   gap: 5px;
-  color: #91a882;
+  color: var(--color-accent);
   border: 0;
   background: none;
   font-size: 12px !important;
@@ -501,12 +501,12 @@
   font-family: "Cascadia Code", "Consolas", monospace;
   font-size: 12px;
   line-height: 1.85;
-  color: #b8c8ad;
+  color: var(--color-text);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   overflow: auto;
   scrollbar-width: thin;
-  scrollbar-color: #3f5138 transparent;
+  scrollbar-color: var(--color-border) transparent;
   outline: none;
 }
 .comfy-log-output:focus-visible {
@@ -521,22 +521,22 @@
   padding: 35px 20px;
   min-height: 250px;
   text-align: center;
-  color: #607455;
+  color: var(--color-text-muted);
 }
 .comfy-log-empty p {
   font-size: 12px;
   margin: 14px 0 0;
   line-height: 1.9;
-  color: #6d8262;
+  color: var(--color-text-muted);
 }
 .comfy-log-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 10px;
-  border-top: 1px solid #2e3b2d;
+  border-top: 1px solid var(--color-border);
   padding: 10px 13px;
-  color: #677e5d;
+  color: var(--color-text-muted);
   font-size: 12px;
   flex-shrink: 0;
 }
@@ -623,11 +623,11 @@
   align-items: center;
   gap: 18px;
   padding: 14px 24px;
-  border-top: 1px solid #343d31;
-  background: #1c231c;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface-chrome);
   flex-shrink: 0;
   font-size: 12px;
-  color: #778c6c;
+  color: var(--color-text-muted);
 }
 .comfy-panel-footer > span {
   display: flex;
@@ -639,10 +639,10 @@
   display: flex;
   align-items: center;
   gap: 5px;
-  color: #a9c393;
+  color: var(--color-accent);
 }
 .comfy-panel-footer > button {
-  color: #b9caae;
+  color: var(--color-text);
 }
 @keyframes comfy-pulse {
   50% {
