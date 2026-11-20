@@ -855,26 +855,29 @@ a svg {
   top: 34px;
   width: 160px;
   z-index: 35;
-  padding: 5px;
-  background: var(--popup-bg);
-  border: 1px solid var(--popup-border);
-  border-radius: 8px;
-  box-shadow: 0 12px 40px #0006;
+  /* shared menu surface (reference: canvas context menu); position and width stay local */
+  padding: var(--menu-padding);
+  background: var(--popover-surface);
+  border: 1px solid var(--popover-border);
+  border-radius: var(--popover-radius);
+  box-shadow: var(--shadow-popover);
 }
 .dropdown button,
 .dropdown a {
-  display: block;
-  padding: 9px 12px;
+  display: flex;
+  align-items: center;
+  min-height: var(--menu-item-height);
+  padding: var(--menu-item-padding);
   width: 100%;
   font-size: 12px;
   background: none;
   border: none;
   text-align: left;
-  border-radius: 4px;
+  border-radius: var(--menu-item-radius);
 }
 .dropdown button:hover,
 .dropdown a:hover {
-  background: var(--popup-hover);
+  background: var(--menu-item-hover);
 }
 .tabs {
   display: flex;
