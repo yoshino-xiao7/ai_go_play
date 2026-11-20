@@ -41,7 +41,7 @@
 5. **字号与字重**（D5）。先处理时间线和画布状态栏。时间线与画布状态栏的试点已完成，见 [字号记录](../../release/DESIGN-SYSTEM-PHASE1-TYPOGRAPHY.md)。
 6. **`canvas.css` 重复定义合并**（D7）。沿用阶段 0 的方法：分析每个属性的最终值，必要时加入窄视口与悬停状态做验证。已完成可以证明等价的部分（31 → 23 组），见 [重复定义记录](../../release/DESIGN-SYSTEM-PHASE1-CANVAS-DEDUP.md)。
 7. **层级排序修正**（D6）。这是可见变化，需要逐个验证弹层的叠放。已完成，见 [层级记录](../../release/DESIGN-SYSTEM-PHASE1-LAYERING.md)。
-8. **遗留模板交互的去留**（D10）与面板动画（D11）。
+8. **遗留模板交互的去留**（D10）与面板动画（D11）。已完成，见 [动效与面板记录](../../release/DESIGN-SYSTEM-PHASE1-MOTION-PANELS.md)。
 9. **`@layer` 化**（D8）。在 `!important` 基本清理之后进行。
 
 ## 验证工具纳入仓库

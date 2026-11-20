@@ -16,8 +16,8 @@
 | D7 | 206 处 `!important`、41 个重复定义的顶层选择器（`canvas.css` ~~31 个~~ → 23 个）。**阶段 1 已处理 `canvas.css`**：删除 94 个始终被覆盖的声明，合并 8 组，构建产物逐字节不变，见 [重复定义记录](../../release/DESIGN-SYSTEM-PHASE1-CANVAS-DEDUP.md)。<br>仍未处理：<br>• `canvas.css` 剩余 23 组：合并要越过同优先级的规则，需要先证明选择器不会命中同一元素，或在 `!important` 清理后一并处理<br>• `.canvas-project-title`、`.canvas-local-tag`、`.media-history-controls` 未被任何组件使用，可以在失效代码清理中整条删除<br>• 其他文件的 10 个重复选择器<br>• `!important` 数量未变 | [级联审计](CASCADE-AUDIT.md) | 1–2 |
 | D8 | 级联顺序依赖懒加载顺序 | [级联审计](CASCADE-AUDIT.md) | 2（`@layer`） |
 | D9 | 19 套按钮类名；~~至少 5 套菜单实现~~；同一个素材面板里有 3 种标签页样式。**阶段 1 已统一菜单与弹层的视觉**：右键菜单、画布「更多」、项目卡片菜单、工具栏主体 / 画框菜单、项目菜单、节点搜索、选择框和参数弹层都使用同一组 Token，见 [菜单与弹层记录](../../release/DESIGN-SYSTEM-PHASE1-MENU-POPOVER.md)。<br>仍未处理：<br>• 右键菜单禁用文字 `#747882`、快捷键文字 `#9297a2` 是冷灰，保留原值<br>• 侧栏账户弹层 `.rail-user-popover`（需要已绑定账户才能渲染）<br>• 参考图预览、视频历史、候选对比、主体素材选择器这几个弹层<br>• 按钮：共用 `Button` / `ButtonLink` / `IconButton` 已建立，**只有项目首页完成替换**，见 [首页按钮记录](../../release/DESIGN-SYSTEM-PHASE1-HOME-BUTTONS.md)。其余页面仍是旧类名；共用的 `Modal` 关闭按钮和 `Confirm` 操作（`ui.tsx`）被所有页面使用，尚未替换；旧 `.button.ghost`、`.icon-button` 仍是冷灰<br>• 对话框表面：`.modal-footer` 描边 `#32363e`、`.confirm-copy` 文字 `#c2c7cf` 是冷灰<br>• 标签页 | 组件盘点 | 1 |
-| D10 | 遗留的网站模板交互：`.btn` 悬停上浮、`.card` 上浮、项目封面 `.m-zoom` 放大、焦点环动画。桌面创作工具是否保留这些效果，需要设计决定 | `motion/motion.css` | 1 |
-| D11 | 侧面板写了过渡动画，但开关依靠 `display:none`，动画从未生效 | `canvas.css` 中的 `.canvas-library` / `.canvas-inspector` | 1 |
+| D10 | ~~遗留的网站模板交互：`.btn` 悬停上浮、`.card` 上浮、项目封面 `.m-zoom` 放大、焦点环动画~~。**阶段 1 已处理**：删除悬停上浮、卡片上浮与阴影、封面放大、焦点环动画；保留按压、颜色过渡、链接下划线、封面裁切。见 [动效与面板记录](../../release/DESIGN-SYSTEM-PHASE1-MOTION-PANELS.md) | `motion/motion.css` | 已完成 |
+| D11 | ~~侧面板写了过渡动画，但开关依靠 `display:none`，动画从未生效~~。**阶段 1 已处理**：开关约 0.2 秒淡入 / 淡出；关闭中不可点、不可聚焦；减少动态效果时即时完成 | `canvas.css` 中的 `.canvas-library` / `.canvas-inspector` | 已完成 |
 | D12 | 口型同步、资产详情使用浏览器原生的 `select`、`audio`、`video` 控件，浅灰色的音频条与深色界面冲突 | 口型同步、资产详情截图 | 1 |
 | D13 | 多个样式文件整份写在一行 | [级联审计](CASCADE-AUDIT.md) | 1（随迁移逐个展开） |
 | D14 | 不同页面的页头和网格不一致：工作流页没有面包屑，内容起点与其他页面不同，并带有宣传性质的横幅 | 工作流页截图 | 1 |
