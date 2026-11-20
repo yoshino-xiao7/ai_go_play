@@ -12,6 +12,7 @@ main.tsx
   4. studio-theme.css         html[data-theme="studio"] 覆盖层
   5. management.css           设置 / 管理页覆盖层
   6. motion/motion.css        遗留交互层（阶段 0 后只剩仍生效的规则）
+  7. design/states.css        共享交互状态（阶段 1：禁用的主操作）
 App 及各工作区按需懒加载，组件 CSS 在对应 chunk 加载时插入：
   Canvas → canvas.css、review-experience.css
   GenerationComposer → generation.css、studio-composer.css

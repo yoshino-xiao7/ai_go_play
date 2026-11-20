@@ -6,10 +6,11 @@
 
 | 编号 | 问题 | 证据 | 建议阶段 |
 | --- | --- | --- | --- |
-| D1 | 状态色分散：危险、警告、信息各有 5 种以上的字面量；危险色 `#f3a9ac` 与品牌色 `#f3abc2` 色相只差约 16°；视频创作的警告横幅使用另一套黄色 `rgba(234,179,8,…)` / `#fef08a` | 右键菜单「删除」，视频创作的 ComfyUI 未连接横幅 | 1 |
-| D2 | 禁用的主按钮仍是填充的主按钮外观 | 安装向导「下一步」、ComfyUI「启动服务」、剧本「保存剧本」 | 1 |
+| D1 | 状态色分散。**阶段 1 已部分处理**：危险、警告、信息 Token 已接入到可实测的界面（见 [阶段 1 记录](../../release/DESIGN-SYSTEM-PHASE1-STATUS.md)）。仍未接入：账号弹层的危险项（`.popover-action-btn.is-danger`，需要绑定账号才能渲染），以及约 15 处无法在隔离环境渲染的错误文字（`production-error`、`timeline-banner.error`、`canvas-run-error`、`subject-error`、`save-canvas-error`、`voice-design-error`、`exit-application-error` 等）；`.generation-job.unknown` 仍为琥珀字面量 | 剩余选择器列表见阶段 1 记录 | 1 |
+| D1a | `.video-notice` 一个类同时用于阻塞提示、旧配置提示、待确认提交和后期任务错误，目前统一按警告显示；区分它们需要修改标记 | `VideoComposer.tsx`、`VideoEnhanceComposer.tsx`、`AudioComposer.tsx` | 1 |
+| D2 | ~~禁用的主按钮仍是填充的主按钮外观~~。**阶段 1 已处理**（`design/states.css`） | 安装向导「下一步」、ComfyUI「启动服务」、剧本「保存剧本」等 | 已完成 |
 | D3 | 旧绿色、旧冷蓝色仍然可见 | 画布素材面板的音频缩略图、属性面板输入框、「打开素材预览」按钮、ComfyUI 输入框占位文字、选中连线的端点、图片大图预览、自动编排面板整体 | 1 |
-| D4 | 焦点色有 3 种：强调色、`#83c4ff`（图像创作）、`#a9bfda`（视频创作） | `studio-composer.css`、`video.css` | 1 |
+| D4 | **更正并已处理（阶段 1）**。阶段 0 记录为「焦点色有 3 种」，这一判断对按钮不成立：全局规则用 `!important` 统一了 `button`、`a`、`input`、`select`、`textarea` 的焦点色，蓝色字面量从未生效。真正生效的例外是这条全局规则以外的元素：创作区的 `<summary>`（`#83c4ff`）、ComfyUI 日志（`#7b9c60`）、安装向导路径行（`#ca91a7`）。现在三者都使用 `--color-focus` | 渲染实测 | 已完成 |
 | D5 | 字号过小：时间线有 77 处可见文字小于 11px；画布状态栏 9px、对比度 3.0:1；字重 450 / 550 / 630 / 650 在中文字体下没有效果；声明的 `Inter` 字体从未加载；等宽字体有 4 套写法 | 渲染实测（`metrics.json`） | 1 |
 | D6 | 层级排序：提示消息（200）低于视频查看器（1500）和图片查看器（5000），查看器打开时提示会被遮住；自动编排遮罩（属于模态）与右键菜单、选择横幅、视频参数弹层共用 1800 | `tokens.css` 的 `--z-*` 层级 | 1 |
 | D7 | 206 处 `!important`、41 个重复定义的顶层选择器（`canvas.css` 31 个） | [级联审计](CASCADE-AUDIT.md) | 1–2 |

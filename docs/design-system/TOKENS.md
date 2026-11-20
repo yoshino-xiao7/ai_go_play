@@ -24,10 +24,21 @@
 | `--color-accent-soft` | `#f3abc21a` | 选中底色 | 已接入 |
 | `--color-on-accent` | `#2d1720` | 强调色上的文字 | 已接入（`--accent-ink`） |
 | `--color-success` | `#adc7bf` | 成功 | 已接入（`--status-ok`） |
-| `--color-danger` | `#e5735a` | 危险，与品牌色相差 30° 以上 | 建议 |
-| `--color-warning` | `#d7ad73` | 警告 | 建议 |
-| `--color-info` | `#9ebfe8` | 信息 | 建议 |
-| `--color-focus` | 同 accent | 焦点环 | 建议（当前焦点色有 3 种，见样式债务） |
+| `--color-danger` | `#f0907a` | 危险操作与失败。色相与品牌色相差 30.4°；作为文字在所有表面上对比度不低于 5.3:1 | 已接入（阶段 1） |
+| `--color-danger-soft` | `#f0907a24` | 危险提示底色、危险按钮悬停（14%） | 已接入 |
+| `--color-danger-line` | `#f0907a59` | 危险控件描边（35%） | 已接入 |
+| `--color-danger-solid` | `#be5337` | 填充式危险按钮（如确认删除）。白字对比度 4.7:1，与弹窗表面对比 3.5:1 | 已接入 |
+| `--color-on-danger-solid` | `#ffffff` | 填充式危险按钮上的文字 | 已接入 |
+| `--color-warning` | `#d7ad73` | 警告与阻塞提示。作为文字不低于 6.0:1（在自身底色上同样成立） | 已接入（阶段 1） |
+| `--color-warning-soft` / `--color-warning-line` | 12% / 35% | 警告底色 / 描边 | 已接入 |
+| `--color-info` | `#9ebfe8` | 说明与模式提示，不用于选中或主操作。作为文字不低于 6.6:1 | 已接入（阶段 1） |
+| `--color-info-soft` / `--color-info-line` | 12% / 35% | 信息底色 / 描边 | 已接入 |
+| `--color-focus` | 同 accent | 所有键盘焦点环 | 已接入（阶段 1） |
+| `--color-disabled-surface` | 同 surface-raised | 禁用的主操作背景 | 已接入（阶段 1） |
+| `--color-disabled-border` | 同 border | 禁用的主操作描边 | 已接入 |
+| `--color-disabled-text` | 同 text-muted | 禁用的主操作文字，在禁用背景上对比度 6.4:1 | 已接入 |
+
+危险色最初建议为 `#e5735a`。实测它在悬停表面上的文字对比度只有 4.1:1，低于小字号所需的 4.5:1，所以改为 `#f0907a`。
 
 基础色阶 `--ink-*`、`--rose-*` 只在 `tokens.css` 内部引用。
 
