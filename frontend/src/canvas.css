@@ -1469,7 +1469,9 @@
 .canvas-node {
   border-color: rgba(255, 255, 255, 0.1) !important;
   border-radius: 14px !important;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
+  /* !important required: in canvas pick mode it keeps the node shadow over the pick ring of
+     studio-theme.css / review-experience.css (.canvas-pick-compatible .canvas-node, higher specificity). */
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45) !important;
 }
 .canvas-node.is-selected {
   border-color: var(--accent) !important;
@@ -1494,7 +1496,7 @@
 .media-node {
   border-radius: 14px;
   background: var(--panel);
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5) !important; /* same reason as .canvas-node box-shadow */
 }
 .media-node-poster {
   background: var(--canvas-bg) !important;
