@@ -70,9 +70,35 @@
 | `--control-tool` | 38px：画布工具栏 | 建议 |
 | `--radius-xs` … `--radius-2xl` | 2 / 4 / 6 / 8 / 12 / 16px | 建议 |
 | `--radius-pill` | 9999px，只用于标签 | 建议 |
-| `--shadow-popover` | `0 12px 36px #0006, 0 1px 4px #0003` | 建议（与 studio-theme 弹层现值相同） |
+| `--shadow-popover` | `0 12px 36px #0006, 0 1px 4px #0003` | 已接入（菜单与弹层） |
 | `--shadow-panel` | 画布浮动面板现值 | 建议 |
 | `--shadow-modal` | `0 28px 100px #0008` | 建议（与 `.modal` 现值相同） |
+
+## 菜单与弹层（阶段 1，D9）
+
+取值来自两个参照组件的实际渲染：命令菜单参照画布右键菜单，内容弹层参照视频参数弹层。宽度、定位、层级、挂载方式和键盘交互仍由各组件自己负责，不做成 Token。
+
+| Token | 值 | 用途 |
+| --- | --- | --- |
+| `--popover-surface` | `var(--color-surface-raised)` | 菜单和弹层的表面 |
+| `--popover-border` | `var(--color-border-strong)` | 1px 描边 |
+| `--popover-radius` | 14px | 容器圆角 |
+| `--popover-text` | `var(--color-text)` | 正文与菜单项文字 |
+| `--popover-padding` | 15px | 内容弹层内边距（参数、选择器） |
+| `--menu-padding` | 6px | 命令菜单内边距 |
+| `--menu-item-height` | 36px | 菜单项最小高度 |
+| `--menu-item-radius` | 8px | 菜单项、列表行圆角 |
+| `--menu-item-padding` | `7px 10px` | 菜单项内边距 |
+| `--menu-item-gap` | 10px | 图标与文字的间距 |
+| `--menu-item-hover` | `var(--color-surface-hover)` | 悬停、展开子菜单；在右键菜单这类方向键移动焦点的菜单里，也表示键盘焦点 |
+| `--option-selected-surface` | `var(--color-accent-soft)` | 分段选项、当前项的选中底色 |
+| `--option-selected-border` | `var(--color-accent-line)` | 分段选项的选中描边 |
+
+状态规则：
+
+- 危险项文字：`--color-danger`，悬停时底色与普通项相同。
+- 键盘焦点：除右键菜单外，其余菜单使用全局的 `--color-focus` 焦点环。右键菜单用方向键移动焦点，焦点由悬停底色表示。
+- 禁用：右键菜单的禁用文字 `#747882` 和快捷键文字 `#9297a2` 暂时保留原值，见样式债务 D9。
 
 ## 层级
 
