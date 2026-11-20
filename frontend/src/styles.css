@@ -1091,7 +1091,7 @@ a svg {
   line-height: 1.9;
   max-width: 420px;
 }
-.empty-state > .button {
+.empty-state > :is(.button, .ui-button) {
   margin-top: 24px;
 }
 .pagination {
@@ -1674,7 +1674,7 @@ progress {
   .page-heading > .button {
     align-self: flex-start;
   }
-  .projects-page .page-heading .button-row > .button {
+  .projects-page .page-heading .button-row > :is(.button, .ui-button) {
     flex: 1;
   }
   .section-toolbar {

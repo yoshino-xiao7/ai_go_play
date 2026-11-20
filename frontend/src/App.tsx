@@ -61,6 +61,7 @@ import type {
   Task,
 } from "./types";
 import { Confirm, EmptyState, Loading, Modal } from "./ui";
+import { Button } from "./design/Button";
 const Canvas = lazy(() => import("./Canvas"));
 const ComfyPanel = lazy(() => import("./ComfyPanel"));
 const Workflows = lazy(() => import("./Workflows"));
@@ -887,12 +888,13 @@ function Projects({
           <p>创建画布，整理素材、参考与分镜。</p>
         </div>
         <div className="button-row">
-          <button className="button secondary btn" onClick={() => startEdit("new", true)}>
+          <Button variant="secondary" className="btn" onClick={() => startEdit("new", true)}>
             <BookOpen size={17} />
             新手引导
-          </button>
-          <button
-            className="button secondary btn"
+          </Button>
+          <Button
+            variant="secondary"
+            className="btn"
             onClick={() => {
               setShareImportError("");
               setShareImportOpen(true);
@@ -900,19 +902,20 @@ function Projects({
           >
             <Cloud size={17} />
             从亦可导入
-          </button>
-          <button
-            className="button secondary btn"
+          </Button>
+          <Button
+            variant="secondary"
+            className="btn"
             disabled={busy}
             onClick={() => importRef.current?.click()}
           >
             <PackageOpen size={17} />
             导入项目
-          </button>
-          <button className="button primary btn" onClick={() => startEdit("new")}>
+          </Button>
+          <Button variant="primary" className="btn" onClick={() => startEdit("new")}>
             <Plus size={18} />
             新建画布
-          </button>
+          </Button>
         </div>
       </header>
       <input
@@ -953,12 +956,12 @@ function Projects({
             title={search ? "没有匹配的项目" : "还没有项目"}
             description={search ? `找不到包含“${search}”的项目。` : "新建一张画布，或导入已有的 ai-go-play 项目包。"}
             action={search ? (
-              <button className="button secondary btn" onClick={() => setSearch("")}>清除搜索</button>
+              <Button variant="secondary" className="btn" onClick={() => setSearch("")}>清除搜索</Button>
             ) : (
-              <button className="button primary btn" onClick={() => startEdit("new")}>
+              <Button variant="primary" className="btn" onClick={() => startEdit("new")}>
                 <Plus size={18} />
                 新建画布
-              </button>
+              </Button>
             )}
           />
         )
