@@ -599,7 +599,8 @@
 }
 .canvas-frame-options {
   width: 132px;
-  /* position, surface and layout: the !important block below (its earlier duplicates were removed, D7) */
+  /* position, surface and layout: the .canvas-frame-options block below (its earlier duplicates were removed, D7;
+     its !important flags were proven redundant and removed in phase 1) */
 }
 .canvas-frame-options button {
   display: flex;
@@ -1389,19 +1390,19 @@
   background: rgba(255, 255, 255, 0.12);
 }
 .canvas-frame-options {
-  position: absolute !important;
-  left: 50% !important;
-  bottom: calc(100% + 12px) !important;
-  top: auto !important;
-  transform: translateX(-50%) !important;
-  background: var(--popover-surface) !important;
-  border: 1px solid var(--popover-border) !important;
-  border-radius: var(--popover-radius) !important;
-  padding: var(--menu-padding) !important;
-  box-shadow: var(--shadow-popover) !important;
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 3px !important;
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 12px);
+  top: auto;
+  transform: translateX(-50%);
+  background: var(--popover-surface);
+  border: 1px solid var(--popover-border);
+  border-radius: var(--popover-radius);
+  padding: var(--menu-padding);
+  box-shadow: var(--shadow-popover);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
 }
 /* Single definition of the zoom control (phase 0 merged an earlier, fully overridden block).
    !important is still required: studio-theme.css sets background/border with higher specificity,
@@ -1557,7 +1558,7 @@
 }
 .canvas-toolbar > .canvas-generate-tool {
   background: var(--accent) !important;
-  color: var(--accent-ink) !important;
+  color: var(--accent-ink);
 }
 .canvas-toolbar > .canvas-generate-tool:hover:not(:disabled) {
   background: var(--accent-hover) !important;
@@ -1671,22 +1672,22 @@
 }
 @media (max-width: 640px) {
   .canvas-toolbar {
-    bottom: 12px !important;
-    height: 42px !important;
+    bottom: 12px;
+    height: 42px;
     max-width: calc(100% - 20px);
-    gap: 2px !important;
-    padding-inline: 5px !important;
+    gap: 2px;
+    padding-inline: 5px;
   }
   .canvas-toolbar > button,
   .canvas-frame-menu > button {
-    width: clamp(21px, 7.4vw, 34px) !important;
-    height: 32px !important;
+    width: clamp(21px, 7.4vw, 34px);
+    height: 32px;
   }
   .canvas-toolbar button > svg {
     width: 16px;
   }
   .canvas-toolbar > .toolbar-divider {
-    margin-inline: 1px !important;
+    margin-inline: 1px;
   }
   .canvas-zoom-controls {
     bottom: 63px !important;
