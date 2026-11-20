@@ -1262,32 +1262,34 @@
   top: 39px;
   right: 0;
   width: 180px;
-  border: 1px solid #3b3e46;
-  border-radius: 10px;
-  padding: 6px;
-  background: #22252b;
-  box-shadow: 0 12px 35px #0005;
+  /* shared menu surface (reference: canvas context menu); position and width stay local */
+  border: 1px solid var(--popover-border);
+  border-radius: var(--popover-radius);
+  padding: var(--menu-padding);
+  background: var(--popover-surface);
+  box-shadow: var(--shadow-popover);
 }
 .canvas-more-options > a,
 .canvas-more-options > button {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 9px;
+  gap: var(--menu-item-gap);
   width: 100%;
-  padding: 9px 10px;
+  min-height: var(--menu-item-height);
+  padding: var(--menu-item-padding);
   box-sizing: border-box;
   border: 0;
-  border-radius: 5px;
+  border-radius: var(--menu-item-radius);
   background: none;
-  color: #c9cdd4;
+  color: var(--popover-text);
   font-size: 12px;
   text-decoration: none;
   text-align: left;
 }
 .canvas-more-options > a:hover,
 .canvas-more-options > button:hover {
-  background: #333740;
+  background: var(--menu-item-hover);
 }
 .media-node {
   border-radius: 9px;
