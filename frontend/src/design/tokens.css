@@ -170,6 +170,8 @@
   --z-media-viewer: 1500;
   --z-picker: 1750;
   --z-context: 1800;
+  --z-canvas-modal: 1850;                /* canvas modal overlays (auto run): above the context tier, so a
+                                            context menu, pick banner or parameter popover stays beneath it */
   --z-preview: 1900;
   --z-nested-modal: 2000;
   --z-select: 2100;
