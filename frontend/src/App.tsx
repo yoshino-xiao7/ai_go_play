@@ -61,7 +61,7 @@ import type {
   Task,
 } from "./types";
 import { Confirm, EmptyState, Loading, Modal } from "./ui";
-import { Button } from "./design/Button";
+import { Button, IconButton } from "./design/Button";
 const Canvas = lazy(() => import("./Canvas"));
 const ComfyPanel = lazy(() => import("./ComfyPanel"));
 const Workflows = lazy(() => import("./Workflows"));
@@ -1004,8 +1004,7 @@ function Projects({
                   <small>{dateText(project.updated_at)} 编辑</small>
                 </button>
                 <div className="menu-wrap">
-                  <button
-                    className="icon-button"
+                  <IconButton
                     aria-label={`${project.name} 操作`}
                     aria-expanded={menu === project.id}
                     onClick={() =>
@@ -1013,7 +1012,7 @@ function Projects({
                     }
                   >
                     <MoreHorizontal size={19} />
-                  </button>
+                  </IconButton>
                   {menu === project.id && (
                     <div className="dropdown">
                       <button onClick={() => startEdit(project)}>
