@@ -16,12 +16,15 @@ npm --prefix frontend ci
 npm --prefix frontend run build
 node --test tests/governance.test.cjs
 .\.venv\Scripts\python scripts/check_docs.py
+.\.venv\Scripts\python scripts/check_agent_skills.py
 .\.venv\Scripts\python scripts/check_release.py
 ```
 
 CI quality 在 Windows、Python 3.12、Node 22 上执行，准备 FFmpeg，不持有用户资料库、模型或云端账户，不把模拟调用算作 GPU 验收。
 
 发布验收使用 GitHub Windows CI。PR 和 main 的质量检查会从候选 ZIP 解压并启动工作台，核对哈希、首次安装状态、Web 页面与退出。未覆盖范围逐版写入发布说明。详见[发布手册](RELEASING.md)。
+
+创作技能检查离线核对四个入口、来源包、逐文件哈希与原文解封；`tests/test_agent_skills.py` 使用独立目录检查新用户读取和缺包错误。打包器要求全部技能文件已被 Git 收录，Windows 候选 ZIP 解压后再次使用包内 Python 检查。它们不代表 Agent 创作质量或 GPU 生成验收，调用方式见 [使用手册](AGENT_SKILLS.md)。
 
 ## 按修改选取证据
 

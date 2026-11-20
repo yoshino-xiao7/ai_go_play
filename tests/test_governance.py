@@ -2,6 +2,7 @@
 import hashlib
 import importlib.util
 import json
+import shutil
 from pathlib import Path
 import subprocess
 import sys
@@ -23,6 +24,7 @@ def load(name):
 
 release = load('check_release')
 push = load('check_push')
+skills = load('check_agent_skills')
 packager = load('package_release')
 versions = load('set_version')
 docs = load('check_docs')
@@ -108,6 +110,32 @@ def test_version_preparation_still_requires_release_notes(candidate):
 def repository(candidate):
     for name in packager.REQUIRED:
         write(candidate, name, 'fixture startup source\n')
+    # Small valid collections keep packaging tests independent of production assets.
+    for name in skills.SKILLS:
+        base = f'.agents/skills/{name}'
+        write(candidate, f'{base}/SKILL.md', f'---\nname: {name}\ndescription: Packaging fixture\n---\n# Fixture\n')
+        write(candidate, f'{base}/agents/openai.yaml', 'interface:\n  display_name: Fixture\n')
+        if name == 'ai-go-play-canvas':
+            for reference in skills.CANVAS_REFERENCES:
+                write(candidate, f'{base}/{reference}', '# Fixture reference\n')
+            continue
+        write(candidate, f'{base}/NOTICE.md', 'Test fixture; no upstream assets.\n')
+        target = candidate / base / 'scripts/source.py'
+        target.parent.mkdir(parents=True)
+        shutil.copyfile(SCRIPTS.parent / base / 'scripts/source.py', target)
+        archive = candidate / base / 'sources/upstream.zip'
+        archive.parent.mkdir(parents=True)
+        data = b'# Packaging fixture original\n'
+        with zipfile.ZipFile(archive, 'w') as output:
+            for entry in skills.ORIGINAL_ENTRIES[name]:
+                output.writestr(entry, data)
+        manifest = {'schema_version': 1, 'name': name, 'repository': 'fixture/skills', 'commit': '0' * 40,
+                    'upstream_url': 'https://example.invalid/fixture', 'archive': 'sources/upstream.zip',
+                    'archive_sha256': hashlib.sha256(archive.read_bytes()).hexdigest(),
+                    'entrypoints': skills.ORIGINAL_ENTRIES[name],
+                    'files': [{'path': entry, 'size': len(data), 'sha256': hashlib.sha256(data).hexdigest()}
+                              for entry in skills.ORIGINAL_ENTRIES[name]]}
+        write(candidate, f'{base}/sources/manifest.json', json.dumps(manifest))
     write(candidate, '.gitignore', 'frontend/dist/\n.qa/\n.env\n')
     git(candidate, 'init', '--initial-branch=dev')
     git(candidate, 'config', 'user.email', 'test@example.invalid')
@@ -126,6 +154,8 @@ def test_package_contains_only_source_and_build_with_valid_hash(repository):
         names = archive.namelist()
         assert 'ai-go-play-1.2.3/frontend/dist/index.html' in names
         assert 'ai-go-play-1.2.3/start.cmd' in names
+        assert all(f'ai-go-play-1.2.3/.agents/skills/{name}/SKILL.md' in names for name in skills.SKILLS)
+        assert 'ai-go-play-1.2.3/.agents/skills/ai-go-play-maimai/sources/upstream.zip' in names
         assert not any('/.env' in n or '/.qa/' in n for n in names)
         assert archive.testzip() is None
     manifest = json.loads(target.with_name('release-manifest.json').read_text())
@@ -141,6 +171,14 @@ def test_package_rejects_missing_tracked_files_and_dirty_source(repository):
         packager.package(repository, repository / '.qa/output')
     git(repository, 'rm', '--cached', 'start.cmd')
     with pytest.raises(ValueError, match='not committed'):
+        packager.package(repository, repository / '.qa/output')
+
+
+def test_package_rejects_source_archive_missing_from_git(repository):
+    source = '.agents/skills/ai-go-play-maimai/sources/upstream.zip'
+    git(repository, 'rm', '--cached', source)
+    git(repository, 'commit', '-m', 'fixture omits archive')
+    with pytest.raises(ValueError, match='Skill files are not committed'):
         packager.package(repository, repository / '.qa/output')
 
 

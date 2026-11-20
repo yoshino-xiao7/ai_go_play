@@ -1,0 +1,250 @@
+{
+  "schema_version": 1,
+  "name": "ai-go-play-maimai",
+  "repository": "BenBenHS/maimai-tangtang",
+  "commit": "d07039731108b65049a2a5533d499cfc5699483d",
+  "upstream_url": "https://github.com/BenBenHS/maimai-tangtang/tree/d07039731108b65049a2a5533d499cfc5699483d",
+  "archive": "sources/upstream.zip",
+  "archive_sha256": "75766dab63e6d2ef82a4006a6e6f389096c783c6e0ee23f5c23e0454c52101ad",
+  "entrypoints": [
+    "skills/maimai-tangtang-animation/SKILL.md",
+    "skills/mmt-cel-first-frame/SKILL.md"
+  ],
+  "files": [
+    {
+      "path": "USAGE.md",
+      "size": 376,
+      "sha256": "e222b54eb071bcfbf68ab05fc520f5059b0a3b64a48a6d15bb7901ee265e9b0c",
+      "git_blob_sha": "aaba2f3e25cacf1b9ee2d885b2fa16c636bf4915"
+    },
+    {
+      "path": "assets/characters/maimai-casual.png",
+      "size": 1493771,
+      "sha256": "6e4da8fcbacfd006081ace3f444cea2207a18d5d6a98e527c473c7043c5674ce",
+      "git_blob_sha": "e5a1a238cf7ec9fcc9d3c12a0739f570a7113870"
+    },
+    {
+      "path": "assets/characters/maimai-home.png",
+      "size": 1398696,
+      "sha256": "1905826997c5b224c99d37ca0fc11cce5db33e6c0ef2aeeb66ffb81731dbc977",
+      "git_blob_sha": "d56058608cce4e5ada0c64bbc73999a7daf20d43"
+    },
+    {
+      "path": "assets/characters/maimai-maid.png",
+      "size": 1689727,
+      "sha256": "4724d7247bde6ae39d36c57294ae4067a738a3b580b54021809a20d82be6baa4",
+      "git_blob_sha": "76f9612689eef6094f085949c11c534378586c0b"
+    },
+    {
+      "path": "assets/characters/maimai-school.png",
+      "size": 1516363,
+      "sha256": "699af21f157601888265bb46cd6a5d1d73b5e719960b7ad44e5c64c2d0d810dd",
+      "git_blob_sha": "7db4b5616eaf53e5d81bc84951fa07c389d160ed"
+    },
+    {
+      "path": "assets/characters/sisters-home.png",
+      "size": 1894783,
+      "sha256": "c364b7cdf7f9b00936732221a588c31f6c674931abf49df2e496176db7bdadab",
+      "git_blob_sha": "0dbc0d4781ab8d3605ecd0d7751694b13d719eea"
+    },
+    {
+      "path": "assets/characters/tangtang-casual.png",
+      "size": 1561683,
+      "sha256": "8017e77e98bbff9841e63b45ee3198955aa5de9dff692e1a9b2f1508d2442324",
+      "git_blob_sha": "28157ead43d7b97ba43bbd527d185918a0383fce"
+    },
+    {
+      "path": "assets/characters/tangtang-home.png",
+      "size": 1435417,
+      "sha256": "4d0473c8ac195d7b4b341eeb359f14be42ee337ac6427893cd2fb54b32679c4f",
+      "git_blob_sha": "14fa783c41f0885af2087e60745cf15c765c3573"
+    },
+    {
+      "path": "assets/characters/tangtang-maid.png",
+      "size": 1819345,
+      "sha256": "1a87783a73de86b39abae675af35631ea1b454ecce87b53a22459d8771fd232e",
+      "git_blob_sha": "5b9c15125875074e730acb93d12d1cd68b7b3f05"
+    },
+    {
+      "path": "assets/characters/tangtang-school.png",
+      "size": 1443462,
+      "sha256": "ebf5da4d1057a82a106638d0feb31a655b41d06c9fde6a7db6723b4dbd5b226d",
+      "git_blob_sha": "cc48e7731c19d138df4b184491c0e9a27d88c2ce"
+    },
+    {
+      "path": "docs/characters.md",
+      "size": 2078,
+      "sha256": "04189c9b28588b40620eff15678735ca25f084b523baac1e342f993c39ca2ac1",
+      "git_blob_sha": "35270de8aaa5a6eedbbbe4fac003a76155c95a37"
+    },
+    {
+      "path": "docs/outfit-designs.md",
+      "size": 24287,
+      "sha256": "c6389f5f477fc298685b8a6746bbdc56522f3fa0f94995050b7a12f521e382d9",
+      "git_blob_sha": "f7cf04023aa08cc5cfc9323c4c7e8a3b399ff9fb"
+    },
+    {
+      "path": "docs/project-map.md",
+      "size": 1689,
+      "sha256": "6692ac4e003fd626fc72c1fbc5e5379ed78479b6e618a26f3ae1df3f40058318",
+      "git_blob_sha": "bc7e545816e3c97864725f964be09809784ae4e2"
+    },
+    {
+      "path": "docs/voice.md",
+      "size": 2276,
+      "sha256": "bc0aff7e504aeb0a4df200ee26294664f44a63927bde78951f7391f5cefe3abd",
+      "git_blob_sha": "f1cf44e93457dfedd5419d46149b443c5bf366d5"
+    },
+    {
+      "path": "docs/wardrobe.md",
+      "size": 6556,
+      "sha256": "7e65ef6db72dd3eaa93d27c40fe3dbcb4ce56a03e8479c58367223debf65e5a4",
+      "git_blob_sha": "3eea5adf29bc56c6f0fb51e0e318afae1be96fc5"
+    },
+    {
+      "path": "skills/maimai-tangtang-animation/SKILL.md",
+      "size": 5873,
+      "sha256": "e4c5eeb70b2cdcdcf946da4fee9eca7e77ab72277e2e2b41331e5148ea663ff4",
+      "git_blob_sha": "aa43e8e8ce2b5d7b593f2c01236040dff0ed548d"
+    },
+    {
+      "path": "skills/maimai-tangtang-animation/assets/cafe/arrival.png",
+      "size": 1647097,
+      "sha256": "ac33b207ad8d6807372cccb865ef3ff1437305ed55ca88cde69d7dbd15c3e89c",
+      "git_blob_sha": "d1c5dbdfc07310dc95d55461ae78c0e3c7165e47"
+    },
+    {
+      "path": "skills/maimai-tangtang-animation/assets/cafe/bell.png",
+      "size": 1548092,
+      "sha256": "b3da933c2d23ebbc55483ab797bcee8c21a37911964f9b9604c514a6cafe90c5",
+      "git_blob_sha": "46ec5ef7631a6f965dc8da933bc92cea75399f8a"
+    },
+    {
+      "path": "skills/maimai-tangtang-animation/assets/cafe/eye.png",
+      "size": 1466937,
+      "sha256": "6e73403a9aa469562993e7cafd7581407dcb0c5d91e89b5135ac9029ad9dfc50",
+      "git_blob_sha": "8c470fd3826eb4f6932a059c789f12e5586d9925"
+    },
+    {
+      "path": "skills/maimai-tangtang-animation/assets/cafe/greeting.png",
+      "size": 1654143,
+      "sha256": "ffb46f56a49454034cc6c3672f46ae5f0fe6ea2489443acaf05316b4e50e877f",
+      "git_blob_sha": "af89ee4b44c7ae2da00c738b54024a13ecbd3ac9"
+    },
+    {
+      "path": "skills/maimai-tangtang-animation/assets/cafe/order-to-ending.jpg",
+      "size": 605989,
+      "sha256": "271530a94fe9089cd476cd03714cd31e2be347da3bda5e2a49c9389b48205d34",
+      "git_blob_sha": "1eaa3921359811fb301009711d2c754057a460f1"
+    },
+    {
+      "path": "skills/maimai-tangtang-animation/assets/cafe/recognition.png",
+      "size": 1935604,
+      "sha256": "b376b2daf90070d3e0c99cddf10b99e5ec5bac269153eed3a3c1ba87ec983204",
+      "git_blob_sha": "895b73d8d1c238578dce7bd4e8fed3f5010d3b5c"
+    },
+    {
+      "path": "skills/maimai-tangtang-animation/assets/cafe/seating-map.png",
+      "size": 277777,
+      "sha256": "d2b36c3bd7dce91326ba4a3b5c375f6c9896fdd3d268628bb5ce36720d6faba0",
+      "git_blob_sha": "69c4b2c1ef94687bb7aa8b52e7db05950e18d451"
+    },
+    {
+      "path": "skills/maimai-tangtang-animation/assets/cafe/station-look-back.png",
+      "size": 3307351,
+      "sha256": "203eacf6a59715b6ebf8fdc8f3546f3098c8d12346b5276879a9fd67d0652a88",
+      "git_blob_sha": "c6712cda1871b0e86db3cab2b952191842cb40e9"
+    },
+    {
+      "path": "skills/maimai-tangtang-animation/assets/cafe/station-maimai-listens.png",
+      "size": 2027559,
+      "sha256": "8c0eb6c068adf1274258a21e9cd73c0991c8974f263440247a8afc3071b517c3",
+      "git_blob_sha": "8ebce7d8de7a9d02eb8d67c1e623960ac40a9b29"
+    },
+    {
+      "path": "skills/maimai-tangtang-animation/assets/cafe/station-maimai-response.png",
+      "size": 1908316,
+      "sha256": "bfb2cf4059281af48aeaf5b0e73866677f739148d523de62f5312527f59b3077",
+      "git_blob_sha": "f1045f5964f18cade53214a0fe6ed7ddb1ae5069"
+    },
+    {
+      "path": "skills/maimai-tangtang-animation/assets/cafe/station-tangtang-high.png",
+      "size": 1594531,
+      "sha256": "cd45ad8d32b89d26806088fe97dda828587769e2cd1c3f202ae28a13b02f3ee1",
+      "git_blob_sha": "a5bf712385e5b5af476d97f6cbb38c29c331073a"
+    },
+    {
+      "path": "skills/maimai-tangtang-animation/assets/cafe/station-two-shot.png",
+      "size": 2001142,
+      "sha256": "e2ef03df572c405f9a8cf30b4fdf926f1c489fd8030dbe109972cd2d9ca3843d",
+      "git_blob_sha": "794110e23872358cda2c1fe3481341e4c5461c11"
+    },
+    {
+      "path": "skills/maimai-tangtang-animation/assets/cafe/station-walk-away.png",
+      "size": 3257703,
+      "sha256": "f8c712004832f3007138eb74a82932e0a1bf40bbab1b9336d417a6c0946eb780",
+      "git_blob_sha": "378e8d95aa6af0d54a145d315c5c99f00e1114ef"
+    },
+    {
+      "path": "skills/maimai-tangtang-animation/assets/cafe/street-to-entry.jpg",
+      "size": 679031,
+      "sha256": "012f3df7c071f0827602953aea2500f1796eec9a91870450781e906860770fc2",
+      "git_blob_sha": "f78a78733c7c0051fd2cd3ee4016b07b297d3ebd"
+    },
+    {
+      "path": "skills/maimai-tangtang-animation/assets/cafe/tilt-end.png",
+      "size": 1814894,
+      "sha256": "20f52168a5a01e39b7fd841a70fb3429fb53b7278821f6358f7b700509db41ad",
+      "git_blob_sha": "ac56b01be3ed3d86f1d01e9c78fd1bf54a2a7a9b"
+    },
+    {
+      "path": "skills/maimai-tangtang-animation/assets/cafe/tilt-start.png",
+      "size": 1814970,
+      "sha256": "b080f7713cae91880ca0e3e6701ed7bef9aa144042cd155ba7b01e2fbb16f03f",
+      "git_blob_sha": "2ad8ca6e0b772510db7698f7eb39c102b753a3cd"
+    },
+    {
+      "path": "skills/maimai-tangtang-animation/references/everyday-direction.md",
+      "size": 2522,
+      "sha256": "9fb02d21b0f21676857cbcf9098f8f882074c4293e1fec196f3181b35035b64a",
+      "git_blob_sha": "17193988a47941d3ca26b67e50fbc51cc52e9480"
+    },
+    {
+      "path": "skills/maimai-tangtang-animation/references/station-camera.md",
+      "size": 1634,
+      "sha256": "1b26a6602387e3fabba27788b338d80582a0d9e4dd0c82a9e086515cecabc8be",
+      "git_blob_sha": "4f90c86e2f3f6b30580dcc2c6b0b7e8ce04b79c1"
+    },
+    {
+      "path": "skills/maimai-tangtang-animation/references/workflow.md",
+      "size": 10479,
+      "sha256": "e6a5f639e2fcef6ce8a6f0a7df2aff5d10a78f2cd15f85dbbcb68da46049e46d",
+      "git_blob_sha": "0f209e1035dfce98ff0208cd6f9140361f29530e"
+    },
+    {
+      "path": "skills/mmt-cel-first-frame/SKILL.md",
+      "size": 4166,
+      "sha256": "5256e2151bac4dd46761a1253f803df5dcbf98f6bae543a7c7e30c7420eacf51",
+      "git_blob_sha": "3c273dc31e675a4adb59bd9e1a8941ff4b8a024e"
+    },
+    {
+      "path": "skills/mmt-cel-first-frame/assets/01_麦麦画风母图.png",
+      "size": 1704318,
+      "sha256": "076d7863c50fd86e6881e8cef954a58cda40272533f27f575a7df77be5652535",
+      "git_blob_sha": "4c1c007033c9381ddfe6795e5304038a0d5f1b69"
+    },
+    {
+      "path": "skills/mmt-cel-first-frame/assets/S03_坐起望窗.png",
+      "size": 1695249,
+      "sha256": "f11a34d701b4e4e1bae303abb24eec253a4e0c1a2898a181355fbd0359b152f8",
+      "git_blob_sha": "61fd25145bbea1f08302936e2c4ae8ef3804d12f"
+    },
+    {
+      "path": "skills/mmt-cel-first-frame/assets/S04A_麦麦起床_画风参考.png",
+      "size": 1764054,
+      "sha256": "75b3c2e9185798286780d51276118371c40fb2cffc8bc52d9ebcd23193b8cc78",
+      "git_blob_sha": "9bfd8d2fa48b50bdb532da029c336c9ae8fbea67"
+    }
+  ],
+  "scope": "Both complete upstream skill directories, source usage/character/catalog text, and nine basic character images. Extended wardrobe images, audio and weights remain upstream."
+}

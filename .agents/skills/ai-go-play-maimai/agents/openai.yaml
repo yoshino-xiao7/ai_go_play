@@ -1,0 +1,4 @@
+interface:
+  display_name: "ai-go-play · 麦麦糖糖原版制作"
+  short_description: "读取麦麦糖糖原版制作和首帧技能，按当前角色与交付阶段开展创作"
+  default_prompt: "用 $ai-go-play-maimai 读取收录的原版制作或首帧技能，按本次角色、画风与阶段执行。"

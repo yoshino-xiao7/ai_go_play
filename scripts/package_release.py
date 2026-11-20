@@ -6,12 +6,14 @@ from pathlib import Path
 import subprocess
 import zipfile
 from check_release import ROOT, validate
+from check_agent_skills import check as check_agent_skills
 
 REQUIRED = ('start.cmd', 'start.ps1', 'scripts/bootstrap.ps1', 'scripts/bootstrap_core.py',
             'backend/manju/setup_api.py', 'backend/manju/system_api.py',
             'LICENSE', 'release/NOTICE.txt', 'release/MODEL-LICENSES.md',
             'release/models.json', 'release/model-checksums.sha256',
-            '首次启动先看我.md', '首次启动先看我.txt')
+            '首次启动先看我.md', '首次启动先看我.txt',
+            'scripts/check_agent_skills.py', 'docs/AGENT_SKILLS.md')
 FORBIDDEN_PARTS = {'.qa', '.manju', '.venv', 'node_modules', '__pycache__'}
 
 
@@ -32,6 +34,9 @@ def package(root, output):
         if (root / path).is_symlink():
             raise ValueError('Release source must not contain symlinks: ' + name)
         paths.append(name)
+    # The same offline check runs on source, package candidates and extracted ZIPs.
+    # Passing tracked paths prevents a local-only archive from silently vanishing.
+    check_agent_skills(root, tracked=tracked)
     dist = root / 'frontend/dist'
     if not (dist / 'index.html').is_file():
         raise ValueError('Build frontend/dist before packaging')

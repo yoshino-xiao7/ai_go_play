@@ -216,7 +216,20 @@ npm --prefix frontend run build
 .\.venv\Scripts\python -m manju serve --port 8780 --data-dir "$PWD\.qa\dev-data" --config-file "$PWD\.qa\dev-config.json"
 ```
 
-热更新、检查命令及故障定位见 [开发环境](docs/DEVELOPMENT.md)、[架构](docs/ARCHITECTURE.md)、[API / CLI](docs/API.md) 和 [测试手册](docs/TESTING.md)。Agent 创作入口见 [画布制作技能](.agents/skills/manju-video-production/SKILL.md)；代码修改先阅读 [AGENTS.md](AGENTS.md)。
+热更新、检查命令及故障定位见 [开发环境](docs/DEVELOPMENT.md)、[架构](docs/ARCHITECTURE.md)、[API / CLI](docs/API.md) 和 [测试手册](docs/TESTING.md)。Agent 创作采用 **ai-go-play 创作技能集**，仅收录以下四个独立入口；上游技能原文、相对目录、素材与许可说明分别保存，不改写成统一制作规则。
+
+| 技能 | 用途 |
+| --- | --- |
+| [ai-go-play-canvas](.agents/skills/ai-go-play-canvas/SKILL.md) | 本项目画布控制、固定素材、真实任务、分镜与时间线 |
+| [ai-go-play-h3-official](.agents/skills/ai-go-play-h3-official/SKILL.md) | MiniMax-AI 官方 H3 视频提示词原版 |
+| [ai-go-play-h3-enhancer](.agents/skills/ai-go-play-h3-enhancer/SKILL.md) | MushroomFleet 的 H3 提示词增强原版 |
+| [ai-go-play-maimai](.agents/skills/ai-go-play-maimai/SKILL.md) | BenBenHS/maimai-tangtang 的动画制作与首帧两份原版技能 |
+
+三个上游来源包均固定提交并记录逐文件校验值；在对应技能目录运行 `python scripts/source.py materialize`，校验后返回原版入口路径。技能包内的 `NOTICE.md` 与 `sources/manifest.json` 说明来源、许可和收录范围。
+
+用户调用、独立安装、Windows 私有 Python 路径和完整性检查见 [创作技能使用手册](docs/AGENT_SKILLS.md)。
+
+代码修改先阅读 [AGENTS.md](AGENTS.md)。
 
 | 目录 | 内容 |
 | --- | --- |

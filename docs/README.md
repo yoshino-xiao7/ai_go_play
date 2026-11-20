@@ -9,6 +9,7 @@ docs 保存长期使用、开发和治理说明；release 保存模型清单、�
 | 开发和提交 | [贡献指南](../CONTRIBUTING.md)、[开发环境](DEVELOPMENT.md) |
 | 理解实现 | [架构](ARCHITECTURE.md)、[API / CLI](API.md) |
 | 界面与样式 | [Design System](design-system/README.md)、[Token](design-system/TOKENS.md)、[样式债务](design-system/STYLE-DEBT.md) |
+| 使用 Agent 创作技能 | [调用、安装和自检](AGENT_SKILLS.md) |
 | 验证修改 | [测试与验收](TESTING.md) |
 | 审查和管理仓库 | [治理](GOVERNANCE.md)、[仓库配置](REPOSITORY-SETUP.md) |
 | 流程验证记录 | [开发与发布流程验收](../release/GOVERNANCE-VALIDATION.md) |

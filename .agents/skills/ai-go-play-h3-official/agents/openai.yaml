@@ -1,0 +1,4 @@
+interface:
+  display_name: "ai-go-play · H3官方提示词"
+  short_description: "读取MiniMax官方原版指南，准确编写H3视频各模式的音画提示词"
+  default_prompt: "用 $ai-go-play-h3-official 读取收录的官方原文，为当前请求编写H3视频提示词。"

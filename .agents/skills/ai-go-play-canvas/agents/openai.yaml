@@ -1,0 +1,4 @@
+interface:
+  display_name: "ai-go-play · 画布控制"
+  short_description: "控制项目画布、固定素材版本与真实任务，维护分镜时间线及制作记录"
+  default_prompt: "用 $ai-go-play-canvas 操作当前项目画布，先核对运行接口与修订，保留范围外内容并回读结果。"

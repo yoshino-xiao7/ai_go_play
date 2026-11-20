@@ -26,6 +26,9 @@ try {
         -Port $port -DataDir $dataDir -ConfigFile $configFile -NoBrowser
     if ($LASTEXITCODE -ne 0) { throw "The packaged launcher exited with code $LASTEXITCODE." }
 
+    & (Join-Path $workspace '.venv\Scripts\python.exe') (Join-Path $workspace 'scripts\check_agent_skills.py')
+    if ($LASTEXITCODE -ne 0) { throw 'The extracted package has incomplete or unreadable agent skills.' }
+
     $health = Invoke-RestMethod -Uri "$url/api/health" -TimeoutSec 5
     if (!$health.ok -or $health.version -ne $manifest.version -or $health.root -ne $dataDir) {
         throw 'The extracted package did not start with the expected version and isolated library.'
@@ -44,7 +47,7 @@ try {
         -ContentType 'application/json' -Body '{"confirm":true,"stop_comfy":false}'
     if (!$shutdown.accepted) { throw 'The packaged server rejected graceful shutdown.' }
     Wait-Process -InputObject $serverProcess -Timeout 15
-    Write-Host 'Windows ZIP passed clean startup, first-run API, web serving and graceful shutdown.'
+    Write-Host 'Windows ZIP passed clean startup, offline agent skill reading, first-run API, web serving and graceful shutdown.'
 } catch {
     $statusPath = Join-Path $workspace '.manju\bootstrap\status.json'
     if (Test-Path -LiteralPath $statusPath) { Get-Content -LiteralPath $statusPath | Write-Host }

@@ -22,6 +22,8 @@
 
 ZIP 随附源码及模型许可披露，模型权重单独获取。以上修改通过 dev → integration 审查。候选新增提交后须重新跑 GitHub CI，并确认新的 SHA。
 
+四个创作技能及其原文来源包也属于分发内容。打包前运行 `scripts/check_agent_skills.py` 并检查所有技能文件已纳入 Git；遗漏入口、清单、读取器或封存包时拒绝打包。Windows 验收从解压目录使用项目私有 Python 再次离线读取原文，不依赖维护者机器的技能缓存或全局命令。
+
 ## 发布 PR
 
 所有者从本仓库 integration 创建到 main 的 PR，填写 `Release-Version: X.Y.Z`，检查完整 head SHA 后评论 `/release-confirm X.Y.Z <40 位 SHA>`。待 policy/main/route、policy/main/review、quality 通过且讨论解决，由所有者使用 **Create a merge commit** 合并，不使用 squash / rebase 发布。发布 PR 的 quality 还检查版本正文、元数据、变更记录与验收就绪文件是否一致。
