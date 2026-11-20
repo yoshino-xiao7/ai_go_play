@@ -23,9 +23,6 @@
 .canvas-workspace textarea {
   font: inherit;
 }
-.canvas-workspace button {
-  cursor: pointer;
-}
 .canvas-workspace button:disabled {
   cursor: default;
   opacity: 0.3;
@@ -47,17 +44,14 @@
   color: #646a6b;
 }
 .canvas-workspace button {
+  cursor: pointer;
   color: inherit;
 }
 .canvas-topbar {
-  height: 56px;
-  min-height: 56px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 20px 0 16px;
   border-bottom: 1px solid var(--canvas-border);
-  background: var(--rail);
   gap: 16px;
   z-index: 30;
 }
@@ -86,7 +80,6 @@
 .canvas-local-tag {
   font-size: 11px;
   color: #9ca69d;
-  display: flex;
   align-items: center;
   gap: 6px;
   white-space: nowrap;
@@ -692,8 +685,6 @@
 }
 .canvas-stage-status {
   position: absolute;
-  bottom: 10px;
-  left: 15px;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -1033,8 +1024,6 @@
 .canvas-conflict-banner {
   position: absolute;
   top: 72px;
-  left: 238px;
-  right: 236px;
   padding: 12px;
   display: flex;
   flex-wrap: wrap;
