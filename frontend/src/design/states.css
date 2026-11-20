@@ -17,6 +17,7 @@
 
 html[data-theme="studio"] :is(
   .button.primary,
+  .ui-button--primary,
   .comfy-button.primary,
   .screenplay-button.screenplay-primary,
   .production-modal button.primary,

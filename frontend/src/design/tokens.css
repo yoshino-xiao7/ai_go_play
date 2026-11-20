@@ -138,6 +138,23 @@
   --option-selected-surface: var(--color-accent-soft);   /* selected segmented option */
   --option-selected-border: var(--color-accent-line);
 
+  /* ------------------------------------------------------------------ buttons (phase 1, D9)
+     Sizes are the rendered values of the existing .button (page and dialog actions) and
+     .button.compact. Colours are the semantic tokens the studio theme already resolves to. */
+  --button-height-md: 40px;              /* page and dialog actions */
+  --button-height-sm: var(--control-lg); /* 32px: compact actions */
+  --button-padding-md: 10px 15px;
+  --button-padding-sm: 7px 11px;
+  --button-font-md: var(--text-md);
+  --button-font-sm: var(--text-sm);
+  --button-gap: 8px;
+  --button-radius: var(--radius-lg);
+  --icon-button-size: var(--control-lg); /* 32px */
+  --icon-button-radius: var(--radius-md);
+  --icon-button-color: var(--color-text-muted);
+  --icon-button-hover-color: var(--color-text);
+  --icon-button-hover-surface: var(--color-surface-hover);
+
   /* ------------------------------------------------------------------ layering
      Encodes today's global stacking ladder with identical values. Known ordering bugs (toast below
      viewers; run shade and context menu sharing 1800) are tracked in STYLE-DEBT.md. Component-local
