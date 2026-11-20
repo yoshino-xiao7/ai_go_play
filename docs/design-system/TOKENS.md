@@ -100,6 +100,35 @@
 - 键盘焦点：除右键菜单外，其余菜单使用全局的 `--color-focus` 焦点环。右键菜单用方向键移动焦点，焦点由悬停底色表示。
 - 禁用：右键菜单的禁用文字 `#747882` 和快捷键文字 `#9297a2` 暂时保留原值，见样式债务 D9。
 
+## 按钮（阶段 1，D9）
+
+组件：`frontend/src/design/Button.tsx`（`Button`、`ButtonLink`、`IconButton`），样式：`frontend/src/design/button.css`。组件只负责类名；可访问名称、`type`、事件、`disabled`、ARIA 属性和 ref 原样传给原生元素，不会补默认的 `type`，表单内的按钮照常提交。
+
+| Token | 值 | 用途 |
+| --- | --- | --- |
+| `--button-height-md` / `--button-height-sm` | 40px / 32px（`--control-lg`） | 页面和对话框操作 / 紧凑操作 |
+| `--button-padding-md` / `--button-padding-sm` | `10px 15px` / `7px 11px` | 内边距 |
+| `--button-font-md` / `--button-font-sm` | `--text-md`（13px）/ `--text-sm`（12px） | 字号 |
+| `--button-gap` / `--button-radius` | 8px / `--radius-lg`（8px） | 图标间距 / 圆角 |
+| `--icon-button-size` / `--icon-button-radius` | `--control-lg`（32px）/ `--radius-md`（6px） | 图标按钮尺寸 / 圆角 |
+| `--icon-button-color` | `--color-text-muted` | 图标按钮图形 |
+| `--icon-button-hover-color` / `--icon-button-hover-surface` | `--color-text` / `--color-surface-hover` | 图标按钮悬停 |
+
+变体与状态：
+
+| 变体 | 正常 | 悬停 | 禁用 |
+| --- | --- | --- | --- |
+| 主 `primary` | `--color-accent` 底、`--color-on-accent` 字、600 字重 | `--color-accent-hover` | 共用禁用规则（`states.css`）：中性、不透明、可读 |
+| 次 `secondary` | `--color-surface-panel` 底、`--color-border-strong` 描边 | `--color-surface-raised` 底、`--color-text-muted` 描边 | 全局 `button:disabled`（不透明度 .45） |
+| 幽灵 `ghost` | 透明、`--color-text-muted` 字 | `--color-surface-hover` 底、`--color-text` 字 | 全局 `button:disabled` |
+| 危险 `danger` | `--color-danger-solid` 底、`--color-on-danger-solid` 字 | 不变 | 全局 `button:disabled` |
+
+- 悬停一律带 `:not(:disabled)`，禁用的控件不再有悬停反馈。
+- 键盘焦点沿用全局焦点环（`--color-focus`）。
+- 悬停上浮动效 `.btn` 不属于组件，由调用方继续传入，去留见样式债务 D10。
+- 尺寸：迁移方案曾建议 24 / 28 / 32px 三档。现有页面和对话框操作实际都是 40px，本轮按实际值保留 40 / 32 两档；是否改为 24 / 28 / 32px 需要另行设计决定。
+- 图标尺寸由调用方决定。首页卡片沿用 19px 图形；统一为 16px、描边 1.5 的目标尚未执行。
+
 ## 层级
 
 数值与阶段 0 之前完全相同，只是有了名字。排序问题见 [样式债务](STYLE-DEBT.md)。

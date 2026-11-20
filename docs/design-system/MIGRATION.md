@@ -37,7 +37,7 @@
 1. **状态色与禁用态**（D1、D2、D4）。接入 `--color-danger`、`--color-warning`、`--color-info`、`--color-focus`。这一步会产生可见变化，需要附前后截图。
 2. **移除可见的旧色系**（D3）：按文件逐个处理，从 `comfy.css`、`subjects.css`、`canvas-runs.css` 开始。
 3. **Menu 与 Popover 统一**（D9）。
-4. **Button 与 IconButton**（D9）。先建立组件，再逐个页面替换，每次替换一个页面。
+4. **Button 与 IconButton**（D9）。先建立组件，再逐个页面替换，每次替换一个页面。组件已建立；项目首页试点已完成，见 [首页按钮记录](../../release/DESIGN-SYSTEM-PHASE1-HOME-BUTTONS.md)。其余页面尚未替换。
 5. **字号与字重**（D5）。先处理时间线和画布状态栏。
 6. **`canvas.css` 重复定义合并**（D7）。沿用阶段 0 的方法：分析每个属性的最终值，必要时加入窄视口与悬停状态做验证。
 7. **层级排序修正**（D6）。这是可见变化，需要逐个验证弹层的叠放。
