@@ -6,11 +6,16 @@
   number ticks, card loops) and the companion motion.js, which only attached to those absent elements.
   See docs/design-system/CASCADE-AUDIT.md.
 
-  The rules below are still live and are kept verbatim, in their original order, so specificity and
-  cascade order are unchanged:
-    .btn lift/press (setup wizard buttons), the in-text link underline, the focus-ring settle,
-    .card lift (project cards), .m-zoom image zoom (project covers).
-  Whether a desktop creative tool should keep hover lifts is a phase 1 design decision (STYLE-DEBT.md).
+  Phase 1 (D10) decided, from measurements in the app, what stays (release record
+  DESIGN-SYSTEM-PHASE1-MOTION-PANELS.md):
+    kept    .btn colour transitions and the press (translateY(1px) scale(.985)): a press cue;
+            the in-text link underline that draws in: the only hover cue of unclassed paragraph links;
+            .m-zoom { overflow: clip }: it clips project-cover images to the cover's rounded corners.
+    removed .btn hover lift (the background / border change is the hover cue); the .card hover lift,
+            border and shadow (decorative, and it suggested the whole card is clickable; the cover's
+            open arrow, the name colour and the asset card's action button remain); the 1.03 image
+            zoom; the focus-ring settle animation (it delayed the ring by 200 ms and, because its
+            reduced-motion override was less specific, it also ran under prefers-reduced-motion).
   --m-in is also read by styles.css, generation.css and video.css.
 */
 
@@ -18,9 +23,7 @@
   --m-in: var(--duration-fast);               /* hover in: buttons, links */
   --m-out: var(--duration-base);              /* hover out */
   --m-press: var(--duration-instant);         /* a press */
-  --m-image: 600ms;                           /* a photograph scaling inside its mask */
   --m-ease: var(--ease-out);                  /* ease-out: fast start, soft landing */
-  --m-lift: -2px;
 }
 
 /* ---------------------------------------------------------------- buttons */
@@ -32,10 +35,6 @@ html:not([data-motion="off"]) .btn {
 }
 html:not([data-motion="off"]) .btn:hover { transition-duration: var(--m-in), var(--m-in), var(--m-in), var(--m-in), var(--m-press); }
 html:not([data-motion="off"]) .btn:active { transform: translateY(1px) scale(.985); }
-@media (hover: hover) and (pointer: fine) {
-  html:not([data-motion="off"]) .btn:hover { transform: translateY(-1px); }
-  html:not([data-motion="off"]) .btn:active { transform: translateY(1px) scale(.985); }
-}
 
 /* ---------------------------------------------------------------- links: an underline that draws */
 /* Live through `p a:not([class])` (e.g. the setup consent links). The selector lists are kept whole:
@@ -54,42 +53,12 @@ html:not([data-motion="off"]) :is(.link, .m-link, p a:not([class]), .footer ul a
   background-size: 100% 1px, 100% 1px; background-position: left 0 bottom 0, 0 100%; transition-duration: var(--m-in);
 }
 
-/* ---------------------------------------------------------------- focus: the ring settles in */
-html:not([data-motion="off"]) :is(a, button, input, select, textarea, summary, [tabindex]):focus-visible:not([data-m-loop] *, .m-anim, .loop-pause) {
-  animation: m-focus var(--m-out) var(--m-ease);
-}
-@keyframes m-focus { from { outline-offset: 6px; outline-color: transparent; } }
-
-/* ---------------------------------------------------------------- cards: a 2px lift */
-html:not([data-motion="off"]) .card:not(.card--open, .card--plan) {
-  transition: transform var(--m-out) var(--m-ease), border-color var(--m-out) var(--m-ease), box-shadow var(--m-out) var(--m-ease);
-}
-@media (hover: hover) and (pointer: fine) {
-  html:not([data-motion="off"]) .card:not(.card--open, .card--plan, .m-nolift):hover {
-    transform: translateY(var(--m-lift));
-    border-color: color-mix(in oklab, var(--ink) 16%, transparent);
-    /* the shadow is deeper on a dark card (its lightness l): about .2 on white, .64 on near-black */
-    box-shadow: inset 0 1px 0 var(--c-hi, transparent), 0 1px 2px rgb(0 0 0 / .06),
-                0 14px 32px -18px oklch(from var(--card, #fff) 0 0 0 / calc(0.75 - l * 0.55));
-    transition-duration: 180ms;
-  }
-}
-
-/* ---------------------------------------------------------------- photographs: 1.03 inside the mask */
+/* ---------------------------------------------------------------- covers: clip the image to the rounded cover */
 .m-zoom { overflow: clip; }
-html:not([data-motion="off"]) :is(.frame__img, .tile__media > img, .m-zoom img, .m-zoom > video) {
-  transition: transform var(--m-image) var(--m-ease);
-}
-@media (hover: hover) and (pointer: fine) {
-  html:not([data-motion="off"]) :is(a, .card:has(a), .m-zoom):hover :is(.frame__img, .tile__media > img),
-  html:not([data-motion="off"]) .m-zoom:hover :is(img, video) { transform: scale(1.03); }
-}
 
-/* ---------------------------------------------------------------- reduced motion */
+/* ---------------------------------------------------------------- reduced motion: same end state, no movement */
 @media (prefers-reduced-motion: reduce) {
-  html:not([data-motion="off"]) .card:hover, html:not([data-motion="off"]) .card--open:hover > .panel,
-  html:not([data-motion="off"]) :is(a, .card:has(a), .m-zoom):hover :is(.frame__img, .tile__media > img, img, video),
-  html:not([data-motion="off"]) .btn:is(:hover, :active), html:not([data-motion="off"]) :is(.btn--arrow, .link):hover::after,
-  :is(a, button):hover > .m-arrow :is(.m-arrow__head, .m-arrow__stem) { transform: none !important; }
-  html:not([data-motion="off"]) :is(a, button, input, select, textarea, summary, [tabindex]):focus-visible { animation: none; }
+  html:not([data-motion="off"]) .btn:active { transform: none !important; }
+  html:not([data-motion="off"]) :is(.link, .m-link, p a:not([class]), .footer ul a, .footer .link),
+  html:not([data-motion="off"]) :is(.link, .m-link, p a:not([class]), .footer ul a, .footer .link):is(:hover, :focus-visible) { transition-duration: 0s; }
 }
