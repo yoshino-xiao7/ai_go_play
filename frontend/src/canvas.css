@@ -382,28 +382,13 @@
   border-radius: 8px;
 }
 .canvas-stage .react-flow__handle {
-  width: 7px;
-  height: 7px;
-  background: var(--accent-line);
-  border: 2px solid #1b1d20;
   opacity: 0;
 }
 .canvas-stage .react-flow__node:hover .react-flow__handle,
 .canvas-stage .react-flow__node.selected .react-flow__handle {
   opacity: 1;
 }
-.canvas-stage .react-flow__resize-control.handle {
-  width: 7px;
-  height: 7px;
-  background: #c0e79b;
-  border: 1px solid #1c2419;
-  border-radius: 1px;
-}
-.canvas-stage .react-flow__resize-control.line {
-  border-color: var(--accent);
-}
 .canvas-stage .react-flow__selection {
-  background: #a4d37c15;
   border: 1px solid var(--accent-line);
 }
 .canvas-node {
@@ -411,17 +396,9 @@
   height: 100%;
   box-sizing: border-box;
   border: 1px solid #3d4341;
-  border-radius: 8px;
   background: #242729;
   position: relative;
-  box-shadow: 0 6px 16px #0000001f;
   overflow: visible;
-}
-.canvas-node.is-selected {
-  border-color: var(--accent);
-  box-shadow:
-    0 0 0 1px var(--accent-soft),
-    0 6px 20px #00000025;
 }
 .node-lock {
   position: absolute;
@@ -1563,13 +1540,6 @@
 .canvas-stage .react-flow__selection {
   background: var(--accent-soft);
   border-color: var(--accent-line);
-}
-.canvas-stage .react-flow__handle {
-  width: 10px;
-  height: 10px;
-  background: var(--panel-raised);
-  border: 1.5px solid var(--accent);
-  color: var(--accent-hover);
 }
 .media-node {
   border-radius: 14px !important;
