@@ -568,31 +568,8 @@
   display: none;
 }
 .canvas-toolbar {
-  position: absolute;
-  left: 50%;
-  bottom: 29px;
-  transform: translateX(-50%);
-  height: 46px;
   display: flex;
   align-items: center;
-  padding: 5px 7px;
-  border: 1px solid #3a3f3d;
-  background: #242829f5;
-  border-radius: 10px;
-  box-shadow: 0 6px 24px #0004;
-  gap: 3px;
-  z-index: 8;
-}
-.canvas-toolbar > button,
-.canvas-frame-menu > button {
-  width: 34px;
-  height: 34px;
-  display: grid;
-  place-items: center;
-  border: 0;
-  background: none;
-  border-radius: 6px;
-  color: #99a29d;
 }
 .canvas-toolbar button:hover:not(:disabled),
 .canvas-toolbar button.active {
@@ -610,16 +587,8 @@
   position: relative;
 }
 .canvas-frame-options {
-  position: absolute;
-  bottom: 48px;
-  left: -35px;
   width: 132px;
-  /* surface values are applied by the !important block below; both read the shared menu tokens */
-  background: var(--popover-surface);
-  border: 1px solid var(--popover-border);
-  border-radius: var(--popover-radius);
-  padding: var(--menu-padding);
-  box-shadow: var(--shadow-popover);
+  /* position, surface and layout: the !important block below (its earlier duplicates were removed, D7) */
 }
 .canvas-frame-options button {
   display: flex;
@@ -1564,10 +1533,6 @@
 }
 .canvas-toolbar > .canvas-generate-tool:hover:not(:disabled) {
   background: var(--accent-hover) !important;
-}
-.canvas-toolbar > .toolbar-divider {
-  background: rgba(255, 255, 255, 0.12);
-  margin: 0 3px;
 }
 .canvas-stage .generation-anchor > .generation-composer {
   max-height: inherit;
