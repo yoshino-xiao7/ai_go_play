@@ -121,6 +121,23 @@
   --shadow-panel: 0 20px 48px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.08);
   --shadow-modal: 0 28px 100px #0008;
 
+  /* ------------------------------------------------------------------ menus and popovers (phase 1, D9)
+     Values are the rendered reference: the canvas context menu (menus) and the video parameter
+     popover (popovers). Width, position, layering and keyboard behaviour stay per component. */
+  --popover-surface: var(--color-surface-raised);
+  --popover-border: var(--color-border-strong);
+  --popover-radius: 14px;
+  --popover-text: var(--color-text);
+  --popover-padding: 15px;               /* content popovers (parameters, pickers) */
+  --menu-padding: 6px;                   /* command menus */
+  --menu-item-height: 36px;
+  --menu-item-radius: 8px;
+  --menu-item-padding: 7px 10px;
+  --menu-item-gap: 10px;
+  --menu-item-hover: var(--color-surface-hover);   /* hover, keyboard focus in roving menus, open submenu */
+  --option-selected-surface: var(--color-accent-soft);   /* selected segmented option */
+  --option-selected-border: var(--color-accent-line);
+
   /* ------------------------------------------------------------------ layering
      Encodes today's global stacking ladder with identical values. Known ordering bugs (toast below
      viewers; run shade and context menu sharing 1800) are tracked in STYLE-DEBT.md. Component-local

@@ -52,7 +52,7 @@
 .video-composer .video-submit:hover:not(:disabled){background:white;transform:translateY(-1px)}
 .video-composer .video-submit:disabled{opacity:1;background:#3d3d40;color:#787881}
 .video-composer .video-status{font-size:10px;color:#74747d;margin-top:5px;gap:10px;line-height:16px}
-.video-parameter-popover{position:fixed;z-index:var(--z-context);box-sizing:border-box;padding:15px;border:1px solid #38383b;border-radius:16px;background:#282829;color:#e8e8ec;font-family:inherit;font-size:13px;box-shadow:0 12px 32px #0005,0 2px 8px #0003;max-height:calc(100vh - 24px);overflow:auto;scrollbar-width:thin;scrollbar-color:#505055 transparent}
+.video-parameter-popover{position:fixed;z-index:var(--z-context);box-sizing:border-box;padding:var(--popover-padding);border:1px solid var(--popover-border);border-radius:var(--popover-radius);background:var(--popover-surface);color:var(--popover-text);font-family:inherit;font-size:13px;box-shadow:var(--shadow-popover);max-height:calc(100vh - 24px);overflow:auto;scrollbar-width:thin;scrollbar-color:#505055 transparent}
 .video-popover-caption{color:#95959d;font-size:12px;line-height:18px;margin-bottom:12px;font-weight:400}
 .video-popover-footnote{font-size:10px;line-height:1.6;color:#878790;margin:13px 0 0}
 .video-duration-row{display:flex;align-items:flex-start;gap:22px;padding-top:3px}
