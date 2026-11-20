@@ -25,7 +25,7 @@ App 及各工作区按需懒加载，组件 CSS 在对应 chunk 加载时插入�
 ## 四种覆盖机制
 
 1. **主题前缀提高特异性。** `studio-theme.css` 用 `html[data-theme="studio"]` 加 `:is(...)` 压过组件规则，`management.css` 同理。
-2. **`!important`。** 全部 206 处，`canvas.css` 占 107 处。
+2. **`!important`。** 全部 206 处，`canvas.css` 占 107 处。阶段 1（2026-11-20）清理了 `canvas.css` 的第一轮：按声明计，`canvas.css` 由 109 处降到 29 处，全部样式文件由 211 处降到 131 处。保留的 29 处中：12 处要胜过 `studio-theme.css`；12 处只与本文件内的规则竞争；2 处在选取模式下要压住主题的描边；1 处要胜过 React Flow 的 inline style；另有 2 处的情况见清理记录。详见 [`!important` 清理记录](../../release/DESIGN-SYSTEM-PHASE1-CANVAS-IMPORTANT.md)。
 3. **同一文件的后置覆盖块。** `canvas.css` 后半部分重复定义了前面的组件（工具栏、节点、顶栏等），并大量配合 `!important`。共有 31 个选择器在顶层被完整定义了两到三次。阶段 1（2026-11-20）删除了其中 94 个始终被覆盖的声明，并合并了 8 组，剩余 23 组，见下文「重复定义的处理」。
 4. **数值别名并行。** `--canvas-*`、`--admin-*`、`--setup-*` 和根变量重复写着同样的颜色。阶段 0 已把它们统一指向 Token。
 
@@ -89,3 +89,9 @@ App 及各工作区按需懒加载，组件 CSS 在对应 chunk 加载时插入�
 - 主题、共享状态和组件样式之间靠特异性和 `!important` 互相覆盖，分层后普通声明会输给所有未分层规则。
 
 要把应用样式放进有顺序的层，需要先清理这些 `!important`。
+
+**`canvas.css` 第一轮清理之后（2026-11-20）的判断：** 仍然没有可以单独、安全迁入 `@layer` 的规则。原因与前置条件见 [清理记录](../../release/DESIGN-SYSTEM-PHASE1-CANVAS-IMPORTANT.md)「`@layer` 候选判断」。
+
+- 它的普通规则靠特异性和源顺序胜过入口 CSS 的基础样式和主题；
+- 12 处标记要胜过 `studio-theme.css`；
+- 1 处在分层后会反过来胜过 `video.css` 中未分层的 `!important`。

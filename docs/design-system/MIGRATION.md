@@ -42,7 +42,7 @@
 6. **`canvas.css` 重复定义合并**（D7）。沿用阶段 0 的方法：分析每个属性的最终值，必要时加入窄视口与悬停状态做验证。已完成可以证明等价的部分（31 → 23 组），见 [重复定义记录](../../release/DESIGN-SYSTEM-PHASE1-CANVAS-DEDUP.md)。
 7. **层级排序修正**（D6）。这是可见变化，需要逐个验证弹层的叠放。已完成，见 [层级记录](../../release/DESIGN-SYSTEM-PHASE1-LAYERING.md)。
 8. **遗留模板交互的去留**（D10）与面板动画（D11）。已完成，见 [动效与面板记录](../../release/DESIGN-SYSTEM-PHASE1-MOTION-PANELS.md)。
-9. **`@layer` 化**（D8）。在 `!important` 基本清理之后进行。这一前置条件尚未满足，因此只完成了可以证明安全的 `tokens` 与 `vendor` 两层，见 [层记录](../../release/DESIGN-SYSTEM-PHASE1-CSS-LAYERS.md)；应用样式的分层需要等 `!important` 清理之后再做。
+9. **`@layer` 化**（D8）。在 `!important` 基本清理之后进行。这一前置条件尚未满足，因此只完成了可以证明安全的 `tokens` 与 `vendor` 两层，见 [层记录](../../release/DESIGN-SYSTEM-PHASE1-CSS-LAYERS.md)；应用样式的分层需要等 `!important` 清理之后再做。`canvas.css` 的第一轮清理已完成（109 → 29），见 [清理记录](../../release/DESIGN-SYSTEM-PHASE1-CANVAS-IMPORTANT.md)；其他文件尚未清理，`canvas.css` 仍不能单独分层。
 
 ## 验证工具纳入仓库
 
