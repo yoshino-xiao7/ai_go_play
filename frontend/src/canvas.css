@@ -1341,33 +1341,35 @@
   color: #eee;
   font-size: 8px;
 }
+/* !important cleanup (phase 1): in this block only background and border keep it, because studio-theme.css
+   sets them with higher specificity; the removed flags were proven redundant (release record). */
 .canvas-toolbar {
-  position: absolute !important;
-  left: 50% !important;
-  bottom: 24px !important;
-  top: auto !important;
-  transform: translateX(-50%) !important;
-  flex-direction: row !important;
-  height: 48px !important;
-  gap: 5px !important;
-  padding: 5px 8px !important;
+  position: absolute;
+  left: 50%;
+  bottom: 24px;
+  top: auto;
+  transform: translateX(-50%);
+  flex-direction: row;
+  height: 48px;
+  gap: 5px;
+  padding: 5px 8px;
   background: var(--canvas-panel) !important;
   border: 1px solid rgba(255, 255, 255, 0.12) !important;
-  border-radius: 9999px !important;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55) !important;
-  z-index: 22 !important;
+  border-radius: 9999px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
+  z-index: 22;
 }
 .canvas-toolbar > button,
 .canvas-frame-menu > button {
-  width: 38px !important;
-  height: 38px !important;
-  display: grid !important;
-  place-items: center !important;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
   border: 0 !important;
-  background: transparent !important;
-  border-radius: 50% !important;
-  color: #9ea5b5 !important;
-  transition: background 0.15s, color 0.15s, transform 0.12s, box-shadow 0.15s !important;
+  background: transparent;
+  border-radius: 50%;
+  color: #9ea5b5;
+  transition: background 0.15s, color 0.15s, transform 0.12s, box-shadow 0.15s;
 }
 .canvas-toolbar button:hover:not(:disabled),
 .canvas-frame-menu > button:hover:not(:disabled) {
@@ -1378,13 +1380,13 @@
 .canvas-frame-menu > button.active {
   background: var(--accent-soft) !important;
   color: #ffffff !important;
-  box-shadow: inset 0 0 0 1px var(--accent-line) !important;
+  box-shadow: inset 0 0 0 1px var(--accent-line);
 }
 .canvas-toolbar > .toolbar-divider {
-  width: 1px !important;
-  height: 20px !important;
-  margin: 0 4px !important;
-  background: rgba(255, 255, 255, 0.12) !important;
+  width: 1px;
+  height: 20px;
+  margin: 0 4px;
+  background: rgba(255, 255, 255, 0.12);
 }
 .canvas-frame-options {
   position: absolute !important;
