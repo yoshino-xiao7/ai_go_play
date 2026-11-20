@@ -658,21 +658,30 @@
   bottom: 48px;
   left: -35px;
   width: 132px;
-  background: #292f2b;
-  border: 1px solid #414b3e;
-  border-radius: 7px;
-  padding: 5px;
-  box-shadow: 0 6px 20px #0004;
+  /* surface values are applied by the !important block below; both read the shared menu tokens */
+  background: var(--popover-surface);
+  border: 1px solid var(--popover-border);
+  border-radius: var(--popover-radius);
+  padding: var(--menu-padding);
+  box-shadow: var(--shadow-popover);
 }
 .canvas-frame-options button {
-  display: block;
+  display: flex;
+  align-items: center;
   width: 100%;
+  min-height: var(--menu-item-height);
   background: none;
   border: 0;
-  padding: 9px 8px;
+  padding: var(--menu-item-padding);
   text-align: left;
-  border-radius: 4px;
+  border-radius: var(--menu-item-radius);
   font-size: 12px;
+}
+/* Options sit inside .canvas-toolbar, whose !important icon-button hover (white 9%) would otherwise
+   apply; menu items use the shared menu hover instead. (0,4,1) beats the toolbar's (0,3,1). */
+.canvas-toolbar .canvas-frame-options button:hover:not(:disabled) {
+  background: var(--menu-item-hover) !important;
+  color: var(--popover-text) !important;
 }
 /* .canvas-zoom-controls box and buttons: single definition further below (design-system phase 0). */
 .canvas-zoom-controls > span:not(.toolbar-divider) {
@@ -1465,11 +1474,11 @@
   bottom: calc(100% + 12px) !important;
   top: auto !important;
   transform: translateX(-50%) !important;
-  background: var(--canvas-panel) !important;
-  border: 1px solid rgba(255, 255, 255, 0.12) !important;
-  border-radius: 12px !important;
-  padding: 6px !important;
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55) !important;
+  background: var(--popover-surface) !important;
+  border: 1px solid var(--popover-border) !important;
+  border-radius: var(--popover-radius) !important;
+  padding: var(--menu-padding) !important;
+  box-shadow: var(--shadow-popover) !important;
   display: flex !important;
   flex-direction: column !important;
   gap: 3px !important;
