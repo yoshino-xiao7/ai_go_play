@@ -3851,7 +3851,7 @@ function CanvasEditor({
       </header>
 
       <div className="canvas-main">
-        <aside className="canvas-library" hidden={!showLibrary}>
+        <aside className="canvas-library" hidden={!showLibrary} inert={!showLibrary}>
           <div className="canvas-panel-heading">
             <h2>素材</h2>
             <div className="canvas-panel-heading-actions">
@@ -4678,7 +4678,7 @@ function CanvasEditor({
           </div>
         </main>
 
-        <aside className="canvas-inspector" hidden={!showInspector}>
+        <aside className="canvas-inspector" hidden={!showInspector} inert={!showInspector}>
           <div className="canvas-panel-heading">
             <h2>{selected.length ? "属性" : selectedEdge ? "连线" : "画布"}</h2>
             <button

@@ -184,10 +184,21 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.18s ease;
+  /* D11: the panel is toggled with [hidden]; display transitions discretely so the close can fade out,
+     and @starting-style gives the open a start point. The closed panel is also inert (Canvas.tsx), so
+     it cannot be clicked or focused while it fades. Reduced motion: no transition (end state at once). */
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.18s ease, display 0.22s allow-discrete;
 }
 .canvas-library[hidden] {
   display: none !important;
+  opacity: 0;
+  transform: translateX(-12px);
+}
+@starting-style {
+  .canvas-library:not([hidden]) {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
 }
 .canvas-panel-heading {
   display: flex;
@@ -700,10 +711,25 @@
   box-shadow: 0 20px 48px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.08);
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
-  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.18s ease;
+  /* D11: same open / close motion as .canvas-library, mirrored from the right */
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.18s ease, display 0.22s allow-discrete;
 }
 .canvas-inspector[hidden] {
   display: none !important;
+  opacity: 0;
+  transform: translateX(12px);
+}
+@starting-style {
+  .canvas-inspector:not([hidden]) {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .canvas-library,
+  .canvas-inspector {
+    transition: none;
+  }
 }
 .canvas-inspector .canvas-panel-heading {
   border-bottom: 1px solid var(--canvas-border);
