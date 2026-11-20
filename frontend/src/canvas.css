@@ -1405,37 +1405,38 @@
   gap: 3px;
 }
 /* Single definition of the zoom control (phase 0 merged an earlier, fully overridden block).
-   !important is still required: studio-theme.css sets background/border with higher specificity,
-   and the max-width:860px override below relies on it. Removing it is phase 1 work (STYLE-DEBT.md). */
+   !important stays only on background and border: studio-theme.css sets them with higher specificity.
+   The other flags here, and in the max-width:640px override below, were proven redundant and removed
+   in phase 1 (the override now wins by source order). */
 .canvas-zoom-controls {
   position: absolute;
-  bottom: 24px !important;
-  right: 24px !important;
-  height: 40px !important;
+  bottom: 24px;
+  right: 24px;
+  height: 40px;
   background: var(--canvas-panel) !important;
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  border-radius: 9999px !important;
-  padding: 0 6px !important;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45) !important;
-  display: flex !important;
-  align-items: center !important;
-  gap: 2px !important;
-  z-index: 15 !important;
+  border-radius: 9999px;
+  padding: 0 6px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  z-index: 15;
 }
 .canvas-zoom-controls button {
-  width: 28px !important;
-  height: 28px !important;
-  border-radius: 50% !important;
-  display: grid !important;
-  place-items: center !important;
-  border: 0 !important;
-  background: transparent !important;
-  color: #a2a8b8 !important;
-  transition: background 0.12s, color 0.12s !important;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: #a2a8b8;
+  transition: background 0.12s, color 0.12s;
 }
 .canvas-zoom-controls button:hover {
-  background: rgba(255, 255, 255, 0.1) !important;
-  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
 }
 .canvas-stage-status {
   bottom: 22px;
@@ -1690,8 +1691,8 @@
     margin-inline: 1px;
   }
   .canvas-zoom-controls {
-    bottom: 63px !important;
-    right: 12px !important;
+    bottom: 63px;
+    right: 12px;
   }
   .canvas-stage-status {
     bottom: 76px;
