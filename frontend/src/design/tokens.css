@@ -10,8 +10,18 @@
     phase 1 and is not referenced yet; changing any value here is a visible design change and needs
     its own reviewed commit with before/after screenshots.
   - Components read semantic tokens (--color-*, --z-*, ...), never the primitive ramps directly.
+
+  Cascade layers (D8). This file is the first CSS the app loads, so the statement below fixes the
+  layer order for every later sheet, including lazily loaded chunks:
+    tokens  these custom properties (no other file defines any of these names)
+    vendor  third-party base styles (React Flow, imported by styles.css)
+  Everything else is still unlayered and therefore above both layers. App styles are not layered yet:
+  they contain !important declarations, whose priority a layer would invert (see CASCADE-AUDIT.md).
 */
 
+@layer tokens, vendor;
+
+@layer tokens {
 :root {
   /* ------------------------------------------------------------------ primitives: warm ink ramp */
   --ink-0: #161415;   /* canvas ground */
@@ -183,4 +193,5 @@
   --duration-fast: 140ms;
   --duration-base: 200ms;
   --ease-out: cubic-bezier(.2, .8, .2, 1);
+}
 }
