@@ -156,15 +156,16 @@
   --icon-button-hover-surface: var(--color-surface-hover);
 
   /* ------------------------------------------------------------------ layering
-     Encodes today's global stacking ladder with identical values. Known ordering bugs (toast below
-     viewers; run shade and context menu sharing 1800) are tracked in STYLE-DEBT.md. Component-local
-     z-index values below 40 stay local. */
+     The global stacking ladder (all are compared in the root stacking context: the layers are
+     position:fixed and either portals on <body> or children of #root, which creates no context).
+     Phase 1 (D6): the toast is the top layer so messages stay visible over the image / video viewers;
+     it is click-through except its close button (styles.css .toast). Component-local z-index values
+     below 40 stay local. */
   --z-dropdown: 45;
   --z-banner: 55;
   --z-notice: 60;
   --z-floating: 80;
   --z-modal: 100;
-  --z-toast: 200;
   --z-project-menu: 1200;
   --z-media-viewer: 1500;
   --z-picker: 1750;
@@ -173,6 +174,7 @@
   --z-nested-modal: 2000;
   --z-select: 2100;
   --z-image-viewer: 5000;
+  --z-toast: 5100;                       /* was 200: hidden under the viewers (1500 / 5000) */
 
   /* ------------------------------------------------------------------ motion */
   --duration-instant: 90ms;

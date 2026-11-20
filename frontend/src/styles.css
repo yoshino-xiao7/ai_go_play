@@ -1465,6 +1465,12 @@ a svg {
   box-shadow: 0 12px 35px #0005;
   font-size: 12px;
   max-width: min(600px, 85vw);
+  /* the toast is the top layer (D6): it must not swallow clicks meant for what is beneath it,
+     e.g. the image surface or video controls of a viewer; only its close button is interactive */
+  pointer-events: none;
+}
+.toast button {
+  pointer-events: auto;
 }
 .toast.error {
   background: #372827;
