@@ -1494,7 +1494,7 @@
 .media-node {
   border-radius: 14px;
   background: var(--panel);
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5) !important;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5);
 }
 .media-node-poster {
   background: var(--canvas-bg) !important;
