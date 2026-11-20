@@ -151,7 +151,8 @@ import type {
   ImageReference,
   VideoEnhanceWorkflow,
 } from "./generationTypes";
-import "@xyflow/react/dist/style.css";
+// React Flow's base CSS is loaded once by styles.css in @layer vendor (D8). A second import here
+// re-inserted the same rules, unlayered, after the global theme whenever this lazy chunk loaded.
 import "./canvas.css";
 import "./review-experience.css";
 import { cameraMotionRole, canConnectCameraMotion, canReference, edgeLocked, edgeRole, reconcileReferences, resolveVideoEnhanceInput } from "./canvasReferences";

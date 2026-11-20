@@ -1,4 +1,7 @@
-@import url("@xyflow/react/dist/style.css");
+/* Third-party React Flow base styles, loaded once, in the lowest cascade layer (D8): every unlayered
+   app rule beats them regardless of specificity or of the order in which lazy chunks insert CSS. They
+   contain no !important, so layering cannot invert any !important contest. */
+@import url("@xyflow/react/dist/style.css") layer(vendor);
 
 :root {
   font-family: var(--font-ui);
