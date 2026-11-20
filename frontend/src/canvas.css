@@ -1373,7 +1373,7 @@
 }
 .canvas-toolbar button.active,
 .canvas-frame-menu > button.active {
-  background: var(--accent-soft) !important;
+  background: var(--accent-soft);
   color: #ffffff !important;
   box-shadow: inset 0 0 0 1px var(--accent-line);
 }
@@ -1469,7 +1469,7 @@
 .canvas-node {
   border-color: rgba(255, 255, 255, 0.1) !important;
   border-radius: 14px !important;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45) !important;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
 }
 .canvas-node.is-selected {
   border-color: var(--accent) !important;
@@ -1552,7 +1552,7 @@
   background: #252a33;
 }
 .canvas-toolbar > .canvas-generate-tool {
-  background: var(--accent) !important;
+  background: var(--accent);
   color: var(--accent-ink);
 }
 .canvas-toolbar > .canvas-generate-tool:hover:not(:disabled) {
