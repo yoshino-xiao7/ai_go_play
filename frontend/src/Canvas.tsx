@@ -2,6 +2,7 @@ import StudioSelect from "./StudioSelect";
 import { useRightButtonPan } from "./useRightButtonPan";
 import ImageViewer from "./ImageViewer";
 import ImageVersionComparison from "./ImageVersionComparison";
+import CanvasCardControls from "./CanvasCardControls";
 import {
   createContext,
   memo,
@@ -59,6 +60,7 @@ import {
   ClipboardPaste,
   Download,
   Expand,
+  Eye,
   FastForward,
   FolderOpen,
   FolderInput,
@@ -248,7 +250,8 @@ type CanvasActions = {
   preview: (versionId: string) => void;
   compareFrames: (link: FrameComparisonLink) => void;
   updateSubject: (id: string, snapshot: SubjectSnapshot) => void;
-  selectNode: (id: string) => void;
+  openMedia: (nodeId: string, versionId: string) => void;
+  previewingNode?: string;
   beginEdit: () => void;
   updateData: (id: string, patch: Partial<CanvasData>) => void;
   toggleGroup: (id: string) => void;
@@ -485,6 +488,16 @@ function NodeHeading({
   );
 }
 
+function mediaHistoryFor(data: CanvasData) {
+  const history = (data.image_history || []).filter(
+    (item, index, items) => items.findIndex(other => other.version_id === item.version_id) === index,
+  );
+  if (data.asset_version_id && !history.some(item => item.version_id === data.asset_version_id)) {
+    history.push({ version_id: data.asset_version_id });
+  }
+  return history;
+}
+
 const MediaNode = memo(function MediaNode(props: NodeProps<CanvasNode>) {
   const { data } = props;
   const comparison = data.frame_comparison;
@@ -494,22 +507,17 @@ const MediaNode = memo(function MediaNode(props: NodeProps<CanvasNode>) {
   );
   const actions = useContext(Actions)!;
   const [showHistory, setShowHistory] = useState(false);
-  const videoVersionsButton = useRef<HTMLButtonElement>(null);
+  const mediaVersionsButton = useRef<HTMLButtonElement>(null);
   const [previewVersion,setPreviewVersion]=useState<string>();
-  const [largePreview,setLargePreview]=useState<string>();
+  const previewOpen = actions.previewingNode === props.id;
+  const openPreview = (versionId: string) => {
+    setPlaying(false);
+    actions.openMedia(props.id, versionId);
+  };
   const [playing,setPlaying]=useState(false);
   useEffect(()=>{if(!props.selected)setPlaying(false);},[props.selected]);
-  const imageHistory = (data.image_history || []).filter(
-    (item, index, items) =>
-      items.findIndex((other) => other.version_id === item.version_id) ===
-      index,
-  );
-  if (
-    (["image","video","audio"].includes(data.kind||"")) &&
-    data.asset_version_id &&
-    !imageHistory.some((item) => item.version_id === data.asset_version_id)
-  )
-    imageHistory.push({ version_id: data.asset_version_id });
+  useEffect(() => { if (previewOpen) setPlaying(false); }, [previewOpen]);
+  const imageHistory = mediaHistoryFor(data);
   const latestResult = imageHistory.at(-1);
   const adoptedIndex = imageHistory.findIndex((item) => item.version_id === data.asset_version_id);
   const previousImageVersion = data.kind === "image" && data.asset_version_id
@@ -543,15 +551,14 @@ const MediaNode = memo(function MediaNode(props: NodeProps<CanvasNode>) {
   const isVideo = data.kind === "video";
   const overlayHistory = isVideo && (props.height ?? 214) >= 170;
   const compactVideo = isVideo && (!overlayHistory || (props.width ?? 264) < 230);
-  const showMediaHistory = imageHistory.length > 1 &&
-    ((isVideo && showHistory) || (data.kind === "audio" && props.selected));
+  const showMediaHistory = imageHistory.length > 1 && showHistory && (isVideo || data.kind === "audio");
   const mediaHistory = showMediaHistory && <div className={`video-history nodrag nopan nowheel ${isVideo ? "canvas-video-history" : ""} ${overlayHistory ? "canvas-video-history-overlay" : ""}`} aria-label={isVideo ? "视频版本" : "配音版本"}
     onPointerDown={event => event.stopPropagation()} onClick={event => event.stopPropagation()}
     onDoubleClick={event => event.stopPropagation()} onKeyDown={event => {
       event.stopPropagation();
-      if (event.key === "Escape" && isVideo) {
+      if (event.key === "Escape") {
         setShowHistory(false);
-        videoVersionsButton.current?.focus();
+        mediaVersionsButton.current?.focus();
       }
     }}>
     {imageHistory.map((item, index) => {
@@ -562,7 +569,7 @@ const MediaNode = memo(function MediaNode(props: NodeProps<CanvasNode>) {
         <button className={previewing || (!isVideo && current) ? "adopted" : ""} aria-pressed={isVideo ? previewing : undefined}
           title={`预览${isVideo ? "视频" : "配音"}版本 ${index + 1}`} onClick={() => {
             if (isVideo) setPreviewVersion(item.version_id);
-            else { setPlaying(false); setLargePreview(item.version_id); }
+            else openPreview(item.version_id);
           }}>
           <img src={mediaUrl(item.version_id, isVideo ? "thumbnail" : "waveform")} alt={`媒体版本 ${index + 1}`} draggable={false} />
           {isVideo ? <span><strong>版本 {index + 1}</strong><small>{status}</small></span> : <span>{status}</span>}
@@ -585,27 +592,31 @@ const MediaNode = memo(function MediaNode(props: NodeProps<CanvasNode>) {
       </div>
       <div
         className={`media-node-poster ${data.kind === "audio" ? "audio-poster" : ""} ${compactVideo ? "compact-video-poster" : ""} ${!data.asset_version_id && data.generation ? "generation-draft-poster" : ""}`}
-        onDoubleClick={event=>{if((["image","video","audio"].includes(data.kind||"")) && visibleVersion){event.stopPropagation();setPlaying(false);setLargePreview(visibleVersion);}}}
+        onDoubleClick={event => {
+          if (!visibleVersion) return;
+          event.stopPropagation();
+          openPreview(visibleVersion);
+        }}
       >
         {data.kind === "image" && visibleVersion && (
           <button
             type="button"
-            className={`media-open-image nodrag nopan${imageHistory.length > 1 ? " has-versions" : ""}`}
-            aria-label={imageHistory.length > 1 ? `预览图片版本，共 ${imageHistory.length} 张` : "查看大图"}
-            title={imageHistory.length > 1 ? "查看图片版本" : "查看原图"}
+            className="media-open-image nodrag nopan"
+            aria-label={imageHistory.length > 1 ? `预览图片版本，共 ${imageHistory.length} 张` : "预览原图"}
+            title={imageHistory.length > 1 ? "查看图片版本" : "预览原图"}
             onPointerDown={(event) => event.stopPropagation()}
             onDoubleClick={(event) => event.stopPropagation()}
             onClick={(event) => {
               event.stopPropagation();
-              setLargePreview(latestResult?.candidate ? latestResult.version_id : visibleVersion);
+              openPreview(latestResult?.candidate ? latestResult.version_id : visibleVersion);
             }}
           >
-            {imageHistory.length > 1 ? `预览版本 · ${imageHistory.length}` : "查看大图"}
+            {imageHistory.length > 1 ? `预览版本 · ${imageHistory.length}` : "预览原图"}
           </button>
         )}
         {isVideo && visibleVersion ? (
           <CanvasVideoPlayer key={visibleVersion} versionId={visibleVersion} selected={!!props.selected}
-            previewOpen={!!largePreview} onOpen={() => setLargePreview(visibleVersion)}
+            previewOpen={previewOpen} onOpen={() => openPreview(visibleVersion)}
             onCompare={comparison && (() => actions.compareFrames(comparison))} />
         ) : data.kind==="audio" && playing && visibleVersion ? <audio className="inline-audio nodrag nopan nowheel" src={mediaUrl(visibleVersion,"original")} autoPlay controls preload="metadata" onPointerDown={e=>e.stopPropagation()}/> : data.asset_version_id && !failed ? (
           <img
@@ -649,8 +660,8 @@ const MediaNode = memo(function MediaNode(props: NodeProps<CanvasNode>) {
           </span>
         )}
         {data.kind === "audio" && visibleVersion && !playing && <button className="poster-play nodrag nopan" title="试听配音" onPointerDown={e=>e.stopPropagation()} onClick={e=>{e.stopPropagation();setPlaying(true);}}>▶</button>}
-        {isVideo && visibleVersion && imageHistory.length > 1 && (
-          <button ref={videoVersionsButton} type="button" className="canvas-video-versions nodrag nopan" aria-label={`查看视频版本，共 ${imageHistory.length} 个`}
+        {(isVideo || data.kind === "audio") && visibleVersion && imageHistory.length > 1 && (
+          <button ref={mediaVersionsButton} type="button" className="canvas-video-versions nodrag nopan" aria-label={`查看${isVideo ? "视频" : "配音"}版本，共 ${imageHistory.length} 个`}
             aria-expanded={showHistory} onPointerDown={event => event.stopPropagation()} onDoubleClick={event => event.stopPropagation()}
             onKeyDown={event => {
               event.stopPropagation();
@@ -664,35 +675,6 @@ const MediaNode = memo(function MediaNode(props: NodeProps<CanvasNode>) {
         <GenerationProgress job={generationJob} pending={!!data.generation?.pending_submission}/>
       </div>
       {!overlayHistory && mediaHistory}
-      {largePreview && (data.kind === "video" || data.kind === "audio" ? (
-        <VideoViewer kind={data.kind} versionId={largePreview} versions={imageHistory.map((item) => item.version_id)} onClose={() => setLargePreview(undefined)} />
-      ) : (
-        <ImageViewer
-          versionId={largePreview}
-          versions={imageHistory.map((item) => item.version_id)}
-          onClose={() => setLargePreview(undefined)}
-          review={{
-            adopted: data.asset_version_id,
-            history: imageHistory,
-            locked: data.locked,
-            onAdopt: adopt,
-            onContinue: (id) => {
-              if (data.locked) return;
-              actions.beginEdit();
-              actions.updateData(props.id, {
-                generation: { ...defaultGenerationDraft(true), ...data.generation, mode: "edit", workflow_id: undefined, edit_base_version_id: id },
-              });
-              actions.selectNode(props.id);
-              setLargePreview(undefined);
-            },
-            onDiscard: (id) => {
-              if (data.locked) return;
-              actions.beginEdit();
-              actions.updateData(props.id, { image_history: imageHistory.filter((item) => item.version_id !== id) });
-            },
-          }}
-        />
-      ))}
     </NodeChrome>
   );
 });
@@ -861,7 +843,6 @@ function CanvasEditor({
   });
   const flow = useReactFlow<CanvasNode>();
   const palette = usePalette();
-  const [liveViewport, setLiveViewport] = useState<Viewport>(initialViewport);
   const [editorSessionId] = useState(() => {
     try {
       const existing = sessionStorage.getItem("manju:canvas-editor-session");
@@ -948,13 +929,15 @@ function CanvasEditor({
   const [showMore, setShowMore] = useState(false);
   const [rounds, setRounds] = useState<{ nodeId: string; version?: string } | null>(null);
   const [panelTab, setPanelTab] = useState<"results" | "props">("results");
-  const [dockCollapsed, setDockCollapsed] = useState(false);
+  const [editorOpen, setEditorOpen] = useState<{ id: string; value: boolean } | null>(null);
+  const editorTrigger = useRef<HTMLButtonElement>(null);
+  const previewTrigger = useRef<HTMLButtonElement>(null);
+  const [mediaPreview, setMediaPreview] = useState<{ nodeId: string; versionId: string } | null>(null);
+  const openMedia = useCallback((nodeId: string, versionId: string) => setMediaPreview({ nodeId, versionId }), []);
   const [showEnhance, setShowEnhance] = useState(false);
   // The shell owns the top bar and its portal hosts; the canvas renders its project switcher and save state into them.
   const { project: projectSlot, status: statusSlot } = useShellSlots();
   const selectedVideoRef = useRef<string | undefined>(undefined);
-  const [quickPrompt, setQuickPrompt] = useState("");
-  const [quickKind, setQuickKind] = useState<"image" | "video">("image");
   const [showShare, setShowShare] = useState(false);
   const [showProduction, setShowProduction] = useState(false);
   const [showCanvasRun, setShowCanvasRun] = useState(false);
@@ -1002,12 +985,6 @@ function CanvasEditor({
     width: 900,
     height: 700,
   });
-  const [, setVideoShelfHeight] = useState(0);
-  const [imageHeadingHeight, setImageHeadingHeight] = useState(24);
-  const [imageToolsSize, setImageToolsSize] = useState({
-    width: 440,
-    height: 46,
-  });
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
   const [assetDisplayName, setAssetDisplayName] = useState("");
   const [renamingAsset, setRenamingAsset] = useState(false);
@@ -1047,10 +1024,9 @@ function CanvasEditor({
   const importPosition = useRef<{ x: number; y: number } | undefined>(
     undefined,
   );
-  const suppressSelectionPan = useRef<string | null>(null);
   const stage = useRef<HTMLDivElement>(null);
-  const composerAnchor = useRef<HTMLDivElement>(null);
-  const imageTools = useRef<HTMLDivElement>(null);
+  const composerAnchor = useRef<HTMLElement>(null);
+  const promptFocusIntent = useRef<string | null>(null);
   const manualViewportSerial = useRef(0);
   const draftPrefix = `manju:canvas-draft:${project.id}`;
   const draftKey = `${draftPrefix}:${editorSessionId}`;
@@ -1147,7 +1123,6 @@ function CanvasEditor({
     viewportTimer.current = setTimeout(() => {
       viewportTimer.current = undefined;
       stage.current?.classList.remove("canvas-navigating");
-      setLiveViewport(viewport);
       setZoom(viewport.zoom);
     }, 100);
   }, []);
@@ -1287,7 +1262,6 @@ function CanvasEditor({
             localView = value;
         } catch { /* The shared document remains usable without local view storage. */ }
         viewportRef.current = !preserveDraft ? flow.getViewport() : localView || restored.viewport || initialViewport;
-        setLiveViewport(viewportRef.current);
         dirtyRef.current = hasDraft;
         conflictRef.current = hasConflict;
         history.current = { past: [], future: [] };
@@ -2706,13 +2680,39 @@ function CanvasEditor({
   const selectedVideoWorkflow = selectedVideo?.data.generation?.workflow_id;
   const selectedEnhanceWorkflow = isVideoEnhanceWorkflow(selectedVideoWorkflow) ? selectedVideoWorkflow : undefined;
   const canEnhanceSelectedVideo = !!selectedVideo && !selectedVideo.data.locked && !!(selectedVideo.data.asset_version_id || selectedVideo.data.generation);
-  const showVideoEnhanceActions = canEnhanceSelectedVideo && !!selectedVideo?.data.asset_version_id;
   const connectionDropSource = connectionDrop && nodes.find(node => node.id === connectionDrop.source);
   const cameraEdge = selectedVideo && edges.find(edge => edge.target === selectedVideo.id && edgeRole(edge) === cameraMotionRole);
   const selectedVideoMotion = cameraEdge ? nodes.find(node => node.id === cameraEdge.source)?.data.camera_motion : undefined;
   const selectedAudio=single?.type==="media" && single.data.kind==="audio"?single:null;
   const selectedPlayback=selectedVideo || selectedAudio;
   const composerNode = selectedImage || selectedPlayback;
+  const editorExpanded = !!composerNode && (editorOpen?.id === composerNode.id
+    ? editorOpen.value
+    : true);
+  const activePreviewNode = mediaPreview && nodes.find(node => node.id === mediaPreview.nodeId);
+  const previewHistory = activePreviewNode ? mediaHistoryFor(activePreviewNode.data) : [];
+  const previewVersions = mediaPreview
+    ? [...new Set([...previewHistory.map(item => item.version_id), mediaPreview.versionId])]
+    : [];
+  useLayer(!covered && editorExpanded, () => {
+    if (!composerNode) return;
+    setEditorOpen({ id: composerNode.id, value: false });
+    editorTrigger.current?.focus();
+  }, {
+    ref: composerAnchor,
+    scope: "focus",
+    fallback: () => editorTrigger.current,
+  });
+  useEffect(() => {
+    setEditorOpen(current => current?.id === composerNode?.id ? current : null);
+  }, [composerNode?.id]);
+  useEffect(() => {
+    if (!editorExpanded || !composerNode || promptFocusIntent.current !== composerNode.id) return;
+    promptFocusIntent.current = null;
+    composerAnchor.current?.querySelector<HTMLElement>(
+      '.card-control-body [contenteditable="true"], .card-control-body textarea:not([disabled])',
+    )?.focus({ preventScroll: true });
+  }, [composerNode?.id, editorExpanded]);
   selectedVideoRef.current = selectedVideo?.id;
   const roundsNodeOf = (id?: string) => id ? workbenchNodes.find(node => node.id === id) : undefined;
   /** The results tab follows the composer target unless a round was opened explicitly. */
@@ -2735,31 +2735,11 @@ function CanvasEditor({
   const imageSize = composerNode
     ? dimensions(composerNode)
     : { width: 264, height: 214 };
-  const imageScreen = {
-    x: imagePosition.x * liveViewport.zoom + liveViewport.x,
-    y: imagePosition.y * liveViewport.zoom + liveViewport.y,
+  const workspaceStyle = workspaceRef.current && getComputedStyle(workspaceRef.current);
+  const controlInset = {
+    left: 80 + (showLibrary ? Number.parseFloat(workspaceStyle?.getPropertyValue("--library-w") || "304") + 14 : 0),
+    right: showInspector ? Number.parseFloat(workspaceStyle?.getPropertyValue("--panel-w") || "400") + 24 : 16,
   };
-  const leftInset = 16;
-  const rightInset = 16;
-  const availableOverlayWidth = Math.max(1, stageDimensions.width - leftInset - rightInset);
-  const imageToolsLeft = Math.max(
-    leftInset,
-    Math.min(
-      stageDimensions.width - imageToolsSize.width - rightInset,
-      imageScreen.x +
-        (imageSize.width * liveViewport.zoom) / 2 -
-        imageToolsSize.width / 2,
-    ),
-  );
-  const imageToolsTop = Math.max(
-    16,
-    imageScreen.y - imageHeadingHeight - imageToolsSize.height - 24,
-  );
-  const imageVisible =
-    imageScreen.x + imageSize.width * liveViewport.zoom >= 0 &&
-    imageScreen.x <= stageDimensions.width &&
-    imageScreen.y + imageSize.height * liveViewport.zoom >= 0 &&
-    imageScreen.y <= stageDimensions.height;
   const generationConnections: ImageReference[] = (selectedImage?.data.generation?.references || []).filter(ref => ref.source === "connection");
   const unresolvedEdges = edges.filter(edge=>edge.target===selectedImage?.id && edgeRole(edge)==="pending");
   const changeEdgeRole = (id:string, role:string) => {
@@ -2871,88 +2851,6 @@ function CanvasEditor({
     return result;
   }, [edges, nodes, hoveredNodeId]);
 
-  useEffect(() => {
-    const card = selectedPlayback && stage.current?.querySelector<HTMLElement>(`[data-id="${CSS.escape(selectedPlayback.id)}"]`);
-    if (!card) {setVideoShelfHeight(0);return;}
-    let shelf:HTMLElement|null=null;
-    const measure = () => setVideoShelfHeight(shelf?.offsetHeight || 0);
-    const observer = new ResizeObserver(measure);
-    const update = () => {
-      const next=card.querySelector<HTMLElement>(".video-history:not(.canvas-video-history-overlay)");
-      if(next!==shelf){observer.disconnect();shelf=next;if(shelf)observer.observe(shelf);}
-      measure();
-    };
-    // React Flow can render the node's selected controls after this effect runs.
-    const children = new MutationObserver(update);
-    children.observe(card,{childList:true,subtree:true});update();
-    return () => {observer.disconnect();children.disconnect();};
-  }, [selectedPlayback?.id, selectedPlayback?.data.image_history]);
-
-  useEffect(() => {
-    if (!composerNode) return;
-    const heading = stage.current?.querySelector<HTMLElement>(
-      `[data-id="${CSS.escape(composerNode.id)}"] .media-node-heading`,
-    );
-    const tools = imageTools.current;
-    const measure = () => {
-      if (heading)
-        setImageHeadingHeight(heading.getBoundingClientRect().height);
-      if (tools)
-        setImageToolsSize({
-          width: tools.offsetWidth,
-          height: tools.offsetHeight,
-        });
-    };
-    const observer = new ResizeObserver(measure);
-    if (heading) observer.observe(heading);
-    if (tools) observer.observe(tools);
-    measure();
-    return () => observer.disconnect();
-  }, [
-    composerNode?.id,
-    composerNode?.data.asset_version_id,
-    showVideoEnhanceActions,
-    liveViewport.zoom,
-  ]);
-
-  useEffect(() => {
-    if (!composerNode) return;
-    const selectedId = composerNode.id;
-    if (suppressSelectionPan.current === selectedId) return;
-    const movement = manualViewportSerial.current;
-    // Make room once on selection. Later status/parameter changes never pull the viewport.
-    const timer = setTimeout(() => {
-      if (
-        suppressSelectionPan.current === selectedId ||
-        interactingRef.current ||
-        manualViewportSerial.current !== movement
-      )
-        return;
-      const card = nodesRef.current.find(
-        (node) => node.id === selectedId && node.selected,
-      );
-      const panel = composerAnchor.current;
-      const bounds = stage.current?.getBoundingClientRect();
-      if (!card || !panel || !bounds) return;
-      const viewport = flow.getViewport();
-      const position = absolutePosition(card, nodesRef.current);
-      const top = position.y * viewport.zoom + viewport.y;
-      const shelf = ["video","audio"].includes(card.data.kind||"") ? stage.current?.querySelector<HTMLElement>(`[data-id="${CSS.escape(selectedId)}"] .video-history:not(.canvas-video-history-overlay)`) : null;
-      const height = (dimensions(card).height + (shelf ? shelf.offsetHeight + 12 : 0)) * viewport.zoom;
-      // The composer is docked at the bottom of the stage: lift the card above it, never past the top tools.
-      const dockTop = panel.getBoundingClientRect().top - bounds.top;
-      const minimumTop = 72 + (imageTools.current?.offsetHeight || 0);
-      const excess = top + height + 20 - dockTop;
-      const shift = Math.min(Math.max(0, top - minimumTop), Math.max(0, excess));
-      if (shift > 1)
-        void flow.setViewport(
-          { ...viewport, y: viewport.y - shift },
-          { duration: 220 },
-        );
-    }, 180);
-    return () => clearTimeout(timer);
-  }, [composerNode?.id]);
-
   const updateGenerationDraft = useCallback(
     (draft: GenerationDraft) => {
       if (!selectedImage) return;
@@ -2974,6 +2872,7 @@ function CanvasEditor({
     action: "edit" | "reference" | "mask" | "parameters",
   ) => {
     if (!selectedImage || imageEditingDisabled) return;
+    setEditorOpen({ id: selectedImage.id, value: true });
     window.dispatchEvent(
       new CustomEvent("manju:composer-action", {
         detail: { nodeId: selectedImage.id, action },
@@ -3136,10 +3035,8 @@ function CanvasEditor({
       preview: onPreview,
       compareFrames: setFrameComparison,
       updateSubject,
-      selectNode: (id) => replace(
-        nodesRef.current.map((item) => ({ ...item, selected: item.id === id })),
-        edgesRef.current.map((edge) => ({ ...edge, selected: false })),
-      ),
+      openMedia,
+      previewingNode: mediaPreview?.nodeId,
       beginEdit: remember,
       updateData,
       toggleGroup: (id: string) => {
@@ -3158,8 +3055,9 @@ function CanvasEditor({
       flushCanvas,
       getCanvasMedia,
       onPreview,
+      openMedia,
+      mediaPreview?.nodeId,
       updateSubject,
-      replace,
       remember,
       updateData,
       changed,
@@ -3255,7 +3153,6 @@ function CanvasEditor({
     const expanded = nodesRef.current.some(item=>parents.has(item.id) && item.data.collapsed);
     const next=nodesRef.current.map(item=>({...item,selected:item.id===id,...(parents.has(item.id)?{data:{...item.data,collapsed:false}}:{})}));
     if(expanded)edit(next);else replace(next);
-    suppressSelectionPan.current=id;
     const point=absolutePosition(node,nodesRef.current),size=dimensions(node);
     void flow.setCenter(point.x+size.width/2,point.y+size.height/2,{zoom:Math.min(1,stageDimensions.width/(size.width+180),stageDimensions.height/(size.height+180)),duration:250});
   };
@@ -3521,7 +3418,6 @@ function CanvasEditor({
     event.preventDefault();
     event.stopPropagation();
     if (node) {
-      suppressSelectionPan.current = node.id;
       if (!nodesRef.current.find((item) => item.id === node.id)?.selected)
         replace(
           nodesRef.current.map((item) => ({
@@ -3596,6 +3492,34 @@ function CanvasEditor({
     ? []
     : contextMenu.kind === "node"
       ? [
+          ...(composerNode ? [
+            { id: "rounds", label: "生成记录", icon: <History />, onSelect: () => openRounds(composerNode.id) },
+            { id: "properties", label: "卡片属性", icon: <PanelRight />, onSelect: () => {
+              setPanelTab("props");
+              setShowInspector(true);
+            } },
+            { id: "locate", label: "定位卡片", icon: <Crosshair />, onSelect: () => locateNode(composerNode.id) },
+          ] : []),
+          ...(composerNode?.data.asset_version_id ? [{
+            id: "media-details",
+            label: "素材详情",
+            icon: <Eye />,
+            onSelect: () => onPreview(composerNode.data.asset_version_id!),
+          }] : []),
+          ...(selectedImage?.data.asset_version_id ? [{
+            id: "image-workflow",
+            label: "图片创作",
+            icon: <Pencil />,
+            disabled: imageEditingDisabled,
+            children: [
+              { id: "image-edit", label: "图片编辑", icon: <Pencil />, onSelect: () => composerAction("edit") },
+              { id: "image-reference", label: "参考生图", icon: <Images />, onSelect: () => composerAction("reference") },
+              { id: "image-mask", label: "局部重绘", icon: <Brush />, onSelect: () => composerAction("mask") },
+              { id: "image-parameters", label: "生成参数", icon: <SlidersHorizontal />, onSelect: () => composerAction("parameters") },
+              { id: "image-to-video", label: "以此图片为首帧生成视频", icon: <Video />,
+                onSelect: () => void addVideoGeneration({ x: imagePosition.x + imageSize.width + 100, y: imagePosition.y }, selectedImage.id) },
+            ],
+          }] : []),
           ...(hasSelectedGroup ? [{
             id: "ungroup",
             label: "解散分组",
@@ -4141,15 +4065,15 @@ function CanvasEditor({
                   openContextMenu(event, node)
                 }
                 onPaneContextMenu={(event) => openContextMenu(event)}
-                onNodeClick={(_,node) => {
+                onNodeClick={(event,node) => {
                   if(canvasPick){const options=getCanvasMedia().filter(item=>item.node_id===node.id && item.kind===canvasPick.kind);if(options.length===1){canvasPick.onChoose(options[0]);setCanvasPick(null);}else if(options.length>1)setPickOptions(options);else setNotice("请选择包含对应素材的卡片。");return;}
-                  suppressSelectionPan.current = null;
                   closeContextMenu();
+                  if (node.type === "media" && !event.shiftKey && !event.ctrlKey && !event.metaKey) {
+                    if (node.id !== composerNode?.id || !editorExpanded) promptFocusIntent.current = node.id;
+                    setEditorOpen({ id: node.id, value: true });
+                  }
                 }}
-                onPaneClick={() => {
-                  suppressSelectionPan.current = null;
-                  closeContextMenu();
-                }}
+                onPaneClick={closeContextMenu}
                 onConnect={onConnect}
                 onReconnectStart={(_,edge)=>{reconnectingEdge.current=edge;}}
                 onReconnectEnd={()=>{reconnectingEdge.current=null;}}
@@ -4191,8 +4115,10 @@ function CanvasEditor({
                 onSelectionDragStop={finishInteraction}
                 onNodeDoubleClick={(_, node) => {
                   if(node.data.generation?.workflow_id==='builtin-latentsync15-local'){void flushCanvas().then(()=>{setLipSyncNodeId(node.id);setShowLipSync(true);}).catch(error=>setNotice(errorText(error)));return;}
-                  if (node.type === "media" && node.data.asset_version_id)
-                    onPreview(node.data.asset_version_id);
+                  if (node.type === "media") {
+                    if (node.data.asset_version_id) openMedia(node.id, node.data.asset_version_id);
+                    else if (node.data.generation) setEditorOpen({ id: node.id, value: true });
+                  }
                   if(node.data.shot)void flushCanvas().then(()=>setShowProduction(true)).catch(error=>setNotice(errorText(error)));
                 }}
                 onMoveStart={(event) => {
@@ -4321,163 +4247,48 @@ function CanvasEditor({
               </span>
             </div>
           )}
-          {selectedImage?.data.asset_version_id && !loading && (
-            <div
-              ref={imageTools}
-              className="canvas-image-tools nodrag nopan nowheel"
-              role="toolbar"
-              aria-label="图片操作"
-              style={{
-                left: imageToolsLeft,
-                top: imageToolsTop,
-                maxWidth: availableOverlayWidth,
-                visibility: imageVisible ? "visible" : "hidden",
-              }}
-              onPointerDown={(event) => event.stopPropagation()}
-              onDoubleClick={(event) => event.stopPropagation()}
-            >
-              <button
-                className={
-                  (selectedImage.data.generation?.mode || "edit") === "edit"
-                    ? "is-active"
-                    : ""
-                }
-                disabled={imageEditingDisabled}
-                onClick={() => composerAction("edit")}
-                title="用文字编辑当前图片"
-              >
-                <Pencil size={15} />
-                <span>图片编辑</span>
-              </button>
-              <button
-                className={
-                  selectedImage.data.generation?.mode === "reference"
-                    ? "is-active"
-                    : ""
-                }
-                disabled={imageEditingDisabled}
-                onClick={() => composerAction("reference")}
-                title="以当前图片作为参考生成"
-              >
-                <Images size={15} />
-                <span>参考生图</span>
-              </button>
-              <button
-                disabled={imageEditingDisabled}
-                onClick={() => composerAction("mask")}
-                title="绘制蒙版，仅重绘指定区域"
-              >
-                <Brush size={15} />
-                <span>局部重绘</span>
-              </button>
-              <button disabled={imageEditingDisabled} title="以当前图片为首帧生成视频" onClick={()=>addVideoGeneration({x:imagePosition.x+imageSize.width+100,y:imagePosition.y},selectedImage.id)}><Video size={15}/><span>生成视频</span></button>
-              <span className="canvas-image-tools-divider" />
-              <button
-                className="icon-only"
-                disabled={imageEditingDisabled}
-                onClick={() => composerAction("parameters")}
-                aria-label="调整生成参数"
-                title="生成参数"
-              >
-                <SlidersHorizontal size={16} />
-              </button>
-              <a
-                className="icon-only"
-                href={mediaUrl(
-                  selectedImage.data.asset_version_id,
-                  "original",
-                  true,
-                )}
-                download={selectedImage.data.title || "图片"}
-                aria-label="下载当前图片"
-                title="下载当前图片原件"
-              >
-                <Download size={16} />
-              </a>
-              <button
-                className={`icon-only ${showInspector ? "is-active" : ""}`}
-                onClick={() => setShowInspector((value) => !value)}
-                aria-label="查看图片属性"
-                title="图片属性"
-              >
-                <PanelRight size={16} />
-              </button>
-              <button
-                className="icon-only"
-                aria-label="图片更多操作"
-                title="更多操作"
-                onClick={(event) => {
-                  const rect = event.currentTarget.getBoundingClientRect();
-                  suppressSelectionPan.current = selectedImage.id;
-                  setContextMenu({
-                    x: rect.right - 254,
-                    y: rect.bottom + 8,
-                    position: flow.screenToFlowPosition({
-                      x: rect.right,
-                      y: rect.bottom,
-                    }),
-                    kind: "node",
-                  });
-                }}
-              >
-                <Ellipsis size={18} />
-              </button>
-            </div>
-          )}
-          {selectedVideo && showVideoEnhanceActions && !loading && (
-            <div ref={imageTools} className="canvas-image-tools nodrag nopan nowheel" role="toolbar" aria-label="视频后期"
-              style={{ left: imageToolsLeft, top: imageToolsTop, maxWidth: availableOverlayWidth, visibility: imageVisible ? "visible" : "hidden" }}
-              onPointerDown={event => event.stopPropagation()} onDoubleClick={event => event.stopPropagation()}>
-              {videoEnhanceTools.map(({ workflowId, Icon }) => (
-                <button key={workflowId} type="button" onClick={() => addVideoEnhance(workflowId, undefined, selectedVideo.id)}>
-                  <Icon size={15} /><span>{videoEnhanceLabels[workflowId]}</span>
-                </button>
-              ))}
-            </div>
-          )}
-          {!loading && !loadError && !guideEnabled && (
-            <section ref={composerAnchor} className={`composer-dock ${dockCollapsed ? "is-collapsed" : ""} ${composerNode ? "is-bound" : "is-free"}`}
-              data-kind={composerNode?.data.kind || quickKind} aria-label="创作条"
-              onPointerDown={event => event.stopPropagation()} onDoubleClick={event => event.stopPropagation()}>
-              {composerNode ? (
-                <header className="dock-head" key={composerNode.id}>
-                  <span className="dock-kind">{composerNode.data.kind === "video" ? <Video size={14} /> : composerNode.data.kind === "audio" ? <Music2 size={14} /> : <ImageIcon size={14} />}
-                    {composerNode.data.kind === "video" ? (selectedEnhanceWorkflow ? "视频后期" : "视频") : composerNode.data.kind === "audio" ? "配音" : "图像"}</span>
-                  <button className="dock-target" onClick={() => locateNode(composerNode.id)} title="结果回到这张卡片 · 点击定位">
-                    <span>↩ 结果回到</span><b>画布 › {composerNode.data.title || "未命名卡片"}</b>
+          {!loading && !loadError && !guideEnabled && composerNode && (
+            <CanvasCardControls key={composerNode.id} panelRef={composerAnchor} inset={controlInset}
+              anchor={{...imagePosition, ...imageSize}} expanded={editorExpanded} toolbar={
+                <>
+                  {composerNode.data.asset_version_id && <button ref={previewTrigger} type="button" className="card-control-preview" aria-label="预览"
+                    onClick={() => openMedia(composerNode.id, composerNode.data.asset_version_id!)}>
+                    <Eye size={15} /><span>预览</span>
+                  </button>}
+                  <button ref={editorTrigger} type="button" aria-label="编辑卡片" aria-expanded={editorExpanded}
+                    onClick={() => {
+                      setEditorOpen({ id: composerNode.id, value: !editorExpanded });
+                      if (!editorExpanded) requestAnimationFrame(() => {
+                        const prompt = composerAnchor.current?.querySelector<HTMLElement>(
+                          '.card-control-body [contenteditable="true"], .card-control-body textarea:not([disabled])',
+                        );
+                        prompt?.focus({ preventScroll: true });
+                      });
+                    }}>
+                    <Pencil size={15} /><span>编辑</span>
                   </button>
-                  <span className="flex" />
-                  <button className="dock-link" aria-label="结果轮次" title="结果轮次" onClick={() => openRounds(composerNode.id)}><History size={13} /><span className="dock-link-label">结果轮次</span></button>
-                  <button className="dock-link" aria-label="定位节点" title="定位节点" onClick={() => locateNode(composerNode.id)}><Crosshair size={13} /><span className="dock-link-label">定位节点</span></button>
-                  <button className="dock-link icon" aria-label={dockCollapsed ? "展开创作条" : "收起创作条"} title={dockCollapsed ? "展开创作条" : "收起创作条"} onClick={() => setDockCollapsed(value => !value)}>{dockCollapsed ? <ChevronUp size={15} /> : <ChevronDown size={15} />}</button>
-                </header>
-              ) : (
-                <header className="dock-head">
-                  <span className="dock-kind" role="radiogroup" aria-label="创作类型">
-                    <button type="button" role="radio" aria-checked={quickKind === "image"} onClick={() => setQuickKind("image")}><ImageIcon size={14} />图像</button>
-                    <button type="button" role="radio" aria-checked={quickKind === "video"} onClick={() => setQuickKind("video")}><Video size={14} />视频</button>
-                  </span>
-                  <span className="dock-target is-new"><span>↩ 结果回到</span><b>新建一张{quickKind === "image" ? "图片" : "视频"}卡片</b></span>
-                  <span className="flex" />
-                  <span className="dock-hint">选中画布上的生成卡片，创作条就绑定到它</span>
-                </header>
-              )}
-              <div className="dock-body">
-                {!composerNode && (
-                  <form className="dock-quick" aria-label="一句话起草" onSubmit={event => { event.preventDefault(); const text = quickPrompt; setQuickPrompt(""); void startDraft(quickKind, text); }}>
-                    <textarea value={quickPrompt} maxLength={4000} rows={2} aria-label="一句话起草"
-                      placeholder={quickKind === "image" ? "写一句画面：谁、在哪、光线与情绪…（新建卡片并填好描述，不会直接生成）" : "写一句运动：镜头怎么动、谁在动…（新建卡片并填好描述，不会直接生成）"}
-                      onChange={event => setQuickPrompt(event.target.value)}
-                      onKeyDown={event => { if (event.key === "Enter" && (event.ctrlKey || event.metaKey) && !event.nativeEvent.isComposing) { event.preventDefault(); event.currentTarget.form?.requestSubmit(); } }} />
-                    <footer>
-                      <button type="button" className="chip" onClick={() => openFilePicker()}><Upload size={13} />导入素材</button>
-                      <button type="button" className="chip" onClick={() => { setShowLibrary(true); setAssetScope("subjects"); }}><UserRound size={13} />主体库</button>
-                      <span className="flex" />
-                      <span className="dock-hint">Ctrl+Enter 起草</span>
-                      <button className="dock-go" type="submit" disabled={!quickPrompt.trim()}><Sparkles size={15} />起草到画布</button>
-                    </footer>
-                  </form>
-                )}
+                  <button type="button" title="更多卡片操作" aria-label="更多卡片操作" aria-haspopup="menu"
+                    onClick={event => {
+                      const rect = event.currentTarget.getBoundingClientRect();
+                      setContextMenu({ x: rect.left, y: rect.bottom + 6,
+                        position: flow.screenToFlowPosition({ x: rect.right, y: rect.bottom }), kind: "node" });
+                    }}>
+                    <Ellipsis size={17} /><span>更多</span>
+                  </button>
+                </>
+              }>
+              <header className="card-editor-heading">
+                <div>
+                  <h2>{selectedVideo ? "视频编辑" : selectedAudio ? "配音编辑" : "图片编辑"}</h2>
+                  <p title={composerNode.data.title}>{composerNode.data.title || "未命名卡片"}</p>
+                </div>
+                <button type="button" className="button secondary" aria-label="收起编辑"
+                  onClick={() => {
+                    setEditorOpen({ id: composerNode.id, value: false });
+                    editorTrigger.current?.focus();
+                  }}>收起<ChevronUp size={14} /></button>
+              </header>
+              <div className="card-control-body">
                 {selectedVideo && selectedVideoWorkflow !== "builtin-latentsync15-local" && (
                   <div className="canvas-av-composer">
                     {selectedEnhanceWorkflow && selectedVideo.data.generation ? (
@@ -4554,7 +4365,7 @@ function CanvasEditor({
                   />
                 )}
               </div>
-            </section>
+            </CanvasCardControls>
           )}
           {loading && (
             <div className="canvas-loading">
@@ -4690,7 +4501,6 @@ function CanvasEditor({
           <header className="panel-head">
             <div className="panel-title">
               <h2 title={resultsNode?.data.title || undefined}>{panelTab === "results" ? (resultsNode?.data.title || "画布") : selected.length ? (single?.data.title || `已选择 ${selected.length} 个元素`) : selectedEdge ? "连线" : "画布"}</h2>
-              {panelTab === "results" && resultsNode && resultsNode.id === composerNode?.id && <span className="tag accent">创作条目标</span>}
             </div>
             <button className="icon-button" title="收起面板" aria-label="收起结果与属性面板" onClick={() => setShowInspector(false)}><X size={15} /></button>
             <div className="panel-tabs" role="tablist" aria-label="面板内容">
@@ -4715,7 +4525,7 @@ function CanvasEditor({
               onUseAsReference={(versionId) => useVersionAsReference(resultsNode.id, versionId)}
               onToVideo={(versionId) => void versionToVideo(resultsNode.id, versionId)}
               onLocate={locateFromRound}
-              onPreview={onPreview}
+              onPreview={versionId => openMedia(resultsNode.id, versionId)}
               onClose={() => setRounds(null)}
             />
           ) : (
@@ -5182,6 +4992,39 @@ function CanvasEditor({
           onClose={closeContextMenu}
         />
       )}
+      {mediaPreview && activePreviewNode && (activePreviewNode.data.kind === "video" || activePreviewNode.data.kind === "audio" ? (
+        <VideoViewer key={mediaPreview.versionId} kind={activePreviewNode.data.kind} versionId={mediaPreview.versionId}
+          versions={previewVersions} onClose={() => setMediaPreview(null)} returnTo={() => previewTrigger.current} />
+      ) : (
+        <ImageViewer key={mediaPreview.versionId} versionId={mediaPreview.versionId} versions={previewVersions}
+          onClose={() => setMediaPreview(null)} returnTo={() => previewTrigger.current} review={{
+            adopted: activePreviewNode.data.asset_version_id,
+            history: previewHistory,
+            locked: activePreviewNode.data.locked,
+            onAdopt: id => adoptVersion(activePreviewNode.id, id),
+            onContinue: id => {
+              if (activePreviewNode.data.locked) return;
+              remember();
+              updateData(activePreviewNode.id, {
+                generation: { ...defaultGenerationDraft(true), ...activePreviewNode.data.generation, mode: "edit", workflow_id: undefined, edit_base_version_id: id },
+              });
+              replace(nodesRef.current.map(node => ({ ...node, selected: node.id === activePreviewNode.id })),
+                edgesRef.current.map(edge => ({ ...edge, selected: false })));
+              setEditorOpen({ id: activePreviewNode.id, value: true });
+              setMediaPreview(null);
+            },
+            onDiscard: id => {
+              if (activePreviewNode.data.locked) return;
+              const remaining = previewHistory.filter(item => item.version_id !== id);
+              remember();
+              updateData(activePreviewNode.id, { image_history: remaining });
+              if (id === mediaPreview.versionId) {
+                const next = activePreviewNode.data.asset_version_id || remaining[0]?.version_id;
+                setMediaPreview(next ? { ...mediaPreview, versionId: next } : null);
+              }
+            },
+          }} />
+      ))}
       {showDrafts && <DraftRecovery projectId={project.id} draftPrefix={draftPrefix} onClose={()=>setShowDrafts(false)} onRestore={restoreDraft}/>}
       {view === "script" && <ScreenplayWorkspace projectId={project.id} page onClose={onCloseView}/>}
       {showShare && <SharePanel project={project} onFlush={flushCanvas} getViewport={()=>flow.getViewport()} onClose={()=>setShowShare(false)} onNotice={setNotice}/>}

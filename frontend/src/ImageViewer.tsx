@@ -5,8 +5,8 @@ import { Modal } from "./ui";
 import CandidateReview from "./CandidateReview";
 import type { ImageReview } from "./CandidateReview";
 
-export default function ImageViewer({versionId, versions, review, onClose}:{
- versionId:string; versions:string[]; review?:ImageReview; onClose:()=>void;
+export default function ImageViewer({versionId, versions, review, onClose, returnTo}:{
+ versionId:string; versions:string[]; review?:ImageReview; onClose:()=>void; returnTo?:()=>HTMLElement|null;
 }) {
  const [selected,setSelected]=useState(versionId);
  const [compare,setCompare]=useState(false);
@@ -61,7 +61,7 @@ export default function ImageViewer({versionId, versions, review, onClose}:{
    }
   }} onDoubleClick={event=>event.stopPropagation()} onPointerDown={event=>event.stopPropagation()}
   onClick={event=>event.stopPropagation()} onDragStart={event=>{event.preventDefault();event.stopPropagation();}}>
-  <Modal title={review && versions.length>1 ? "图片版本预览" : "图片大图预览"} onClose={onClose} wide>
+  <Modal title={review && versions.length>1 ? "图片版本预览" : "图片预览"} onClose={onClose} returnTo={returnTo} closeLabel="关闭预览" className="media-viewer-modal image-viewer-modal" wide>
    <div className="image-viewer-toolbar">
     {versions.length>1 && <>
      <button disabled={index<=0} onClick={()=>step(-1)}>上一张</button>
@@ -71,7 +71,7 @@ export default function ImageViewer({versionId, versions, review, onClose}:{
     <button disabled={comparing} onClick={()=>zoom(1/1.25)} aria-label="预览缩小">−</button>
     <output>{Math.round(view.scale*100)}%</output>
     <button disabled={comparing} onClick={()=>zoom(1.25)} aria-label="预览放大">＋</button>
-    <button disabled={comparing} onClick={()=>setView({scale:1,x:0,y:0})}>原始尺寸 100%</button>
+    <button disabled={comparing} onClick={()=>setView({scale:1,x:0,y:0})}>原始尺寸</button>
     <button disabled={comparing} onClick={fit}>适应窗口</button>
     <a href={mediaUrl(current,"original")} download draggable={false}>下载原图</a>
    </div>

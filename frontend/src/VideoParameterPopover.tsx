@@ -27,10 +27,13 @@ export default function VideoParameterPopover({anchor,label,onClose,children,wid
     const button=anchor.current;
     if(!button)return;
     const observer=new MutationObserver(()=>{
-      if(getComputedStyle(button).visibility==="hidden")close.current();
+      if(!button.getClientRects().length || getComputedStyle(button).visibility==="hidden")close.current();
+      else measure();
     });
-    const container=button.closest(".video-composer-anchor");
+    const container=button.closest(".canvas-card-controls");
     if(container)observer.observe(container,{attributes:true,attributeFilter:["style"]});
+    const editor=button.closest(".card-control-editor");
+    if(editor)observer.observe(editor,{attributes:true,attributeFilter:["style","hidden"]});
     return()=>observer.disconnect();
   },[anchor]);
   return createPortal(<div ref={panel} className="video-parameter-popover nodrag nopan nowheel" role="dialog" aria-label={label} style={{...position,width,maxWidth:"calc(100vw - 24px)"}} onPointerDown={e=>e.stopPropagation()} onWheel={e=>e.stopPropagation()} onKeyDown={e=>e.stopPropagation()}>{children}</div>,document.body);

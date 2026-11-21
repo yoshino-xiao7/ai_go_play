@@ -117,7 +117,7 @@ export default function Tray({ open, onToggle, currentProjectId, refresh, notify
         </div>
         <div className="tray-chips" role="list">
           {failed && !jobs && <span className="tray-offline">本机服务暂不可达</span>}
-          {jobs && !recent.length && <span className="tray-offline">还没有生成任务 · 在创作条写好描述后点「生成」</span>}
+          {jobs && !recent.length && <span className="tray-offline">还没有生成任务</span>}
           {recent.map(job => {
             const state = chipState[job.status];
             const output = job.outputs[0]?.version_id;

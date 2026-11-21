@@ -1,16 +1,11 @@
 /* Surface layer · canvas workspace: layout, tool island, drawer, side panel, banners, top-bar status. */
 @layer surface {
-  /*
-    Floating-instrument layout. One set of variables decides where every instrument sits, so the
-    console is always centred in the free band between the left instruments (spine, drawer) and the
-    right ones (view kit, panel) and can never sit under the minimap or the panel.
-  */
+  /* Shared insets for the canvas tools and side panels. */
   .canvas-workspace {
     position: absolute; inset: 0; display: flex; flex-direction: column;
     --edge: 14px; --panel-w: 400px; --library-w: 304px; --spine-w: 58px; --kit-w: 236px;
     --reserve-l: calc(var(--edge) + var(--spine-w));
     --kit-right: 16px;
-    --reserve-r: calc(var(--kit-right) + var(--kit-w));
   }
   .canvas-workspace[data-library="open"] { --reserve-l: calc(var(--edge) * 2 + var(--library-w) + var(--spine-w)); }
   .canvas-workspace[data-panel="open"] { --kit-right: calc(var(--edge) + var(--panel-w) + 16px); }

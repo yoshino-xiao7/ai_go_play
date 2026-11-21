@@ -137,10 +137,8 @@
   .media-node-poster .media-kind { top: 8px; left: 8px; }
   .media-open-image {
     position: absolute; right: 8px; top: 8px; z-index: 3; height: 24px; padding: 0 10px; border-radius: var(--radius-pill);
-    background: rgba(10, 10, 12, 0.6); color: #fff; font-size: 12px; backdrop-filter: blur(6px); opacity: 0; transition: opacity var(--dur);
+    background: rgba(10, 10, 12, 0.78); color: #fff; font-size: 12px; font-weight: 600;
   }
-  .canvas-node:hover .media-open-image, .media-open-image.has-versions { opacity: 1; }
-  .media-open-image.has-versions { background: var(--accent); color: var(--text-on-accent); font-weight: 600; }
   .poster-play {
     position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%;
     background: var(--accent); color: var(--text-on-accent); box-shadow: var(--shadow-accent); transition: transform var(--dur) var(--ease-spring);
@@ -261,16 +259,6 @@
   .subject-node-error { color: var(--state-bad); font-size: 12px; }
 
   /* floating image tools above the selected card */
-  .canvas-image-tools {
-    position: absolute; z-index: var(--z-dock); display: flex; align-items: center; gap: 2px; padding: 4px; border-radius: var(--radius-pill);
-    background: var(--plum-7); color: #fff; box-shadow: var(--shadow-3); animation: drop var(--dur) var(--ease-out) both; white-space: nowrap; overflow-x: auto;
-  }
-  .canvas-image-tools > button, .canvas-image-tools > a { display: inline-flex; align-items: center; gap: 5px; height: 30px; padding: 0 11px; border-radius: var(--radius-pill); color: rgba(255, 255, 255, 0.86); font-size: 12px; }
-  .canvas-image-tools > .icon-only { width: 30px; padding: 0; justify-content: center; }
-  .canvas-image-tools > button:hover:not(:disabled), .canvas-image-tools > a:hover { background: rgba(255, 255, 255, 0.14); color: #fff; }
-  .canvas-image-tools > .is-active { background: var(--accent); color: var(--text-on-accent); }
-  .canvas-image-tools > button:disabled { opacity: 0.4; }
-  .canvas-image-tools-divider { width: 1px; height: 16px; margin: 0 4px; background: rgba(255, 255, 255, 0.2); }
 
   /* beginner guide */
   .canvas-beginner-guide {
@@ -287,76 +275,44 @@
   .canvas-guide-actions, .canvas-guide-footer { display: flex; gap: 8px; flex-wrap: wrap; }
   .canvas-guide-primary { background: var(--accent) !important; border-color: transparent !important; color: var(--text-on-accent) !important; font-weight: 600 !important; }
 
-  /* ---------------------------------------------------------------- 咒语台 · the prompt console (docked composer) */
-  .composer-dock {
-    /* centred in the free band between --reserve-l and --reserve-r (see .canvas-workspace in canvas.css) */
-    position: absolute; bottom: 18px; z-index: var(--z-dock); transform: translateX(-50%);
-    left: calc(var(--reserve-l, 72px) + (100% - var(--reserve-l, 72px) - var(--reserve-r, 252px)) / 2);
-    width: min(840px, calc(100% - var(--reserve-l, 72px) - var(--reserve-r, 252px) - 24px)); max-height: min(58vh, 640px); display: flex; flex-direction: column;
-    border-radius: 10px; background: var(--surface-raised); border: 1px solid var(--line);
-    box-shadow: var(--shadow-3); isolation: isolate; container: dock / inline-size;
-    transition: left 0.6s var(--ease-out), width 0.6s var(--ease-out), box-shadow var(--dur);
-    animation: console-rise 0.8s var(--ease-spring) 0.25s backwards;
+  .canvas-card-controls {
+    position: absolute; inset: 0; z-index: var(--z-dock); pointer-events: none;
   }
-  @keyframes console-rise { from { opacity: 0; transform: translate(-50%, 40px) scale(0.94); filter: blur(10px); } to { opacity: 1; transform: translate(-50%, 0); filter: none; } }
-  /* living spectrum edge */
-  .composer-dock::before {
-    content: ""; position: absolute; inset: 0; z-index: 2; border-radius: inherit; padding: 1px; pointer-events: none;
-    background: var(--spectrum-conic); opacity: 0; animation: hero-sweep 8s linear infinite;
-    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude;
-    transition: opacity var(--dur);
+  .card-control-bar, .card-control-editor {
+    position: absolute; pointer-events: auto; background: var(--surface-raised);
+    border: 1px solid var(--line-strong); border-radius: 8px; box-shadow: var(--shadow-2);
   }
-  .composer-dock:hover::before { opacity: 0.5; }
-  .composer-dock:focus-within::before { opacity: 1; animation-duration: 3.2s; }
-  .composer-dock:focus-within { box-shadow: var(--shadow-3), 0 0 0 4px rgb(var(--accent-rgb) / 0.12); }
-  .composer-dock.is-bound { animation: console-rise 0.8s var(--ease-spring) 0.25s backwards; }
+  .card-control-bar { display: flex; align-items: center; gap: 2px; padding: 2px; }
+  .card-control-bar button {
+    display: inline-flex; flex: 0 1 auto; align-items: center; justify-content: center; gap: 5px;
+    min-width: 0; min-height: 32px; padding: 0 7px; border-radius: 5px;
+    white-space: nowrap; color: var(--text-strong); font-size: 13px; font-weight: 600;
+  }
+  .card-control-bar button svg { flex: none; }
+  .card-control-bar button:hover, .card-control-bar button[aria-expanded="true"] {
+    color: var(--text-strong); background: var(--surface-tint);
+  }
+  .card-control-bar .card-control-preview { color: var(--accent-strong); }
+  .card-control-editor { display: flex; flex-direction: column; }
+  .card-control-editor[hidden] { display: none; }
+  .card-editor-heading {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    padding: 9px 12px; border-bottom: 1px solid var(--line-soft);
+  }
+  .card-editor-heading > div { min-width: 0; }
+  .card-editor-heading h2 { font-size: 15px; line-height: 1.3; }
+  .card-editor-heading p {
+    overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: var(--text-muted); font-size: 13px;
+  }
+  .card-editor-heading button { flex: none; white-space: nowrap; }
+  .card-control-body { min-height: 0; overflow: auto; overscroll-behavior: contain; }
+  .card-control-body .generation-composer { gap: 8px; padding: 10px 12px 12px; }
+  .card-control-body .prompt-editor {
+    min-height: 76px; padding: 8px 10px; border: 1px solid var(--line-strong); border-radius: 6px;
+    background: var(--surface-sunk); font-family: var(--font-sans); font-size: 15px; line-height: 1.6;
+  }
+  .card-control-body .prompt-editor:empty::before, .card-control-body .prompt-editor[data-empty="true"]::before { color: var(--text-muted); }
 
-  .dock-head { position: relative; display: flex; flex-wrap: nowrap; align-items: center; gap: 8px; min-width: 0; padding: 12px 14px 10px; border-bottom: 1px solid var(--line-soft); animation: bind-flash 1s var(--ease-out); }
-  @keyframes bind-flash { 0% { background: linear-gradient(90deg, rgb(var(--accent-rgb) / 0.25), rgb(var(--accent-rgb) / 0.18)); } 100% { background: transparent; } }
-  .dock-kind {
-    display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border-radius: var(--radius-pill);
-    background: var(--spectrum-soft); font-weight: 650; color: var(--text-strong); font-size: var(--text-sm); box-shadow: inset 0 0 0 1px var(--line);
-  }
-  .dock-kind[role="radiogroup"] { padding: 3px; gap: 2px; background: var(--surface-sunk); }
-  .dock-kind button { display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 12px; border-radius: var(--radius-pill); color: var(--text-muted); font-weight: 500; transition: all var(--dur) var(--ease-out); }
-  .dock-kind button[aria-checked="true"] { background: var(--spectrum); color: var(--text-on-accent); font-weight: 650; box-shadow: var(--shadow-accent); }
-  .dock-target {
-    display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border-radius: var(--radius-pill);
-    border: 1px dashed var(--line-strong); font-size: var(--text-sm); color: var(--text-muted); flex: 0 1 auto; min-width: 0; max-width: 52%; white-space: nowrap; transition: border-color var(--dur), box-shadow var(--dur);
-  }
-  .dock-target b { color: var(--text-strong); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  button.dock-target:hover { border-style: solid; border-color: var(--line-glow); box-shadow: 0 0 18px -6px rgb(var(--accent-rgb) / 0.7); }
-  .dock-target.is-new b { color: var(--accent-strong); }
-  .dock-link { flex: none; white-space: nowrap; display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 9px; border-radius: 6px; font-size: 12px; color: var(--text-muted); transition: background var(--dur-fast), color var(--dur-fast); }
-  .dock-link.icon { width: 28px; padding: 0; justify-content: center; }
-  .dock-link:hover { background: var(--surface-tint); color: var(--text-strong); }
-  .dock-kind { flex: none; white-space: nowrap; }
-  .dock-head > .dock-hint { min-width: 0; flex: 0 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  /* narrow console (results panel and/or drawer open): the header stays one line; links fold to
-     icons (they keep aria-label + title), then the hint and the "结果回到" prefix give way */
-  @container dock (max-width: 720px) { .dock-link-label { display: none; } .dock-link { width: 28px; padding: 0; justify-content: center; } .dock-target { max-width: none; } }
-  @container dock (max-width: 560px) { .dock-head > .dock-hint { display: none; } .dock-target > span { display: none; } }
-  .dock-hint { font-size: 12px; color: var(--text-faint); }
-  .dock-body { min-height: 0; overflow: auto; }
-  .composer-dock.is-collapsed .dock-body { display: none; }
-  .composer-dock.is-collapsed .dock-head { border-bottom: 0; }
-  .dock-quick { display: grid; gap: 8px; padding: 12px 18px 14px; }
-  .dock-quick textarea {
-    border: 0 !important; background: transparent !important; box-shadow: none !important; min-height: 46px !important; padding: 4px 0 !important;
-    resize: none; font: 500 17px/1.65 var(--font-sans) !important; color: var(--text-strong) !important; caret-color: var(--hue-rose);
-    transition: min-height 0.45s var(--ease-out) !important;
-  }
-  .composer-dock:focus-within .dock-quick textarea { min-height: 92px !important; }
-  .dock-quick textarea::placeholder { color: var(--text-faint); }
-  .dock-quick footer { display: flex; align-items: center; gap: 8px; }
-  .dock-go {
-    position: relative; overflow: hidden; display: inline-flex; align-items: center; gap: 7px; height: 42px; padding: 0 22px; border-radius: var(--radius-pill);
-    background: var(--spectrum); background-size: 220% 100%; color: var(--text-on-accent); font-weight: 650; box-shadow: var(--shadow-accent);
-    transition: transform var(--dur-fast) var(--ease-spring), background-position 0.8s var(--ease-out), box-shadow var(--dur);
-  }
-  .dock-go:hover:not(:disabled) { background-position: 100% 0; box-shadow: var(--glow-accent); }
-  .dock-go:active:not(:disabled) { transform: scale(0.95); }
-  .dock-go:disabled { background: var(--surface-sunk); color: var(--text-faint); box-shadow: none; }
   .dock-lipsync { display: grid; gap: 8px; padding: 14px 16px; }
   .canvas-av-composer { display: grid; }
 

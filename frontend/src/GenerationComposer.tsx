@@ -152,7 +152,6 @@ export default function GenerationComposer({
   const {setReferencePreview,hoverReference,openReference,renderReferencePreview}=useReferencePreview();
   const composerRoot = useRef<HTMLDivElement>(null);
   const [expanded,setExpanded]=useState(false);
-  const [collapsed,setCollapsed]=useState(false);
   const [updateCandidate,setUpdateCandidate]=useState<ImageReference|null>(null);
   const [missingVersions,setMissingVersions]=useState<string[]>([]);
   const knownReferences = useRef(new Map<string, ImageReference>());
@@ -801,12 +800,16 @@ export default function GenerationComposer({
   return (
     <div
       ref={composerRoot}
-      className={"generation-composer nodrag nopan nowheel"+(collapsed?" is-collapsed":"")}
+      className="generation-composer nodrag nopan nowheel"
       onKeyDown={event => { if (event.key === "Escape") { setPickerOpen(false); setSizeOpen(false); setPresetOpen(null); setReferencePreview(null); } }}
       onPointerDown={(event) => event.stopPropagation()}
       onDoubleClick={(event) => event.stopPropagation()}
     >
-      <div className="composer-compact-toolbar"><span>图片创作</span><button className="composer-rounds-link" onClick={()=>window.dispatchEvent(new CustomEvent("manju:open-rounds",{detail:{nodeId}}))} title="查看这张卡片每一轮提交与结果">结果轮次</button><button onClick={()=>setExpanded(value=>!value)} aria-expanded={expanded}>创作预设</button><button aria-label={collapsed?"展开创作面板":"收起创作面板"} onClick={()=>setCollapsed(value=>!value)}>{collapsed?"展开":"收起"}</button></div>
+      <div className="composer-compact-toolbar">
+        <button type="button" onClick={() => setExpanded(value => !value)} aria-expanded={expanded}>
+          <Palette size={14} /> 创作预设
+        </button>
+      </div>
       {draft.refill_of && (
         <div className="composer-refill" role="status">
           <span className="composer-refill-tag">回填</span>
@@ -824,22 +827,8 @@ export default function GenerationComposer({
         {([{ id: "camera", label: "镜头语言", Icon: Camera }, { id: "style", label: "画面风格", Icon: Palette }, { id: "light", label: "光线氛围", Icon: Sun }] as const).map(({ id, label, Icon }) => <button key={id} disabled={disabledEditing} aria-expanded={presetOpen === id} onClick={() => { setPresetOpen(value => value === id ? null : id); setPickerOpen(false); setSizeOpen(false); }}><span className={`studio-preset-icon ${id}`}><Icon size={18} strokeWidth={1.6} /></span><span>{label}</span><ChevronDown size={13} /></button>)}
       </div>
       {presetOpen && <div className="studio-presets"><span>添加到画面描述</span><div>{creativePresets[presetOpen].map(preset => <button key={preset.label} onClick={() => addPreset(preset.text)} title={preset.text}>{preset.label}</button>)}</div></div>}
-      <div className="generation-reference-list" aria-label="生成引用图片">
-        {references.map((reference,index)=><ReferenceTile key={reference.version_id} reference={reference} index={index} badge={draft.mode==="edit"&&index===0?"底图":undefined}
-          disabled={disabledEditing} onHover={hoverReference} onOpen={openReference}
-          onMove={direction=>reorderReference(index,direction)} canMoveBack={index!==0&&!(draft.mode==="edit"&&!!versionId&&index===1)} canMoveForward={index!==references.length-1&&!(draft.mode==="edit"&&!!versionId&&index===0)}
-          onRemove={draft.mode==="edit"&&!!versionId&&reference.source==="base"?undefined:()=>removeReference(reference)}>
-          {reference.node_id && !sourceVersions[reference.node_id] && <span className="reference-status">来源卡已删除／无图</span>}
-          {reference.node_id && sourceVersions[reference.node_id] && ((reference.source==="connection" ? sourceVersions[reference.node_id]!==reference.version_id : !sourceImages[reference.node_id]?.includes(reference.version_id)) || (sourceDescriptions[reference.node_id]!==undefined && sourceDescriptions[reference.node_id]!==reference.description)) && <button className="reference-status" disabled={disabledEditing} onClick={()=>setUpdateCandidate(reference)}>来源有新图 · 更新</button>}
-          {missingVersions.includes(reference.version_id) && <span className="reference-status error">原件缺失</span>}
-        </ReferenceTile>)}
-        <button className="studio-add-reference" title="添加参考图片" aria-label="添加参考图片" disabled={disabledEditing} aria-expanded={pickerOpen} onClick={openPicker}><Plus size={24} strokeWidth={1.3} />{!references.length && <span>参考图片</span>}</button>
-        {!references.length && <div className="studio-reference-empty"><strong>让画面有据可依</strong><span>添加参考图，或输入 @ 引用画布图片</span></div>}
-        <span className="studio-mode-caption">{workflowModeNames[draft.mode]}</span>
-      </div>
-      {references.some(ref=>ref.description) && <label className="reference-description-option"><input type="checkbox" checked={references.filter(ref=>ref.description).every(ref=>ref.use_description!==false)} onChange={event=>{onBeginEdit();updateDraft({references:(draft.references||[]).map(ref=>({...ref,use_description:event.target.checked}))});}} />使用主体设定</label>}
-      {updateCandidate && createPortal(<div className="modal-shade"><div className="modal modal-wide" role="dialog" aria-label="更新固定参考"><header className="modal-heading"><h2>更新固定参考</h2></header><div className="reference-compare"><figure><img src={mediaUrl(updateCandidate.version_id)} /><figcaption>当前固定图片</figcaption></figure><figure><img src={mediaUrl(sourceVersions[updateCandidate.node_id!] || updateCandidate.version_id)} /><figcaption>来源当前主图（同时更新主体设定）</figcaption></figure></div><footer className="modal-footer"><button onClick={()=>setUpdateCandidate(null)}>取消</button><button onClick={()=>{onUpdateReference?.(updateCandidate);setUpdateCandidate(null);}}>更新引用</button></footer></div></div>,document.body)}
       <div className="generation-prompt-wrap">
+        <span className="card-prompt-label">提示词</span>
         <PromptEditor ref={textarea} value={draft.prompt} references={references} placeholder={draft.mode === "edit" ? "描述你想修改的地方，试试 @ 引用另一张图片…" : "描述你想创作的画面，试试 @ 引用角色或场景…"} disabled={disabledEditing} onFocus={onBeginEdit}
           onReferenceHover={hoverReference}
           onCompositionStart={() => { composing.current = true; }} onCompositionEnd={() => { composing.current = false; }}
@@ -853,6 +842,20 @@ export default function GenerationComposer({
             else if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) { event.preventDefault(); void submit(); }
           }} />
       </div>
+      <div className="generation-reference-list" aria-label="生成引用图片">
+        {references.map((reference,index)=><ReferenceTile key={reference.version_id} reference={reference} index={index} badge={draft.mode==="edit"&&index===0?"底图":undefined}
+          disabled={disabledEditing} onHover={hoverReference} onOpen={openReference}
+          onMove={direction=>reorderReference(index,direction)} canMoveBack={index!==0&&!(draft.mode==="edit"&&!!versionId&&index===1)} canMoveForward={index!==references.length-1&&!(draft.mode==="edit"&&!!versionId&&index===0)}
+          onRemove={draft.mode==="edit"&&!!versionId&&reference.source==="base"?undefined:()=>removeReference(reference)}>
+          {reference.node_id && !sourceVersions[reference.node_id] && <span className="reference-status">来源卡已删除／无图</span>}
+          {reference.node_id && sourceVersions[reference.node_id] && ((reference.source==="connection" ? sourceVersions[reference.node_id]!==reference.version_id : !sourceImages[reference.node_id]?.includes(reference.version_id)) || (sourceDescriptions[reference.node_id]!==undefined && sourceDescriptions[reference.node_id]!==reference.description)) && <button className="reference-status" disabled={disabledEditing} onClick={()=>setUpdateCandidate(reference)}>来源有新图 · 更新</button>}
+          {missingVersions.includes(reference.version_id) && <span className="reference-status error">原件缺失</span>}
+        </ReferenceTile>)}
+        <button className="studio-add-reference" title="添加参考图片" aria-label="添加参考图片" disabled={disabledEditing} aria-expanded={pickerOpen} onClick={openPicker}><Plus size={24} strokeWidth={1.3} />{!references.length && <span>参考图片</span>}</button>
+        {!references.length && <div className="studio-reference-empty"><strong>让画面有据可依</strong><span>添加参考图，或输入 @ 引用画布图片</span></div>}
+      </div>
+      {references.some(ref=>ref.description) && <label className="reference-description-option"><input type="checkbox" checked={references.filter(ref=>ref.description).every(ref=>ref.use_description!==false)} onChange={event=>{onBeginEdit();updateDraft({references:(draft.references||[]).map(ref=>({...ref,use_description:event.target.checked}))});}} />使用主体设定</label>}
+      {updateCandidate && createPortal(<div className="modal-shade"><div className="modal modal-wide" role="dialog" aria-label="更新固定参考"><header className="modal-heading"><h2>更新固定参考</h2></header><div className="reference-compare"><figure><img src={mediaUrl(updateCandidate.version_id)} /><figcaption>当前固定图片</figcaption></figure><figure><img src={mediaUrl(sourceVersions[updateCandidate.node_id!] || updateCandidate.version_id)} /><figcaption>来源当前主图（同时更新主体设定）</figcaption></figure></div><footer className="modal-footer"><button onClick={()=>setUpdateCandidate(null)}>取消</button><button onClick={()=>{onUpdateReference?.(updateCandidate);setUpdateCandidate(null);}}>更新引用</button></footer></div></div>,document.body)}
       {draft.mode === "edit" && selectedWorkflow?.capabilities.supports_mask && <div className="studio-edit-tools"><button className={`generation-mask-toggle ${draft.mask_version_id ? "has-mask" : ""}`} disabled={disabledEditing || !references.length} aria-expanded={showMaskTools} onClick={() => setShowMaskTools(value => !value)}><Brush size={14} />{draft.mask_version_id ? "已设置局部编辑区域" : "局部编辑"}<ChevronDown size={12} /></button></div>}
       {pickerOpen && createPortal(
         <div className="generation-reference-picker studio-reference-picker-overlay" role="dialog" aria-label="选择引用图片" style={pickerPosition} onPointerDown={event => event.stopPropagation()}>
@@ -1091,7 +1094,7 @@ export default function GenerationComposer({
           </ul>
           {capabilityError && <p className="composer-effective-block">暂不能提交：{capabilityError}</p>}
           {effectiveRequest ? <>
-            <h4>实际提交{pendingSubmission ? "（重试沿用上次的同一个请求）" : ""}</h4>
+            <h4>提交内容{pendingSubmission ? "（重试沿用上次的同一个请求）" : ""}</h4>
             <dl className="composer-effective-list">
               <dt>去向</dt><dd>{effectiveRequest.provider === "openai" ? "云端 OpenAI · 会计费，描述与参考图会离开本机" : "本机 ComfyUI"}</dd>
               <dt>工作流</dt><dd>{selectedWorkflow?.name || effectiveRequest.workflow_id} <code>{effectiveRequest.workflow_id}</code></dd>
@@ -1138,8 +1141,8 @@ export default function GenerationComposer({
         </label>
         {!isOpenAI && <button className="studio-size-toggle" aria-label="画幅与尺寸" aria-expanded={sizeOpen} title={canSetSize ? `${currentWidth} × ${currentHeight} 像素` : "输出尺寸由当前工作流决定"} disabled={disabledEditing || !canSetSize} onClick={() => { setSizeOpen(value => !value); setShowParameters(false); setPresetOpen(null); setPickerOpen(false); }}><span>{canSetSize ? currentRatio?.label || "自定义" : "原始尺寸"}</span><span className="studio-dot">·</span><span>{canSetSize ? currentLongEdge === 1024 ? "1K" : currentLongEdge === 2048 ? "2K" : `${currentLongEdge}px` : "工作流"}</span><ChevronDown size={13} /></button>}
         <button className="studio-mention-toggle" aria-label="引用图片" title="引用图片 · @" disabled={disabledEditing} aria-expanded={pickerOpen} onClick={openPicker}><AtSign size={19} /></button>
-        {!isOpenAI && <button className="generation-parameters-toggle" title={advancedCount ? `高级参数 · 已调整 ${advancedCount} 项` : "高级参数"} aria-label={advancedCount ? `高级参数，已调整 ${advancedCount} 项` : "高级参数"} aria-expanded={showParameters} onClick={() => setShowParameters(value => !value)}><Settings2 size={15} />{advancedCount > 0 && <b className="composer-adv-count">{advancedCount}</b>}</button>}
-        <button className={"composer-effective-toggle" + (capabilityError ? " has-issue" : "")} aria-expanded={showEffective} title="提交前检查与实际提交内容" onClick={() => { setShowEffective(value => !value); setSizeOpen(false); setPickerOpen(false); setPresetOpen(null); }}>{capabilityError ? <AlertCircle size={13} /> : <Check size={13} />}<span>实际提交</span></button>
+        {!isOpenAI && <button className="generation-parameters-toggle" title={advancedCount ? `高级参数 · 已调整 ${advancedCount} 项` : "高级参数"} aria-label={advancedCount ? `高级参数，已调整 ${advancedCount} 项` : "高级参数"} aria-expanded={showParameters} onClick={() => setShowParameters(value => !value)}><Settings2 size={15} /><span>参数</span>{advancedCount > 0 && <b className="composer-adv-count">{advancedCount}</b>}</button>}
+        <button className={"composer-effective-toggle" + (capabilityError ? " has-issue" : "")} aria-expanded={showEffective} title="提交前检查与实际提交内容" onClick={() => { setShowEffective(value => !value); setSizeOpen(false); setPickerOpen(false); setPresetOpen(null); }}>{capabilityError ? <AlertCircle size={13} /> : <Check size={13} />}<span>提交预览</span></button>
         <span className="studio-output-count" title={isOpenAI ? "每次生成 1 张，费用预估见上方" : selectedWorkflow?.builtin ? "当前工作流每次生成 1 张图片" : "出图数量由工作流决定"}><Sparkles size={13} />{isOpenAI&&openai.estimate?`≈ $${openai.estimate.output_usd.toFixed(4)} + 输入`:selectedWorkflow?.builtin ? "1 张" : "按工作流输出"}</span>
         <button
           className="generation-submit"
@@ -1148,7 +1151,8 @@ export default function GenerationComposer({
           disabled={!canSubmit || job?.status === "unknown"}
           onClick={() => void submit()}
         >
-          {submitting || active ? <LoaderCircle className="spin" size={22} /> : pendingSubmission ? <RefreshCw size={21} /> : <ArrowUp size={24} strokeWidth={2.2} />}
+          {submitting || active ? <LoaderCircle className="spin" size={22} /> : pendingSubmission ? <RefreshCw size={21} /> : <ArrowUp size={16} strokeWidth={2.2} />}
+          <span>{submitting ? "正在提交" : active ? "生成中" : pendingSubmission ? "重试提交" : "生成图片"}</span>
         </button>
       </footer>
       {renderReferencePreview(references)}

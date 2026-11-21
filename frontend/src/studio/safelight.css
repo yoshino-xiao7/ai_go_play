@@ -91,13 +91,6 @@ body { background: var(--surface-app); }
 .canvas-panel { background: var(--surface-raised); backdrop-filter: none; box-shadow: var(--shadow-3); animation: sl-from-right 200ms var(--ease-out) backwards; }
 .canvas-library { background: var(--surface-raised); backdrop-filter: none; animation: sl-from-left 200ms var(--ease-out) backwards; }
 .canvas-spine, .viewkit-bar, .canvas-viewkit .react-flow__minimap.canvas-minimap { background: var(--surface-raised); backdrop-filter: none; }
-.composer-dock { animation: sl-rise 220ms var(--ease-out) backwards; }
-.composer-dock::before { display: none; }
-.dock-head { animation: none; }
-.dock-kind { background: var(--surface-sunk); }
-.dock-kind button[aria-checked="true"], .dock-go { background: var(--accent); background-size: auto; box-shadow: none; }
-.dock-go:hover:not(:disabled) { background: var(--accent-hover); box-shadow: none; }
-.dock-go:disabled { background: var(--surface-sunk); color: var(--text-faint); }
 .spine-btn.is-make:hover:not(:disabled) { background: var(--accent); box-shadow: none; }
 /* nodes: flat cards; selection is a clear accent outline, not a rotating rainbow */
 .canvas-node { background: var(--surface-raised); animation: sl-fade 180ms var(--ease-out) backwards; }
@@ -186,13 +179,10 @@ progress::-moz-progress-bar { background: var(--accent); }
 @keyframes sl-drop { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
 @keyframes sl-from-right { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: none; } }
 @keyframes sl-from-left { from { opacity: 0; transform: translateX(-16px); } to { opacity: 1; transform: none; } }
-/* the composer is centred with translateX(-50%); its rise keeps that */
-.composer-dock { animation-name: sl-rise-centred; }
-@keyframes sl-rise-centred { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translate(-50%, 0); } }
 @media (prefers-reduced-motion: reduce) {
-  .modal, .dropdown, .menu-popover, .reel, .canvas-panel, .canvas-library, .composer-dock, .canvas-node, .modal-shade.is-page { animation: none !important; }
+  .modal, .dropdown, .menu-popover, .reel, .canvas-panel, .canvas-library, .canvas-node, .modal-shade.is-page { animation: none !important; }
 }
-html[data-motion="off"] :is(.modal, .dropdown, .menu-popover, .reel, .canvas-panel, .canvas-library, .composer-dock, .canvas-node, .modal-shade.is-page) { animation: none !important; }
+html[data-motion="off"] :is(.modal, .dropdown, .menu-popover, .reel, .canvas-panel, .canvas-library, .canvas-node, .modal-shade.is-page) { animation: none !important; }
 
 /* the run dialog takes focus as a whole on open; no outline on the panel itself */
 .canvas-run-panel:focus { outline: none; }

@@ -17,28 +17,36 @@ export function ReferenceTile({reference,index,badge,disabled,onHover,onOpen,onR
 }){
   const kind=reference.media_type||"image";
   return <div className="generation-reference reference-tile" data-version-id={reference.version_id}>
-    <button type="button" className="studio-reference-image" title={`预览参考素材 ${reference.title}`} aria-label={`预览参考素材 ${reference.title}`}
+    <button type="button" className="studio-reference-image" aria-label={`预览参考素材 ${reference.title}`}
       onMouseEnter={e=>onHover(reference,e.currentTarget.getBoundingClientRect())} onMouseLeave={()=>onHover(reference,null)}
-      onFocus={e=>onHover(reference,e.currentTarget.getBoundingClientRect())} onBlur={()=>onHover(reference,null)} onClick={()=>onOpen(reference)}>
+      onClick={()=>onOpen(reference)}>
       {kind==="audio"?<Music2 className="reference-audio-icon" size={28}/>:<img src={mediaUrl(reference.version_id)} alt={reference.title}/>}
       <span className="generation-reference-index">{index+1}</span>
       {kind==="video"&&<Film className="reference-kind-icon" size={15}/>}
-      {badge&&<span className="studio-reference-base">{badge}</span>}
     </button>
-    {children}
-    {onMove&&<div className="generation-reference-actions"><button type="button" title="参考素材前移" disabled={disabled||!canMoveBack} onClick={()=>onMove(-1)}><ArrowLeft size={12}/></button><button type="button" title="参考素材后移" disabled={disabled||!canMoveForward} onClick={()=>onMove(1)}><ArrowRight size={12}/></button></div>}
-    {onRemove&&<button type="button" className="studio-remove-reference" title={`移除引用 ${reference.title}`} aria-label={`移除引用 ${reference.title}`} disabled={disabled} onClick={()=>{onHover(reference,null);onRemove();}}><X size={11}/></button>}
+    {badge&&<span className="studio-reference-base">{badge}</span>}
+    {(onMove||onRemove)&&<div className="generation-reference-actions">
+      {onMove&&<>
+        <button type="button" title="参考素材前移" aria-label="参考素材前移" disabled={disabled||!canMoveBack} onClick={()=>onMove(-1)}><ArrowLeft size={13}/></button>
+        <button type="button" title="参考素材后移" aria-label="参考素材后移" disabled={disabled||!canMoveForward} onClick={()=>onMove(1)}><ArrowRight size={13}/></button>
+      </>}
+      {onRemove&&<button type="button" className="studio-remove-reference" title="移除引用"
+        aria-label={`移除引用 ${reference.title}`} disabled={disabled} onClick={()=>{onHover(reference,null);onRemove();}}>
+        <X size={13}/>
+      </button>}
+    </div>}
+    {children&&<div className="reference-tile-status">{children}</div>}
   </div>;
 }
 
 function ReferenceHover({preview,references}:{preview:Preview;references:ImageReference[]}){
   const {reference,rect}=preview,kind=reference.media_type||"image";
-  const width=Math.min(264,innerWidth-24),height=Math.min(310,Math.max(80,innerHeight-110)),total=height+68;
+  const width=Math.min(264,innerWidth-24),height=Math.min(225,Math.max(80,innerHeight-110)),total=height+58;
   const top=rect.top-total-10>=12?rect.top-total-10:rect.bottom+total+10<=innerHeight-12?rect.bottom+10:Math.max(12,innerHeight-total-12);
   const index=references.findIndex(item=>item.version_id===reference.version_id);
   const source=reference.source==="connection"?"来自连线":reference.source==="base"?"编辑底图":"固定素材引用";
   return createPortal(<div className="studio-reference-preview reference-media-preview" role="tooltip" style={{width,left:Math.max(12,Math.min(rect.left,innerWidth-width-12)),top}}>
-    {kind==="audio"?<div className="reference-audio-poster" style={{height}}><Music2 size={64}/><span>点击试听音频</span></div>:<img style={{height}} src={mediaUrl(reference.version_id,kind==="image"?"original":"thumbnail")} alt={reference.title}/>}
+    {kind==="audio"?<div className="reference-audio-poster"><Music2 size={32}/><span>点击试听音频</span></div>:<img style={{maxHeight:height}} src={mediaUrl(reference.version_id,kind==="image"?"original":"thumbnail")} alt={reference.title}/>}
     <div><strong>{reference.title}</strong><span>{({image:"图",video:"视频",audio:"音频"})[kind]} {index<0?"":index+1} · {source} · 点击{kind==="image"?"查看大图":kind==="video"?"播放":"试听"}</span></div>
   </div>,document.body);
 }

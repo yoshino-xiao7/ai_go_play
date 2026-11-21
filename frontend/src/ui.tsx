@@ -13,6 +13,7 @@ export function Modal({
   page = false,
   backLabel,
   returnTo,
+  closeLabel,
 }: {
   title: string;
   children: ReactNode;
@@ -25,6 +26,7 @@ export function Modal({
   backLabel?: string;
   /** Where focus goes on close when the control that opened the dialog is gone (e.g. a menu item). */
   returnTo?: () => HTMLElement | null;
+  closeLabel?: string;
 }) {
   const dialog = useRef<HTMLDivElement>(null);
   // Esc closes only the topmost layer; focus returns to the control that opened this dialog.
@@ -82,8 +84,10 @@ export function Modal({
             </button>
           )}
           <h2>{title}</h2>
-          <button className="icon-button" aria-label={page ? `关闭${title}` : "关闭"} title="关闭 (Esc)" onClick={onClose}>
-            <X size={19} />
+          <button className={closeLabel ? "button secondary" : "icon-button"}
+            aria-label={closeLabel || (page ? `关闭${title}` : "关闭")} title="关闭 (Esc)" onClick={onClose}>
+            <X size={closeLabel ? 15 : 19} />
+            {closeLabel}
           </button>
         </header>
         {children}
