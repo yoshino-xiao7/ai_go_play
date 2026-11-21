@@ -1,0 +1,28 @@
+/* Project page: start from one sentence; canvas: quick draft bar. Token-based, both palettes. */
+.creation-start { margin: 6px 0 26px; padding: 16px 18px 14px; border-radius: 22px; border: 1px solid var(--color-border-strong);
+  background: linear-gradient(135deg, var(--color-surface-panel), var(--color-surface-raised)); box-shadow: 0 18px 44px -28px #a03c6466; }
+.cs-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.cs-eyebrow { display: inline-flex; gap: 6px; align-items: center; font: 600 11px var(--font-mono); letter-spacing: .14em; color: var(--color-accent); }
+.cs-kind { display: inline-flex; padding: 3px; border-radius: 999px; background: var(--color-surface-sunken); border: 1px solid var(--color-border); }
+.cs-kind button { display: inline-flex; gap: 5px; align-items: center; height: 28px; padding: 0 12px; border: 0; border-radius: 999px; background: transparent; color: var(--color-text-muted); font-size: 12.5px; font-weight: 600; }
+.cs-kind button[aria-checked="true"] { background: var(--color-surface-panel); color: var(--color-text); box-shadow: 0 2px 8px -3px #a03c6466; }
+.cs-prompt { display: block; width: 100%; margin: 10px 0 8px; padding: 4px 2px; border: 0; background: transparent; resize: vertical; min-height: 52px;
+  color: var(--color-text); font: 17px/1.6 "Noto Serif SC", "Songti SC", "SimSun", serif; outline: none; }
+.cs-prompt::placeholder { color: var(--color-text-muted); }
+.cs-foot { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; border-top: 1px dashed var(--color-border); padding-top: 10px; }
+.cs-target { display: inline-flex; gap: 6px; align-items: center; font-size: 12.5px; color: var(--color-text-muted); }
+.cs-hint { flex: 1 1 260px; font-size: 12px; color: var(--color-text-muted); line-height: 1.5; }
+.cs-go { height: 38px; padding: 0 20px; border-radius: 999px; border: 0; background: var(--color-accent); color: var(--color-on-accent); font-weight: 700; }
+.cs-go:disabled { opacity: .5; }
+
+.canvas-quick-draft { position: absolute; left: 50%; bottom: 92px; z-index: 12; transform: translateX(-50%); width: min(560px, calc(100% - 32px));
+  display: flex; align-items: center; gap: 6px; padding: 6px 6px 6px 14px; border-radius: 999px; border: 1px solid var(--color-border-strong);
+  background: var(--color-surface-panel); box-shadow: 0 18px 40px -22px #a03c6480;
+  animation: qd-in .3s ease-out; }
+@keyframes qd-in { from { opacity: 0; transform: translate(-50%, 8px); } }
+.canvas-quick-draft input { flex: 1; min-width: 0; border: 0 !important; background: transparent !important; box-shadow: none !important; outline: none; color: var(--color-text); font-size: 13.5px; }
+.canvas-quick-draft .cs-kind button { height: 26px; padding: 0 9px; }
+.canvas-quick-draft .cs-go { height: 32px; padding: 0 14px; }
+html[data-motion="off"] .canvas-quick-draft { animation: none; }
+@media (prefers-reduced-motion: reduce) { .canvas-quick-draft { animation: none; } }
+@media (max-width: 760px) { .canvas-quick-draft { bottom: 84px; } .canvas-quick-draft .cs-kind { display: none; } }

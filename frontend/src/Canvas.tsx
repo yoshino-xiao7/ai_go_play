@@ -154,6 +154,8 @@ import type {
 } from "./generationTypes";
 import GenerationRounds from "./GenerationRounds";
 import { draftFromRound } from "./roundSnapshots";
+import { takeDraftIntent } from "./draftIntent";
+import "./creation-start.css";
 import type { Workflow, WorkflowMode } from "./workflowTypes";
 // React Flow's base CSS is loaded once by styles.css in @layer vendor (D8). A second import here
 // re-inserted the same rules, unlayered, after the global theme whenever this lazy chunk loaded.
@@ -923,6 +925,8 @@ function CanvasEditor({
   const [showMore, setShowMore] = useState(false);
   const [showScreenplay, setShowScreenplay] = useState(false);
   const [rounds, setRounds] = useState<{ nodeId: string; version?: string } | null>(null);
+  const [quickPrompt, setQuickPrompt] = useState("");
+  const [quickKind, setQuickKind] = useState<"image" | "video">("image");
   const [showShare, setShowShare] = useState(false);
   const [showProduction, setShowProduction] = useState(false);
   const [showCanvasRun, setShowCanvasRun] = useState(false);
@@ -3324,6 +3328,42 @@ function CanvasEditor({
     const point=absolutePosition(node,nodesRef.current),size=dimensions(node);
     void flow.setCenter(point.x+size.width/2,point.y+size.height/2,{zoom:Math.min(1,stageDimensions.width/(size.width+180),stageDimensions.height/(size.height+180)),duration:250});
   };
+  // ---------------------------------------------------------------- draft from one sentence
+  /** New image / video card holding this description, selected so its composer opens. Never submits. */
+  /** First free spot near the viewport centre, searched in rings, so a new card never covers another. */
+  const freeSpot = (width: number, height: number) => {
+    const start = centerPosition();
+    const boxes = nodesRef.current.filter(node => !node.parentId).map(node => ({ ...absolutePosition(node, nodesRef.current), ...dimensions(node) }));
+    const hits = (x: number, y: number) => boxes.some(box => x < box.x + box.width + 40 && x + width + 40 > box.x && y < box.y + box.height + 40 && y + height + 40 > box.y);
+    for (let ring = 0; ring < 12; ring++)
+      for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [-1, 0], [0, -1], [1, 1], [-1, 1], [1, -1], [-1, -1]]) {
+        const x = start.x + dx * ring * (width + 60), y = start.y + dy * ring * (height + 60);
+        if (!hits(x, y)) return { x, y };
+      }
+    return start;
+  };
+  const startDraft = async (kind: "image" | "video", prompt: string) => {
+    const text = prompt.trim();
+    if (!text) return;
+    if (kind === "image") {
+      const id = addGeneration(freeSpot(360, 240), text);
+      requestAnimationFrame(() => locateNode(id));
+      setNotice("已新建图片卡片并填好描述：可以加参考、改参数，点“生成”后结果回到这张卡片。");
+      return;
+    }
+    const id = await addVideoGeneration(freeSpot(380, 240));
+    const node = id ? nodesRef.current.find(item => item.id === id) : undefined;
+    if (!id || !node?.data.generation) return;
+    updateData(id, { generation: { ...node.data.generation, prompt: text, video_mode: "text" } });
+    requestAnimationFrame(() => locateNode(id));
+    setNotice("已新建视频卡片并填好描述：可直接文生视频，也可加首帧（尾帧可选）。结果回到这张卡片。");
+  };
+  useEffect(() => {
+    if (loading || loadError) return;
+    const intent = takeDraftIntent(project.id);
+    if (intent) void startDraft(intent.kind, intent.prompt);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- consume once per loaded project
+  }, [loading, loadError, project.id]);
   // ---------------------------------------------------------------- results by round (GenerationRounds)
   useEffect(() => {
     const open = (event: Event) => {
@@ -5237,6 +5277,16 @@ function CanvasEditor({
         />
       )}
       {showDrafts && <DraftRecovery projectId={project.id} draftPrefix={draftPrefix} onClose={()=>setShowDrafts(false)} onRestore={restoreDraft}/>}
+      {!loading && !loadError && !selected.length && !rounds && !guideEnabled && saveState !== "conflict" && (
+        <form className="canvas-quick-draft" aria-label="一句话起草" onSubmit={event => { event.preventDefault(); const text = quickPrompt; setQuickPrompt(""); void startDraft(quickKind, text); }}>
+          <input value={quickPrompt} maxLength={4000} aria-label="一句话起草" placeholder={quickKind === "image" ? "一句话起草一张图…（新建卡片，不会直接生成）" : "一句话起草一段视频…（新建卡片，不会直接生成）"} onChange={event => setQuickPrompt(event.target.value)} />
+          <span className="cs-kind" role="radiogroup" aria-label="创作类型">
+            <button type="button" role="radio" aria-checked={quickKind === "image"} onClick={() => setQuickKind("image")}>图像</button>
+            <button type="button" role="radio" aria-checked={quickKind === "video"} onClick={() => setQuickKind("video")}>视频</button>
+          </span>
+          <button className="cs-go" type="submit" disabled={!quickPrompt.trim()}>起草</button>
+        </form>
+      )}
       {roundsNode && ["image", "video", "audio"].includes(roundsNode.data.kind || "") && (
         <GenerationRounds
           key={roundsNode.id}

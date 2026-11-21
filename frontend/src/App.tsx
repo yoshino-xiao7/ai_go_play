@@ -1,6 +1,7 @@
 import StudioSelect from "./StudioSelect";
 import ExitApplication from "./ExitApplication";
 import AppearanceSettings from "./AppearanceSettings";
+import CreationStarter from "./CreationStarter";
 import {
   lazy,
   Suspense,
@@ -926,6 +927,7 @@ function Projects({
         hidden
         onChange={(e) => importProject(e.target.files?.[0])}
       />
+      {!loading && !error && <CreationStarter projects={projects} onOpen={id => { onChanged(); navigate(`/canvas/${id}`); }} notify={notify} />}
       <div className="section-toolbar project-toolbar">
         <h2>最近项目 <span className="count">{search ? filtered.length : projects.length}</span></h2>
         <div className="project-tools">

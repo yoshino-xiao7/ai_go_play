@@ -177,3 +177,6 @@ html[data-palette="pale-pink"] .generation-composer .composer-effective-toggle.h
 html[data-palette="pale-pink"] .reference-status { background: #ffffffeb; color: var(--pp-rose-deep); border-color: var(--pp-pink-strong); }
 html[data-palette="pale-pink"] .reference-status.error { color: var(--color-danger); border-color: var(--color-danger-line); }
 html[data-palette="pale-pink"] .studio-reference-image .studio-reference-base { background: #ffffffe6; color: var(--pp-ink); }
+html[data-palette="pale-pink"] .canvas-notice { background: #fffafc; color: var(--pp-ink); border: 1px solid var(--pp-pink-strong); box-shadow: var(--pp-shadow-lg); }
+html[data-palette="pale-pink"] .canvas-notice svg { color: var(--pp-rose); }
+html[data-palette="pale-pink"] .canvas-notice button { color: var(--pp-muted); }
