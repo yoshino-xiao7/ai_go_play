@@ -5,7 +5,6 @@ import { GenerationProgress, useGenerationJob } from "./GenerationProgress";
 import { activeGenerationStates, generationStateLabels, VIDEO_INTERPOLATE_WORKFLOW, VIDEO_UPSCALE_WORKFLOW, VIDEO_WATERMARK_WORKFLOW } from "./generationTypes";
 import type { GenerationDraft, GenerationJob, GenerationRequest, ImageReference, VideoEnhanceMethod, VideoEnhanceOptions, VideoEnhanceWorkflow, WatermarkOptions } from "./generationTypes";
 import StudioSelect from "./StudioSelect";
-import "./video.css";
 
 export const videoEnhanceLabels = {
   [VIDEO_INTERPOLATE_WORKFLOW]: "视频补帧",

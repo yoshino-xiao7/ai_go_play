@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { api, mediaUrl } from "./api";
-import "./canvas-runs.css";
+import { useLayer } from "./shell/layers";
 
 type Step = {node_id:string; title:string; label?:string; kind:string; dependencies:string[]; action?:string; reason?:string; status?:string; error?:string; job_id?:string; job_status?:string; job_progress?:number|null; message?:string; output_version_id?:string};
 type Plan = {revision:number; nodes:Step[]; valid:boolean; errors:{node_id?:string;message:string}[]; warnings:{message:string}[]};
@@ -11,6 +12,22 @@ const labels:Record<string,string> = {pending:"等待依赖",submitting:"正在�
 const message = (error:unknown) => error instanceof Error ? error.message : String(error);
 
 export default function CanvasRunPanel({projectId,selectedNodeIds,onClose,onChanged,onLocate}:Props) {
+  // Shared layer stack: Esc closes it (one layer at a time) and focus goes back to the control that
+  // opened it, or to 更多 when that was a menu item. Closing never stops a submitted run.
+  const dialog = useRef<HTMLElement>(null);
+  const isTop = useLayer(true, onClose, { ref: dialog, fallback: "[aria-label=\"更多画布选项\"]" });
+  useEffect(() => {
+    dialog.current?.focus({ preventScroll: true });
+    const trap = (event: KeyboardEvent) => {
+      if (event.key !== "Tab" || !dialog.current || !isTop()) return;
+      const items = Array.from(dialog.current.querySelectorAll<HTMLElement>("button:not([disabled]), input:not([disabled]), select:not([disabled]), a[href]")).filter(element => element.getClientRects().length > 0);
+      const first = items[0], last = items[items.length - 1];
+      if (!dialog.current.contains(document.activeElement) || (event.shiftKey ? document.activeElement === first || document.activeElement === dialog.current : document.activeElement === last)) { event.preventDefault(); (event.shiftKey ? last : first)?.focus(); }
+    };
+    document.addEventListener("keydown", trap);
+    return () => document.removeEventListener("keydown", trap);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- mount only
+  }, []);
   const [scope,setScope] = useState<"all"|"downstream">(selectedNodeIds.length ? "downstream" : "all"), [force,setForce] = useState(false);
   const [plan,setPlan] = useState<Plan>(), [run,setRun] = useState<Run>(), [history,setHistory] = useState<Run[]>([]);
   const [busy,setBusy] = useState(""), [error,setError] = useState("");
@@ -68,7 +85,7 @@ export default function CanvasRunPanel({projectId,selectedNodeIds,onClose,onChan
     catch(e){setError(message(e));}finally{setBusy("");}
   }
   const steps=plan?.nodes||run?.nodes||[];
-  return <div className="canvas-run-shade" role="presentation"><section className="canvas-run-panel" role="dialog" aria-modal="true" aria-labelledby="canvas-run-title">
+  return createPortal(<div className="canvas-run-shade" role="presentation"><section ref={dialog} tabIndex={-1} className="canvas-run-panel" role="dialog" aria-modal="true" aria-labelledby="canvas-run-title">
     <header><div><h2 id="canvas-run-title">画布自动编排</h2><p>参考连线和卡片引用决定依赖；上游完成后，下游使用实际输出的固定版本。</p></div><button onClick={onClose} aria-label="关闭自动编排">×</button></header>
     <div className="canvas-run-body">
       <fieldset disabled={!!busy||active(run)} className="canvas-run-options"><label>执行范围<select value={scope} onChange={e=>{setScope(e.target.value as "all"|"downstream");invalidate();}}><option value="all">整张画布</option><option value="downstream" disabled={!selectedNodeIds.length}>选中节点及下游（{selectedNodeIds.length} 个起点）</option></select></label><label className="canvas-run-check"><input type="checkbox" checked={force} onChange={e=>{setForce(e.target.checked);invalidate();}}/>强制重做全部执行节点</label><button onClick={()=>void preview()}>{busy==="plan"?"检查中…":"检查依赖与执行计划"}</button></fieldset>
@@ -81,5 +98,5 @@ export default function CanvasRunPanel({projectId,selectedNodeIds,onClose,onChan
       {!!history.length&&<label className="canvas-run-history">历史运行<select value={run?.id||""} onChange={e=>{setPlan(undefined);setRun(history.find(item=>item.id===e.target.value));}}>{history.map(item=><option key={item.id} value={item.id}>{new Date(item.created_at).toLocaleString()} · {labels[item.status]||item.status} · {item.nodes.length} 节点</option>)}</select></label>}
     </div>
     <footer><span>生成素材进入项目资产库；已有选用版本保留，新结果可在节点历史中审核采用。</span><button onClick={onClose}>关闭</button></footer>
-  </section></div>;
+  </section></div>, document.body);
 }

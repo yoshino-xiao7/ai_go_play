@@ -1,6 +1,8 @@
 import { useEffect, useRef } from "react";
 import type { ReactNode } from "react";
-import { X, LoaderCircle } from "lucide-react";
+import { createPortal } from "react-dom";
+import { ArrowLeft, X, LoaderCircle } from "lucide-react";
+import { useLayer } from "./shell/layers";
 
 export function Modal({
   title,
@@ -8,69 +10,79 @@ export function Modal({
   onClose,
   wide = false,
   className = "",
+  page = false,
+  backLabel,
+  returnTo,
 }: {
   title: string;
   children: ReactNode;
   onClose: () => void;
   wide?: boolean;
   className?: string;
+  /** Fill the shell stage as a view instead of floating over a scrim. */
+  page?: boolean;
+  /** Page views show a labelled way back (e.g. "返回画布") instead of a bare ×. */
+  backLabel?: string;
+  /** Where focus goes on close when the control that opened the dialog is gone (e.g. a menu item). */
+  returnTo?: () => HTMLElement | null;
 }) {
   const dialog = useRef<HTMLDivElement>(null);
-  const closeRef = useRef(onClose);
-  closeRef.current = onClose;
+  // Esc closes only the topmost layer; focus returns to the control that opened this dialog.
+  const isTop = useLayer(true, onClose, { ref: dialog, fallback: returnTo });
   useEffect(() => {
-    const previous = document.activeElement as HTMLElement;
     const initial = dialog.current?.querySelector<HTMLElement>(
-      "input, textarea, select",
+      "[data-autofocus], input:not([type='hidden']):not([disabled]), textarea:not([disabled]), select:not([disabled])",
     );
-    (initial || dialog.current)?.focus();
+    (initial || dialog.current)?.focus({ preventScroll: true });
     const key = (event: KeyboardEvent) => {
-      if (event.key === "Escape") closeRef.current();
-      if (event.key === "Tab" && dialog.current) {
-        const focusable = Array.from(
-          dialog.current.querySelectorAll<HTMLElement>(
-            "button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), a[href]",
-          ),
-        ).filter((element) => element.getClientRects().length > 0);
-        const first = focusable[0];
-        const last = focusable[focusable.length - 1];
-        if (
-          event.shiftKey &&
-          (document.activeElement === first ||
-            document.activeElement === dialog.current)
-        ) {
-          event.preventDefault();
-          last?.focus();
-        } else if (!event.shiftKey && document.activeElement === last) {
-          event.preventDefault();
-          first?.focus();
-        }
+      if (event.key !== "Tab" || !dialog.current || !isTop()) return;
+      const focusable = Array.from(
+        dialog.current.querySelectorAll<HTMLElement>(
+          "button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), a[href], [tabindex]:not([tabindex='-1'])",
+        ),
+      ).filter((element) => element.getClientRects().length > 0);
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (!dialog.current.contains(document.activeElement)) {
+        event.preventDefault();
+        (event.shiftKey ? last : first)?.focus();
+      } else if (event.shiftKey && (document.activeElement === first || document.activeElement === dialog.current)) {
+        event.preventDefault();
+        last?.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first?.focus();
       }
     };
     document.addEventListener("keydown", key);
-    return () => {
-      document.removeEventListener("keydown", key);
-      previous?.focus();
-    };
+    return () => document.removeEventListener("keydown", key);
   }, []);
-  return (
+  // Floating dialogs render at the document root: opened from inside a blurred or transformed
+  // container (the top bar, a card) they would otherwise be positioned and clipped by it.
+  const view = (
     <div
-      className="modal-shade"
+      className={`modal-shade ${page ? "is-page" : ""}`}
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
+        if (!page && event.target === event.currentTarget) onClose();
       }}
     >
       <div
-        className={`modal ${wide ? "modal-wide" : ""} ${className}`}
+        className={`modal ${wide ? "modal-wide" : ""} ${page ? "is-page" : ""} ${className}`}
         role="dialog"
-        aria-modal="true"
+        aria-modal={page ? undefined : true}
         aria-label={title}
         tabIndex={-1}
         ref={dialog}
       >
         <header className="modal-heading">
+          {page && (
+            <button className="modal-back" onClick={onClose}>
+              <ArrowLeft size={16} />
+              <span>{backLabel || "返回"}</span>
+            </button>
+          )}
           <h2>{title}</h2>
-          <button className="icon-button" aria-label="关闭" onClick={onClose}>
+          <button className="icon-button" aria-label={page ? `关闭${title}` : "关闭"} title="关闭 (Esc)" onClick={onClose}>
             <X size={19} />
           </button>
         </header>
@@ -78,6 +90,8 @@ export function Modal({
       </div>
     </div>
   );
+  // page views live in the shell stage (their place in the layout); floating dialogs go to the root
+  return page ? view : createPortal(view, document.body);
 }
 
 export function EmptyState({

@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { Columns2, Maximize2, Pause, Play, Volume2, VolumeX } from "lucide-react";
 import { mediaUrl } from "./api";
-import "./video.css";
 
 function timeLabel(seconds: number) {
   const whole = Math.floor(seconds);

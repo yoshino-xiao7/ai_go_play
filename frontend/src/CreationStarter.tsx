@@ -4,7 +4,6 @@ import { api } from "./api";
 import type { Project } from "./types";
 import { setDraftIntent } from "./draftIntent";
 import StudioSelect from "./StudioSelect";
-import "./creation-start.css";
 
 /**
  * Project page: start from one sentence. Opens the chosen (or a new) project's canvas with a new

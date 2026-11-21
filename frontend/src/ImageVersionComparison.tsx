@@ -1,7 +1,6 @@
 import { useState } from "react";
 import type { CSSProperties } from "react";
 import { mediaUrl } from "./api";
-import "./image-version-comparison.css";
 
 export default function ImageVersionComparison({
   previous,

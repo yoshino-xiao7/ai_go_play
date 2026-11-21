@@ -4,11 +4,10 @@ import {
   currentMotion, currentPalette, onAppearanceChange, setMotion, setPalette,
   type MotionPreference, type Palette,
 } from "./design/appearance";
-import "./appearance-settings.css";
 
 const palettes: { id: Palette; name: string; note: string }[] = [
-  { id: "pale-pink", name: "淡粉亮色", note: "米白纸面、淡粉主色；看片区域保留暗房深色。" },
-  { id: "darkroom", name: "暗房深色", note: "原有的深色工作台，适合长时间暗光环境。" },
+  { id: "nocturne", name: "夜场 Nocturne", note: "墨黑舞台与全息光谱，默认配色，作品最出彩。" },
+  { id: "pearl", name: "珍珠 Pearl", note: "乳白珠光与同一组光谱，适合明亮环境。" },
 ];
 const motions: { id: MotionPreference; name: string; note: string }[] = [
   { id: "system", name: "跟随系统", note: "系统开启“减少动画”时自动减少。" },

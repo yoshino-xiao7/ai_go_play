@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { BookOpen, Check, ChevronDown, ChevronUp, Link2, Upload } from "lucide-react";
-import "./canvas-beginner-guide.css";
 
 export const beginnerImagePrompt = "雨后的夜晚，一盏暖黄色纸灯笼挂在安静的街角，地面有湿润的倒影，画面干净，电影感光线，横向构图。";
 export const beginnerVideoPrompt = "保留参考图的主体和构图，镜头缓慢向前推进，光线和细节轻微变化，动作自然，画面稳定，无突然切换。";

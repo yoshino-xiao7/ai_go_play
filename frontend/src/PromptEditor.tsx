@@ -2,7 +2,6 @@ import { forwardRef, useImperativeHandle, useLayoutEffect, useRef } from "react"
 import type { KeyboardEvent } from "react";
 import { mediaUrl } from "./api";
 import type { ImageReference } from "./generationTypes";
-import "./prompt-editor.css";
 
 export type PromptEditorHandle = {
   focus(): void;

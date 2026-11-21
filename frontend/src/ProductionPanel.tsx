@@ -8,7 +8,6 @@ import { activeGenerationStates, generationStateLabels, type GenerationJob } fro
 import { GenerationProgress } from "./GenerationProgress";
 import ProductionPreview, { subtitleWindow } from "./ProductionPreview";
 import type { ProductionDocument, ProductionRender, ProductionSettings, ProductionShot } from "./productionTypes";
-import "./production.css";
 
 type Props = { projectId: string; onClose: () => void; onChanged: () => void; onLocate?: (nodeId: string) => void };
 type Choice = { key: string; title: string; kind: "video" | "audio"; versionId?: string; nodeId?: string; duration?: number | null; missing?: boolean };

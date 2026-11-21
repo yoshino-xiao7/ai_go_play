@@ -1,7 +1,6 @@
 import { useEffect, useRef } from "react";
 import { mediaUrl } from "./api";
 import type { ImageHistoryItem } from "./generationTypes";
-import "./candidate-review.css";
 
 export type ImageReview = {
   adopted?: string;

@@ -4,7 +4,6 @@ import { mediaUrl } from "./api";
 import { Modal } from "./ui";
 import CandidateReview from "./CandidateReview";
 import type { ImageReview } from "./CandidateReview";
-import "./image-viewer.css";
 
 export default function ImageViewer({versionId, versions, review, onClose}:{
  versionId:string; versions:string[]; review?:ImageReview; onClose:()=>void;

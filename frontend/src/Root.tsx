@@ -2,9 +2,8 @@ import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { api, ApiError } from "./api";
 import type { SetupState } from "./setup/types";
 import Onboarding from "./setup/Onboarding";
-import "./setup/setup.css";
 
-const App = lazy(() => import("./App"));
+const App = lazy(() => import("./shell/Studio"));
 
 export default function Root() {
   const [state, setState] = useState<SetupState | null>(null);

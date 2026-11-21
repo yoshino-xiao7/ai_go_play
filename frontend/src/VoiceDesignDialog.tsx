@@ -6,7 +6,6 @@ import { Modal } from "./ui";
 import { activeGenerationStates, generationStateLabels } from "./generationTypes";
 import type { GenerationJob } from "./generationTypes";
 import type { SubjectSnapshot } from "./subjectTypes";
-import "./voice-design.css";
 
 const PROFILE = "builtin-h3-voice-design-local";
 const DEFAULT_TEXT = "你好，很高兴认识你。今天的天气很好，我们一起出去走走吧。";

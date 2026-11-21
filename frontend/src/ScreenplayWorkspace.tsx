@@ -3,7 +3,6 @@ import type { KeyboardEvent, ReactNode } from "react";
 import { BookOpen, FileText, List, LoaderCircle, Pencil, Plus, Save, Trash2 } from "lucide-react";
 import { api, ApiError, jsonBody } from "./api";
 import { EmptyState, Modal } from "./ui";
-import "./screenplay.css";
 
 type Character = { name: string; bio: string };
 type Episode = { id: string; title: string; outline: string; script: string };
@@ -143,7 +142,7 @@ function StorySettings({ screenplay, editing, disabled, onChange }: {
   );
 }
 
-export default function ScreenplayWorkspace({ projectId, onClose }: Props) {
+export default function ScreenplayWorkspace({ projectId, onClose, page = false }: Props & { page?: boolean }) {
   const [snapshot, setSnapshot] = useState<Snapshot>();
   const [draft, setDraft] = useState<Screenplay | null>(null);
   const [tab, setTab] = useState<Tab>("story");
@@ -332,7 +331,7 @@ export default function ScreenplayWorkspace({ projectId, onClose }: Props) {
   }
 
   return (
-    <Modal title="剧本" className="screenplay-workspace" wide onClose={close}>
+    <Modal title="剧本" className="screenplay-workspace" wide page={page} backLabel="返回画布" onClose={close}>
       {screenplay && !loading && <>
         <div className="screenplay-toolbar">
           <div className="screenplay-project-title">

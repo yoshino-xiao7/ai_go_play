@@ -2,7 +2,6 @@ import {useCallback, useSyncExternalStore} from "react";
 import {api} from "./api";
 import {activeGenerationStates, generationStateLabels, VIDEO_WATERMARK_WORKFLOW} from "./generationTypes";
 import type {GenerationJob} from "./generationTypes";
-import "./generation-progress.css";
 
 type Entry = {job?: GenerationJob; listeners: Set<()=>void>; timer?: ReturnType<typeof setTimeout>; controller?: AbortController};
 const jobs = new Map<string, Entry>();

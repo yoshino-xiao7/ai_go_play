@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { ChevronRight } from "lucide-react";
-import "./context-menu.css";
+import { useLayer } from "./shell/layers";
 
 export type CanvasMenuItem = {
   id: string;
@@ -36,6 +36,8 @@ function MenuList({
   label: string;
 }) {
   const menu = useRef<HTMLDivElement>(null);
+  // a submenu is its own layer: Esc or an outside click peels one level at a time
+  useLayer(true, onBack || onClose, { ref: menu, outside: !onBack });
   const [location, setLocation] = useState(position);
   const [submenu, setSubmenu] = useState<{ id: string; rect: DOMRect } | null>(
     null,

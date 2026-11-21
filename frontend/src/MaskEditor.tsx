@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { Brush, Eraser, LoaderCircle, Trash2, Undo2 } from "lucide-react";
 import { mediaUrl, uploadAsset } from "./api";
 import { Modal } from "./ui";
-import "./generation.css";
 
 type Stroke = {
   points: { x: number; y: number }[];

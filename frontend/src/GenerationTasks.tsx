@@ -5,7 +5,6 @@ import { EmptyState } from "./ui";
 import { generationStateLabels } from "./generationTypes";
 import type { GenerationJob } from "./generationTypes";
 import type { Workflow } from "./workflowTypes";
-import "./generationTasks.css";
 import VideoViewer from "./VideoViewer";
 import {GenerationProgress} from "./GenerationProgress";
 

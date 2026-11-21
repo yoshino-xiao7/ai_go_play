@@ -7,7 +7,6 @@ import type { Subject, SubjectKind, SubjectMediaCandidate, SubjectPage, SubjectS
 import { subjectKindLabels, subjectSnapshot } from "./subjectTypes";
 import SubjectMediaPicker, { useSubjectMediaUrl } from "./SubjectMediaPicker";
 import type { SubjectMediaSource } from "./SubjectMediaPicker";
-import "./subjects.css";
 
 export const SUBJECT_DRAG_TYPE = "application/x-manju-subject";
 const messageOf = (error: unknown) => error instanceof Error ? error.message : String(error);

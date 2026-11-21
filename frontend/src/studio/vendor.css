@@ -1,0 +1,3 @@
+/* Cascade layer order for the whole studio, then third-party base styles in the lowest layer. */
+@layer vendor, base, kit, shell, surface, view, state;
+@import url("@xyflow/react/dist/style.css") layer(vendor);

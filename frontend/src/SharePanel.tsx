@@ -13,7 +13,6 @@ import {
 import { api } from "./api";
 import type { Project, SetuUser, ShareStatus } from "./types";
 import { Modal } from "./ui";
-import "./share-panel.css";
 
 type Viewport = { x: number; y: number; zoom: number };
 

@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Download, X } from "lucide-react";
 import { mediaUrl } from "./api";
-import "./video.css";
 
 export default function VideoViewer({versionId, versions = [], onClose,kind="video"}: {versionId:string;kind?:"video"|"audio"; versions?:string[]; onClose:()=>void}) {
   const [current,setCurrent]=useState(versionId);

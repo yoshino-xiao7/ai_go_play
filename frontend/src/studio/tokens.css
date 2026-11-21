@@ -1,0 +1,235 @@
+/*
+  ai-go-play · Safelight design tokens.
+  A darkroom, not a disco: graphite neutrals, one muted rose (the safelight) that marks only the
+  current object or action, compact corners and flat fills. Components reference the semantic layer
+  (--surface-*, --text-*, --accent-*, --state-*). Two palettes share every name:
+    html[data-palette="nocturne"]  graphite night (default)
+    html[data-palette="pearl"]     paper daylight
+  Compatibility names (--spectrum*, --hue-*, --pink-*, --plum-*, --rose-*) still resolve, but to
+  flat accent values, so no screen can bring a rainbow or a gradient back by accident.
+*/
+:root {
+  --hue-rose: var(--accent);
+  --hue-orchid: var(--accent);
+  --hue-iris: var(--accent);
+  --hue-cyan: var(--accent-deep);
+  --hue-gold: var(--text-muted);
+  /* flat on purpose: used as background-image, so expressed as a one-colour gradient */
+  --spectrum: linear-gradient(var(--accent), var(--accent));
+  --spectrum-soft: linear-gradient(var(--accent-soft), var(--accent-soft));
+  --spectrum-conic: linear-gradient(transparent, transparent);
+
+  /* type */
+  --font-sans: "Inter", "PingFang SC", "HarmonyOS Sans SC", "Microsoft YaHei UI", "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif;
+  --font-serif: "Inter", "PingFang SC", "HarmonyOS Sans SC", "Microsoft YaHei UI", "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif;
+  --font-display: "Inter", "PingFang SC", "Microsoft YaHei UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "Cascadia Mono", "Cascadia Code", Consolas, monospace;
+  --text-xs: 12px;
+  --text-sm: 12.5px;
+  --text-md: 13.5px;
+  --text-lg: 15px;
+  --text-xl: 18px;
+  --text-2xl: 24px;
+  --text-hero: clamp(32px, 3.6vw, 48px);
+
+  /* space / shape: corners stay small; only true toggles and avatars are round */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --radius-xs: 3px;
+  --radius-sm: 5px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 10px;
+  --radius-pill: 6px;
+
+  /* layers */
+  --z-canvas-ui: 10;
+  --z-dock: 20;
+  --z-panel: 30;
+  --z-shell: 40;
+  --z-tray: 45;
+  --z-popover: 60;
+  --z-modal: 80;
+  --z-palette: 85;
+  --z-toast: 90;
+  --z-boot: 100;
+
+  /* motion: short and decisive. Things slide from where they come from; nothing bounces. */
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-spring: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-bounce: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --dur-fast: 120ms;
+  --dur: 180ms;
+  --dur-slow: 280ms;
+
+  /* shell metrics */
+  --rail-w: 92px;
+  --top-h: 64px;
+  --tray-h: 52px;
+  --glass-blur: blur(14px);
+}
+
+/* ---------------------------------------------------------------- nocturne · graphite (default) */
+:root,
+html[data-palette="nocturne"] {
+  --pink-0: #241d21;
+  --pink-1: #2c2328;
+  --pink-2: #5a3f4b;
+  --pink-3: #d98ba7;
+  --pink-4: #c97896;
+  --rose-5: #e5a3bb;
+  --rose-6: #f0c3d3;
+  --plum-0: #111114;
+  --plum-1: #141417;
+  --plum-2: #1e1e23;
+  --plum-3: #2a2a30;
+  --plum-4: #45454e;
+  --plum-5: #8b8a96;
+  --plum-6: #b5b4be;
+  --plum-7: #18181c;
+  --plum-8: #0d0d10;
+  --plum-9: #08080a;
+
+  --surface-app: #0f0f12;
+  --surface-sunk: #0b0b0d;
+  --surface-raised: #17171b;
+  --surface-soft: #131316;
+  --surface-tint: #1f1e24;
+  --surface-glass: rgba(23, 23, 27, 0.9);
+  --surface-glass-strong: rgba(23, 23, 27, 0.96);
+  --surface-scrim: rgba(6, 6, 8, 0.66);
+  --surface-media: #09090b;
+  --surface-media-2: #141417;
+
+  --line-soft: rgba(255, 255, 255, 0.06);
+  --line: rgba(255, 255, 255, 0.1);
+  --line-strong: rgba(255, 255, 255, 0.18);
+  --line-media: rgba(255, 255, 255, 0.12);
+  --line-glow: rgba(229, 143, 174, 0.45);
+
+  --text-strong: #f2f1f5;
+  --text: #dedde4;
+  --text-muted: #a9a8b3;
+  --text-faint: #8b8a96;
+  --text-on-accent: #160f13;
+  --text-on-media: #f2f1f5;
+  --text-on-media-muted: rgba(242, 241, 245, 0.8);
+
+  --accent-rgb: 229 143 174;
+  --accent: #e58fae;
+  --accent-hover: #eda4be;
+  --accent-soft: rgba(229, 143, 174, 0.13);
+  --accent-strong: #f0b0c7;
+  --accent-deep: #f6cbda;
+  --accent-ring: #e58fae;
+  --accent-2: #e58fae;
+  --accent-3: #f0b0c7;
+
+  --state-ok: #7fcfa6;
+  --state-ok-soft: rgba(127, 207, 166, 0.1);
+  --state-warn: #dcbd84;
+  --state-warn-soft: rgba(220, 189, 132, 0.1);
+  --state-bad: #f08a8a;
+  --state-bad-soft: rgba(240, 138, 138, 0.11);
+  --state-info: #b5b4be;
+  --state-info-soft: rgba(181, 180, 190, 0.1);
+  --state-run: #e58fae;
+  --state-run-soft: rgba(229, 143, 174, 0.12);
+
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.45);
+  --shadow-2: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 6px 18px -10px rgba(0, 0, 0, 0.8);
+  --shadow-3: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 18px 40px -18px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  --shadow-accent: none;
+  --glow-accent: 0 0 0 1px rgba(229, 143, 174, 0.5);
+  --focus-ring: 0 0 0 2px var(--surface-app), 0 0 0 4px var(--accent-ring);
+
+  --canvas-bg: #0d0d10;
+  --canvas-grid: rgba(255, 255, 255, 0.07);
+  --ambient-opacity: 0;
+  color-scheme: dark;
+}
+
+/* ---------------------------------------------------------------- pearl · paper */
+html[data-palette="pearl"] {
+  --pink-0: #faf3f6;
+  --pink-1: #f3e5eb;
+  --pink-2: #e5c5d2;
+  --pink-3: #b9577f;
+  --pink-4: #9c3d66;
+  --rose-5: #873256;
+  --rose-6: #6e2846;
+  --plum-0: #ffffff;
+  --plum-1: #f7f6f8;
+  --plum-2: #eeedf0;
+  --plum-3: #dedce2;
+  --plum-4: #b9b7c0;
+  --plum-5: #66636f;
+  --plum-6: #4a4752;
+  --plum-7: #232127;
+  --plum-8: #18171b;
+  --plum-9: #0e0d10;
+
+  --surface-app: #f6f5f7;
+  --surface-sunk: #eeedf0;
+  --surface-raised: #ffffff;
+  --surface-soft: #fbfafc;
+  --surface-tint: #f3ecf0;
+  --surface-glass: rgba(255, 255, 255, 0.92);
+  --surface-glass-strong: rgba(255, 255, 255, 0.97);
+  --surface-scrim: rgba(24, 22, 28, 0.32);
+  --surface-media: #18171b;
+  --surface-media-2: #232127;
+
+  --line-soft: rgba(24, 22, 30, 0.07);
+  --line: rgba(24, 22, 30, 0.12);
+  --line-strong: rgba(24, 22, 30, 0.22);
+  --line-media: rgba(255, 255, 255, 0.14);
+  --line-glow: rgba(156, 61, 102, 0.4);
+
+  --text-strong: #18171b;
+  --text: #33313a;
+  --text-muted: #55525e;
+  --text-faint: #66636f;
+  --text-on-accent: #ffffff;
+  --text-on-media: #f6f5f7;
+  --text-on-media-muted: rgba(246, 245, 247, 0.82);
+
+  --accent-rgb: 156 61 102;
+  --accent: #9c3d66;
+  --accent-hover: #873256;
+  --accent-soft: rgba(156, 61, 102, 0.09);
+  --accent-strong: #873256;
+  --accent-deep: #6e2846;
+  --accent-ring: #9c3d66;
+  --accent-2: #873256;
+  --accent-3: #6e2846;
+
+  --state-ok: #0b6e4b;
+  --state-ok-soft: rgba(11, 110, 75, 0.08);
+  --state-warn: #7f5205;
+  --state-warn-soft: rgba(127, 82, 5, 0.08);
+  --state-bad: #b3263f;
+  --state-bad-soft: rgba(179, 38, 63, 0.08);
+  --state-info: #55525e;
+  --state-info-soft: rgba(85, 82, 94, 0.08);
+  --state-run: #873256;
+  --state-run-soft: rgba(156, 61, 102, 0.08);
+
+  --shadow-1: 0 1px 2px rgba(24, 22, 30, 0.08);
+  --shadow-2: 0 1px 2px rgba(24, 22, 30, 0.06), 0 6px 16px -10px rgba(24, 22, 30, 0.18);
+  --shadow-3: 0 18px 40px -20px rgba(24, 22, 30, 0.3), 0 0 0 1px rgba(24, 22, 30, 0.06);
+  --shadow-accent: none;
+  --glow-accent: 0 0 0 1px rgba(156, 61, 102, 0.45);
+  --focus-ring: 0 0 0 2px var(--surface-raised), 0 0 0 4px var(--accent-ring);
+
+  --canvas-bg: #f3f2f5;
+  --canvas-grid: rgba(24, 22, 30, 0.08);
+  --ambient-opacity: 0;
+  color-scheme: light;
+}

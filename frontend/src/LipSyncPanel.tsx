@@ -4,7 +4,6 @@ import {Modal} from './ui';
 import {GenerationProgress} from './GenerationProgress';
 import {activeGenerationStates,type GenerationJob} from './generationTypes';
 import type {Asset,AssetPage,AssetVersion,CanvasData} from './types';
-import './lipsync.css';
 
 type Props={projectId:string;onClose:()=>void;onChanged:()=>void;initialVideoNodeId?:string};
 type Profile={ready:boolean;errors:string[];name:string};

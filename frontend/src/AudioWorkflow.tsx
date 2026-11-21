@@ -3,7 +3,6 @@ import {api} from './api';
 import {Modal} from './ui';
 import StudioSelect from './StudioSelect';
 import type {SpeechOptions} from './generationTypes';
-import './speech.css';
 export type SpeechCapabilities=Partial<Record<'emotion_text'|'emotion_reference'|'pronunciation'|'studio_quality'|'interval_silence'|'temperature',boolean>>;
 export type AudioProfile={id:string;kind:'audio';name:string;ready:boolean;errors:string[];revision:number;defaults:SpeechOptions;capabilities?:SpeechCapabilities};
 export type EmotionMode='preset'|'text'|'audio';

@@ -44,7 +44,6 @@ import { api, dateText } from "./api";
 import { Confirm, EmptyState, Modal } from "./ui";
 import type { Workflow, WorkflowBinding, WorkflowBindings, WorkflowGraph, WorkflowMode, WorkflowReport } from "./workflowTypes";
 import { workflowModeNames } from "./workflowTypes";
-import "./workflows.css";
 
 const modeIcons = { text_to_image: Image, reference: GitBranch, edit: SlidersHorizontal };
 const mappingNames: Record<keyof WorkflowBindings, string> = { prompt: "中文描述", negative_prompt: "负面描述", seed: "随机种子", width: "输出宽度", height: "输出高度", steps: "采样步数", cfg: "提示词强度 CFG", denoise: "重绘强度", images: "参考图片（按顺序）", mask: "编辑蒙版" };

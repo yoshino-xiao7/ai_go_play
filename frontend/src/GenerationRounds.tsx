@@ -5,7 +5,6 @@ import type { GenerationJob, ImageHistoryItem } from "./generationTypes";
 import { activeGenerationStates, generationStateLabels } from "./generationTypes";
 import type { Workflow } from "./workflowTypes";
 import { appendedTail, isCloudJob, roundChanges, roundsOf, snapshotOf } from "./roundSnapshots";
-import "./generation-rounds.css";
 
 export type RoundsNode = {
   id: string; title: string; kind: "image" | "video" | "audio"; locked: boolean;
@@ -25,6 +24,8 @@ type Props = {
   onLocate: (nodeId: string, versionId?: string) => void;
   onPreview: (versionId: string) => void;
   onClose: () => void;
+  /** Rendered inside the canvas side panel (the panel owns the title and closing). */
+  embedded?: boolean;
 };
 
 const messageOf = (error: unknown) => error instanceof Error ? error.message : String(error);
@@ -32,7 +33,7 @@ const timeText = (value: string) => new Date(value).toLocaleString("zh-CN", { mo
 const errorText = (job: GenerationJob) => typeof job.error === "string" ? job.error : job.error?.message || "";
 
 /** Results of one canvas node, grouped by submission round. Reads only real job records. */
-export default function GenerationRounds({ projectId, node, highlightVersion, nodeTitles, onRefill, onAdopt, onUseAsReference, onToVideo, onLocate, onPreview, onClose }: Props) {
+export default function GenerationRounds({ projectId, node, highlightVersion, nodeTitles, onRefill, onAdopt, onUseAsReference, onToVideo, onLocate, onPreview, onClose, embedded = false }: Props) {
   const [jobs, setJobs] = useState<GenerationJob[] | null>(null);
   const [workflows, setWorkflows] = useState<Record<string, Workflow>>({});
   const [error, setError] = useState("");
@@ -90,8 +91,8 @@ export default function GenerationRounds({ projectId, node, highlightVersion, no
   const byId = new Map(rounds.map(item => [item.job.id, item]));
   const kindLabel = node.kind === "video" ? "视频" : node.kind === "audio" ? "音频" : "图片";
   return (
-    <aside className="gr-panel nodrag nopan nowheel" aria-label={`${node.title} 的结果轮次`}>
-      <header className="gr-head">
+    <section className={`gr-panel nodrag nopan nowheel${embedded ? " is-embedded" : ""}`} aria-label={`${node.title} 的结果轮次`}>
+      <header className="gr-head" hidden={embedded}>
         <div>
           <span className="gr-eyebrow"><History size={12} />结果轮次 · {kindLabel}</span>
           <h3 title={node.title}>{node.title}</h3>
@@ -99,6 +100,7 @@ export default function GenerationRounds({ projectId, node, highlightVersion, no
         <button className="gr-icon" onClick={() => onLocate(node.id)} title="在画布中定位此节点" aria-label="在画布中定位此节点"><Crosshair size={15} /></button>
         <button className="gr-icon" onClick={onClose} title="关闭" aria-label="关闭结果轮次"><X size={15} /></button>
       </header>
+      {embedded && <div className="gr-summary"><span className="gr-eyebrow"><History size={12} />结果轮次 · {kindLabel}</span><b>{rounds.length} 轮</b>{active && <span className="gr-live"><LoaderCircle className="spin" size={11} />进行中</span>}<button className="gr-icon" onClick={() => onLocate(node.id)} title="在画布中定位此节点" aria-label="在画布中定位此节点"><Crosshair size={14} /></button></div>}
       <p className="gr-note">每一轮都是一次真实提交：提交时的描述、参数与参考版本由本机服务保存，回填只改卡片草稿，不改这些记录。</p>
       {error && <p className="gr-error" role="alert">{error}</p>}
       <div className="gr-list" ref={list}>
@@ -190,6 +192,6 @@ export default function GenerationRounds({ projectId, node, highlightVersion, no
           );
         })}
       </div>
-    </aside>
+    </section>
   );
 }

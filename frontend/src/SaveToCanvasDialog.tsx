@@ -5,7 +5,6 @@ import { AlertCircle, Check, Copy, LayoutGrid, LoaderCircle, Plus, RefreshCw, Se
 import { ApiError, api, dateText, mediaUrl } from "./api";
 import type { CanvasData, Project } from "./types";
 import { Modal } from "./ui";
-import "./save-to-canvas.css";
 
 type Snapshot = { nodes: Node[]; edges: Edge[] };
 type CanvasWrite = CanvasData & { request_id: string };

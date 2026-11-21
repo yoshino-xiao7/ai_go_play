@@ -1,5 +1,4 @@
 import StudioSelect from "./StudioSelect";
-import ExitApplication from "./ExitApplication";
 import { useRightButtonPan } from "./useRightButtonPan";
 import ImageViewer from "./ImageViewer";
 import ImageVersionComparison from "./ImageVersionComparison";
@@ -18,6 +17,7 @@ import {
   ReactFlowProvider,
   Background,
   BackgroundVariant,
+  MiniMap,
   Handle,
   Position,
   NodeResizer,
@@ -42,7 +42,12 @@ import type {
 } from "@xyflow/react";
 import {
   ArrowLeft,
-  BookOpen,
+  Map as MapIcon,
+  Clapperboard,
+  ChevronUp,
+  History,
+  Mic,
+  Workflow as WorkflowIcon,
   Brush,
   Check,
   CircuitBoard,
@@ -72,7 +77,6 @@ import {
   Plus,
   Redo2,
   Search,
-  Share2,
   Scaling,
   ListChecks,
   Sparkles,
@@ -155,13 +159,15 @@ import type {
 import GenerationRounds from "./GenerationRounds";
 import { draftFromRound } from "./roundSnapshots";
 import { takeDraftIntent } from "./draftIntent";
-import "./creation-start.css";
 import type { Workflow, WorkflowMode } from "./workflowTypes";
-// React Flow's base CSS is loaded once by styles.css in @layer vendor (D8). A second import here
-// re-inserted the same rules, unlayered, after the global theme whenever this lazy chunk loaded.
-import "./canvas.css";
-import "./review-experience.css";
+import { createPortal } from "react-dom";
 import { usePalette } from "./design/appearance";
+import type { CanvasView } from "./shell/Studio";
+import { clearRoundsIntent, takeRoundsIntent } from "./shell/roundsIntent";
+import { registerCanvasFlush } from "./shell/canvasBridge";
+import { useShellSlots } from "./shell/slots";
+import { useLayer } from "./shell/layers";
+import type { CanvasCommand } from "./shell/canvasBridge";
 import { cameraMotionRole, canConnectCameraMotion, canReference, edgeLocked, edgeRole, reconcileReferences, resolveVideoEnhanceInput } from "./canvasReferences";
 import { CameraMotionFields, CameraMotionPicker, cameraMotionLabel, cameraPresets } from "./CameraMotion";
 import type { CameraMotion } from "./CameraMotion";
@@ -231,8 +237,9 @@ type CanvasProps = {
   onAssetsChange: () => void;
   onOpenComfy: () => void;
   onOpenTasks: () => void;
-  guideEnabled: boolean;
-  onCloseGuide: () => void;
+  /** Which project view the shell route asks for; the canvas stays mounted underneath. */
+  view: CanvasView;
+  onCloseView: () => void;
 };
 type CanvasActions = {
   projectId: string;
@@ -826,16 +833,32 @@ export default function Canvas(props: CanvasProps) {
 
 function CanvasEditor({
   project,
-  onBack,
   onProjectChange,
   onPreview,
   assetsRefresh,
   onAssetsChange,
   onOpenComfy,
   onOpenTasks,
-  guideEnabled,
-  onCloseGuide,
+  view,
+  onCloseView,
 }: CanvasProps) {
+  const guideEnabled = view === "guide";
+  const onCloseGuide = onCloseView;
+  // 剧本 and 时间线 are full views laid over this canvas. The canvas stays mounted (selection,
+  // viewport and undo history survive the round trip) but must not take a key or a click meanwhile.
+  const covered = view === "script" || view === "timeline";
+  const coveredRef = useRef(covered);
+  coveredRef.current = covered;
+  const workspaceRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const root = workspaceRef.current;
+    if (!root) return;
+    for (const child of Array.from(root.children)) {
+      const keep = child.classList.contains("is-page") || child.classList.contains("modal-shade");
+      if (covered && !keep) child.setAttribute("inert", "");
+      else child.removeAttribute("inert");
+    }
+  });
   const flow = useReactFlow<CanvasNode>();
   const palette = usePalette();
   const [liveViewport, setLiveViewport] = useState<Viewport>(initialViewport);
@@ -923,18 +946,26 @@ function CanvasEditor({
   const [showLibrary, setShowLibrary] = useState(false);
   const [showInspector, setShowInspector] = useState(false);
   const [showMore, setShowMore] = useState(false);
-  const [showScreenplay, setShowScreenplay] = useState(false);
   const [rounds, setRounds] = useState<{ nodeId: string; version?: string } | null>(null);
+  const [panelTab, setPanelTab] = useState<"results" | "props">("results");
+  const [dockCollapsed, setDockCollapsed] = useState(false);
+  const [showEnhance, setShowEnhance] = useState(false);
+  // The shell owns the top bar and its portal hosts; the canvas renders its project switcher and save state into them.
+  const { project: projectSlot, status: statusSlot } = useShellSlots();
+  const selectedVideoRef = useRef<string | undefined>(undefined);
   const [quickPrompt, setQuickPrompt] = useState("");
   const [quickKind, setQuickKind] = useState<"image" | "video">("image");
   const [showShare, setShowShare] = useState(false);
   const [showProduction, setShowProduction] = useState(false);
   const [showCanvasRun, setShowCanvasRun] = useState(false);
-  const [showTimeline, setShowTimeline] = useState(false);
   const [showLipSync, setShowLipSync] = useState(false);
   const [lipSyncNodeId,setLipSyncNodeId] = useState<string>();
   const [showDrafts, setShowDrafts] = useState(false);
   const [showNavigator, setShowNavigator] = useState(false);
+  const [showMinimap, setShowMinimap] = useState(() => { try { return localStorage.getItem("manju:canvas-minimap") !== "off"; } catch { return true; } });
+  useEffect(() => { try { localStorage.setItem("manju:canvas-minimap", showMinimap ? "on" : "off"); } catch { /* optional */ } }, [showMinimap]);
+  /** 环形创作: screen position inside the stage plus the matching flow position. */
+  const [radial, setRadial] = useState<{ x: number; y: number; flow: { x: number; y: number } } | null>(null);
   const [nodeSearch, setNodeSearch] = useState("");
   const [renderingFrame, setRenderingFrame] = useState(false);
   const reconnectingEdge = useRef<Edge | null>(null);
@@ -948,13 +979,30 @@ function CanvasEditor({
   },[]);
   const [connectionDrop, setConnectionDrop] = useState<{x:number;y:number;source:string} | null>(null);
   const [edgeMenu, setEdgeMenu] = useState<{x:number;y:number;id:string} | null>(null);
+  // Every floating part of the canvas sits on the shared layer stack (shell/layers.ts): Esc and
+  // outside clicks peel one layer at a time and focus returns to the control that opened it.
+  const moreRef = useRef<HTMLDivElement>(null);
+  const spineRef = useRef<HTMLDivElement>(null);
+  const radialRef = useRef<HTMLDivElement>(null);
+  const navigatorRef = useRef<HTMLElement>(null);
+  const libraryRef = useRef<HTMLElement>(null);
+  const panelRef = useRef<HTMLElement>(null);
+  useLayer(showMore, () => setShowMore(false), { ref: moreRef, outside: true });
+  useLayer(showSubjects || showEnhance || showFrames, () => { setShowSubjects(false); setShowEnhance(false); setShowFrames(false); }, { ref: spineRef, outside: true });
+  useLayer(!!radial, () => setRadial(null), { ref: radialRef, returnFocus: false });
+  useLayer(showNavigator, () => setShowNavigator(false), { ref: navigatorRef, outside: true, fallback: '.viewkit-bar [aria-label="搜索画布节点"]' });
+  // side sheets: Esc folds them only while the user is working inside them
+  // 主体 (#/canvas/:id/subjects) is this drawer on the subject library: closing the drawer also
+  // leaves that route, so the 主体 entry in the navigation opens it again next time.
+  const closeLibrary = () => { setShowLibrary(false); if (view === "subjects") onCloseView(); };
+  useLayer(showLibrary, closeLibrary, { ref: libraryRef, scope: "focus", fallback: '.spine-btn[aria-label="素材与主体抽屉"]' });
+  useLayer(showInspector, () => setShowInspector(false), { ref: panelRef, scope: "focus", fallback: ".panel-reopen" });
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
   const [stageDimensions, setStageDimensions] = useState({
     width: 900,
     height: 700,
   });
-  const [composerHeight, setComposerHeight] = useState(310);
-  const [videoShelfHeight, setVideoShelfHeight] = useState(0);
+  const [, setVideoShelfHeight] = useState(0);
   const [imageHeadingHeight, setImageHeadingHeight] = useState(24);
   const [imageToolsSize, setImageToolsSize] = useState({
     width: 440,
@@ -2481,6 +2529,7 @@ function CanvasEditor({
         target.isContentEditable);
     const keydown = (event: KeyboardEvent) => {
       if (
+        coveredRef.current ||
         typing(event.target) ||
         event.isComposing ||
         loading ||
@@ -2526,6 +2575,7 @@ function CanvasEditor({
     };
     const paste = (event: ClipboardEvent) => {
       if (
+        coveredRef.current ||
         typing(event.target) ||
         loading ||
         document.querySelector('[aria-modal="true"]')
@@ -2663,6 +2713,10 @@ function CanvasEditor({
   const selectedAudio=single?.type==="media" && single.data.kind==="audio"?single:null;
   const selectedPlayback=selectedVideo || selectedAudio;
   const composerNode = selectedImage || selectedPlayback;
+  selectedVideoRef.current = selectedVideo?.id;
+  const roundsNodeOf = (id?: string) => id ? workbenchNodes.find(node => node.id === id) : undefined;
+  /** The results tab follows the composer target unless a round was opened explicitly. */
+  const resultsNode = roundsNodeOf(rounds?.nodeId) || (composerNode && ["image", "video", "audio"].includes(composerNode.data.kind || "") ? composerNode : undefined);
   const videoReferences:ImageReference[]=workbenchNodes.filter(node=>node.id!==selectedVideo?.id).flatMap(node=>{
     const subject=node.data.subject;
     const result:ImageReference[]=[];
@@ -2685,87 +2739,9 @@ function CanvasEditor({
     x: imagePosition.x * liveViewport.zoom + liveViewport.x,
     y: imagePosition.y * liveViewport.zoom + liveViewport.y,
   };
-  const leftInset = stageDimensions.width > 620 ? 88 : 16;
-  // The docked rounds drawer (380px + 12px gap) owns the right edge while open on wide stages.
-  const rightInset = rounds && stageDimensions.width > 760 ? 404 : stageDimensions.width > 620 ? 24 : 16;
-  const availableOverlayWidth = Math.max(
-    1,
-    stageDimensions.width - leftInset - rightInset,
-  );
-  let composerWidth = Math.min(760, availableOverlayWidth);
-  let composerLeft = Math.max(
-    leftInset,
-    Math.min(
-      stageDimensions.width - composerWidth - rightInset,
-      imageScreen.x +
-        (imageSize.width * liveViewport.zoom) / 2 -
-        composerWidth / 2,
-    ),
-  );
-  const imagePixelHeight = imageSize.height * liveViewport.zoom;
-  const belowImage = imageScreen.y + imagePixelHeight + 22 + (selectedPlayback && videoShelfHeight ? (videoShelfHeight + 12) * liveViewport.zoom : 0);
-  // The bottom canvas toolbar (~72px) floats above the stage; keep composer controls clear of it.
-  const bottomReserve = 84;
-  const belowSpace = stageDimensions.height - belowImage - bottomReserve;
-  const aboveBottom =
-    imageScreen.y - imageHeadingHeight - (selectedImage || showVideoEnhanceActions ? imageToolsSize.height : 0) - 36;
-  const minimumComposerHeight = Math.min(
-    selectedPlayback ? 180 : stageDimensions.width >= 1100 ? 310 : 220,
-    Math.max(140, stageDimensions.height * 0.45),
-  );
-  let composerTop = belowImage;
-  let composerMaxHeight = Math.max(1, belowSpace);
-  if (belowSpace < minimumComposerHeight) {
-    if (
-      aboveBottom - 16 >= minimumComposerHeight &&
-      imageScreen.y > stageDimensions.height / 2
-    ) {
-      composerMaxHeight = Math.min(composerHeight, aboveBottom - 16);
-      composerTop = aboveBottom - composerMaxHeight;
-    } else {
-      const panelHeight = Math.min(
-        composerHeight,
-        Math.max(minimumComposerHeight, stageDimensions.height * 0.5),
-      );
-      const visibleImageBottom = Math.min(
-        stageDimensions.height - minimumComposerHeight - bottomReserve,
-        imageScreen.y +
-          Math.min(
-            imagePixelHeight,
-            Math.max(80, stageDimensions.height * 0.25),
-          ),
-      );
-      composerTop = Math.max(
-        16,
-        stageDimensions.height - panelHeight - bottomReserve,
-        visibleImageBottom,
-      );
-      composerMaxHeight = Math.max(
-        1,
-        stageDimensions.height - composerTop - bottomReserve,
-      );
-    }
-  }
-  // Keep the zoom controls reachable when the panel uses the lower right corner.
-  if (
-    composerTop + Math.min(composerHeight, composerMaxHeight) >
-      stageDimensions.height - 70 &&
-    composerLeft + composerWidth > stageDimensions.width - 180
-  ) {
-    const widthBesideZoom = stageDimensions.width - leftInset - 180;
-    if (widthBesideZoom >= 440) {
-      composerWidth = Math.min(composerWidth, widthBesideZoom);
-      composerLeft = Math.max(
-        leftInset,
-        Math.min(composerLeft, stageDimensions.width - composerWidth - 180),
-      );
-    } else {
-      composerMaxHeight = Math.max(
-        1,
-        stageDimensions.height - composerTop - 72,
-      );
-    }
-  }
+  const leftInset = 16;
+  const rightInset = 16;
+  const availableOverlayWidth = Math.max(1, stageDimensions.width - leftInset - rightInset);
   const imageToolsLeft = Math.max(
     leftInset,
     Math.min(
@@ -2913,36 +2889,6 @@ function CanvasEditor({
   }, [selectedPlayback?.id, selectedPlayback?.data.image_history]);
 
   useEffect(() => {
-    const element = composerAnchor.current;
-    if (!element) return;
-    const panel = element.firstElementChild as HTMLElement | null;
-    if (!panel) return;
-    const measure = () =>
-      setComposerHeight(
-        Math.ceil(
-          Math.max(
-            panel.getBoundingClientRect().height,
-            panel.scrollHeight + 2,
-          ),
-        ),
-      );
-    const observer = new ResizeObserver(measure);
-    const observe = () => {
-      observer.disconnect();
-      observer.observe(panel);
-      for (const child of panel.children) observer.observe(child);
-      measure();
-    };
-    observe();
-    const children = new MutationObserver(observe);
-    children.observe(panel, { childList: true });
-    return () => {
-      observer.disconnect();
-      children.disconnect();
-    };
-  }, [composerNode?.id]);
-
-  useEffect(() => {
     if (!composerNode) return;
     const heading = stage.current?.querySelector<HTMLElement>(
       `[data-id="${CSS.escape(composerNode.id)}"] .media-node-heading`,
@@ -2993,30 +2939,15 @@ function CanvasEditor({
       const top = position.y * viewport.zoom + viewport.y;
       const shelf = ["video","audio"].includes(card.data.kind||"") ? stage.current?.querySelector<HTMLElement>(`[data-id="${CSS.escape(selectedId)}"] .video-history:not(.canvas-video-history-overlay)`) : null;
       const height = (dimensions(card).height + (shelf ? shelf.offsetHeight + 12 : 0)) * viewport.zoom;
-      const heading = stage.current?.querySelector<HTMLElement>(
-        `[data-id="${CSS.escape(selectedId)}"] .media-node-heading`,
-      );
-      const minimumTop =
-        (heading?.getBoundingClientRect().height || 24) +
-        (imageTools.current?.offsetHeight || 0) +
-        40;
-      const body = panel.firstElementChild as HTMLElement | null;
-      const naturalHeight = body
-        ? Math.max(body.offsetHeight, body.scrollHeight + 2)
-        : 310;
-      const panelHeight = Math.min(
-        naturalHeight,
-        Math.max(190, bounds.height - minimumTop - height - 46),
-      );
-      const excess = top + height + 22 + panelHeight + 24 - bounds.height;
-      const shift = Math.min(
-        Math.max(0, top - minimumTop),
-        Math.max(0, excess),
-      );
+      // The composer is docked at the bottom of the stage: lift the card above it, never past the top tools.
+      const dockTop = panel.getBoundingClientRect().top - bounds.top;
+      const minimumTop = 72 + (imageTools.current?.offsetHeight || 0);
+      const excess = top + height + 20 - dockTop;
+      const shift = Math.min(Math.max(0, top - minimumTop), Math.max(0, excess));
       if (shift > 1)
         void flow.setViewport(
           { ...viewport, y: viewport.y - shift },
-          { duration: 160 },
+          { duration: 220 },
         );
     }, 180);
     return () => clearTimeout(timer);
@@ -3365,15 +3296,56 @@ function CanvasEditor({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- consume once per loaded project
   }, [loading, loadError, project.id]);
   // ---------------------------------------------------------------- results by round (GenerationRounds)
+  const openRounds = useCallback((nodeId: string, version?: string) => {
+    setRounds({ nodeId, version });
+    setPanelTab("results");
+    setShowInspector(true);
+  }, []);
   useEffect(() => {
     const open = (event: Event) => {
-      const detail = (event as CustomEvent<{ nodeId: string; version?: string }>).detail;
-      if (detail?.nodeId) setRounds({ nodeId: detail.nodeId, version: detail.version });
+      const detail = (event as CustomEvent<{ nodeId: string; version?: string; projectId?: string }>).detail;
+      if (!detail?.nodeId || (detail.projectId && detail.projectId !== project.id)) return;
+      clearRoundsIntent();
+      openRounds(detail.nodeId, detail.version);
+      if (detail.projectId && nodesRef.current.some(node => node.id === detail.nodeId)) requestAnimationFrame(() => locateNode(detail.nodeId));
     };
     window.addEventListener("manju:open-rounds", open);
     return () => window.removeEventListener("manju:open-rounds", open);
-  }, []);
-  const roundsNode = rounds ? nodes.find(node => node.id === rounds.nodeId) : undefined;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- locateNode reads refs
+  }, [openRounds, project.id]);
+  useEffect(() => { // the tray asked for a round before this canvas existed
+    if (loading || loadError) return;
+    const intent = takeRoundsIntent(project.id);
+    if (intent && nodesRef.current.some(node => node.id === intent.nodeId)) {
+      openRounds(intent.nodeId, intent.version);
+      requestAnimationFrame(() => locateNode(intent.nodeId));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- consume once per loaded project
+  }, [loading, loadError, project.id]);
+  // ---------------------------------------------------------------- shell bridge
+  useEffect(() => {
+    registerCanvasFlush(flushCanvas);
+    return () => registerCanvasFlush(null);
+  }, [flushCanvas]);
+  useEffect(() => {
+    const run = (event: Event) => {
+      const command = (event as CustomEvent<{ command: CanvasCommand }>).detail?.command;
+      const after = (action: () => void) => void flushCanvas().then(action).catch(error => setNotice(errorText(error)));
+      if (command === "share") after(() => setShowShare(true));
+      else if (command === "export") exportDraft();
+      else if (command === "production") after(() => setShowProduction(true));
+      else if (command === "orchestrate") after(() => setShowCanvasRun(true));
+      else if (command === "lipsync") after(() => { setLipSyncNodeId(selectedVideoRef.current); setShowLipSync(true); });
+      else if (command === "drafts") setShowDrafts(true);
+      else if (command === "search") setShowNavigator(value => !value);
+    };
+    window.addEventListener("manju:canvas-command", run);
+    return () => window.removeEventListener("manju:canvas-command", run);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- exportDraft reads refs
+  }, [flushCanvas]);
+  useEffect(() => { // 主体 view = the material drawer on the subject library
+    if (view === "subjects") { setShowLibrary(true); setAssetScope("subjects"); }
+  }, [view]);
   /** Same write as the node card's own "采用": undoable, keeps history and the job link. */
   const adoptVersion = (nodeId: string, versionId: string, jobId?: string) => {
     const node = nodesRef.current.find(item => item.id === nodeId);
@@ -3832,161 +3804,68 @@ function CanvasEditor({
           ...historyMenuItems,
         ];
 
+  const radialItems: { id: string; label: string; icon: React.ReactNode; run: (at: { x: number; y: number }) => void }[] = [
+    { id: "image", label: "图像", icon: <Sparkles size={19} />, run: at => { addGeneration({ x: at.x - 180, y: at.y - 120 }); } },
+    { id: "video", label: "视频", icon: <Video size={19} />, run: at => { void addVideoGeneration({ x: at.x - 190, y: at.y - 120 }); } },
+    { id: "speech", label: "配音", icon: <Music2 size={19} />, run: at => { void addSpeechGeneration({ x: at.x - 180, y: at.y - 100 }); } },
+    { id: "text", label: "文字", icon: <Type size={19} />, run: at => addText({ x: at.x - 130, y: at.y - 95 }) },
+    { id: "character", label: "角色", icon: <UserRoundPlus size={19} />, run: at => addEmptySubject("character", { x: at.x - 140, y: at.y - 200 }) },
+    { id: "frame", label: "画框", icon: <Frame size={19} />, run: at => addFrame("16:9", { x: at.x - 240, y: at.y - 135 }) },
+    { id: "import", label: "导入", icon: <Upload size={19} />, run: at => openFilePicker(at) },
+  ];
+
   return (
-    <div className="canvas-workspace" data-history={historySerial}>
+    <div className="canvas-workspace" ref={workspaceRef} data-covered={covered ? "true" : undefined} data-history={historySerial} data-panel={showInspector ? "open" : "closed"} data-library={showLibrary ? "open" : "closed"}>
       {frameComparison && <FrameComparison
         key={`${frameComparisonSources?.originalVersionId}:${frameComparisonSources?.remakeVersionId}`}
         sources={frameComparisonSources} onClose={() => setFrameComparison(undefined)} />}
-      <header className="canvas-topbar">
-        <div className="canvas-title-area">
-          <button
-            className="canvas-icon-button back-button canvas-back-projects"
-            title="返回项目"
-            aria-label="保存并返回项目列表"
-            onClick={() => {
-              void flushCanvas().then(onBack).catch(error => setNotice(errorText(error)));
-            }}
-          >
-            <ArrowLeft size={19} />
-            <span>返回项目</span>
-          </button>
-          <CanvasProjectMenu
-            project={project}
-            nodes={workbenchNodes}
-            edgeCount={edges.length}
-            revision={revisionRef.current}
-            onProjectChange={onProjectChange}
-            onNavigate={async id => {
-              if (dirtyRef.current && !conflictRef.current) await flushCanvas();
-              if (dirtyRef.current) persistDraft();
-              window.location.hash = `/canvas/${encodeURIComponent(id)}`;
-            }}
-            onNotice={setNotice}
-          />
-        </div>
-        <div className="canvas-header-actions">
-          <ExitApplication beforeExit={flushCanvas} />
-          <div className="canvas-command-bar" role="group" aria-label="画布命令">
-            <span className={`canvas-save-status ${saveState}`}>
-              {saveState === "saved" ? (
-                <Check size={13} />
-              ) : saveState === "saving" ? (
-                <Loader2 className="spin" size={13} />
-              ) : (
-                <AlertCircle size={13} />
-              )}
-              {
-                {
-                  saved: "已保存",
-                  pending: "待保存",
-                  saving: "保存中",
-                  error: "保存失败",
-                  conflict: "版本冲突",
-                }[saveState]
-              }
-            </span>
-            {saveState === "error" && (
-              <button className="canvas-small-button" onClick={() => void save()}>
-                重试保存
-              </button>
-            )}
-            <button className="canvas-small-button" aria-haspopup="dialog" onClick={() => setShowScreenplay(true)}><BookOpen size={15}/><span>剧本</span></button>
-            <button className="canvas-small-button" onClick={()=>void flushCanvas().then(()=>setShowShare(true)).catch(error=>setNotice(errorText(error)))}><Share2 size={15}/><span>分享</span></button>
-            <button className="canvas-small-button canvas-production-button" onClick={()=>void flushCanvas().then(()=>setShowProduction(true)).catch(error=>setNotice(errorText(error)))}><Video size={15}/><span>分镜成片</span></button>
-            <button className="canvas-small-button" onClick={()=>void flushCanvas().then(()=>setShowCanvasRun(true)).catch(error=>setNotice(errorText(error)))}>自动编排</button>
-            <button className="canvas-small-button" onClick={()=>void flushCanvas().then(()=>setShowTimeline(true)).catch(error=>setNotice(errorText(error)))}>多轨剪辑</button>
-            <button className="canvas-small-button" onClick={()=>void flushCanvas().then(()=>{setLipSyncNodeId(selectedVideo?.id);setShowLipSync(true);}).catch(error=>setNotice(errorText(error)))}>口型同步</button>
-            <button className={`canvas-small-button ${showNavigator?"active":""}`} title="搜索画布节点" aria-label="搜索画布节点" aria-expanded={showNavigator} onClick={()=>setShowNavigator(value=>!value)}><Search size={15}/></button>
-            <button
-              className={`canvas-small-button canvas-panel-toggle ${showLibrary ? "active" : ""}`}
-              title="素材面板"
-              aria-label="素材面板"
-              aria-expanded={showLibrary}
-              onClick={() => setShowLibrary((value) => !value)}
-            >
-              <PanelLeft size={15} />
-              <span>素材</span>
-            </button>
-            <button
-              className={`canvas-small-button canvas-panel-toggle ${showInspector ? "active" : ""}`}
-              title="属性面板"
-              aria-label="属性面板"
-              aria-expanded={showInspector}
-              onClick={() => setShowInspector((value) => !value)}
-            >
-              <PanelRight size={15} />
-              <span>属性</span>
-            </button>
-            <button
-              className="canvas-small-button"
-              onClick={onOpenTasks}
-              aria-label="查看生成任务"
-            >
-              <ListChecks size={15} />
-              任务
-            </button>
-            <button
-              className="canvas-small-button canvas-comfy-button"
-              onClick={onOpenComfy}
-              aria-label="打开 ComfyUI 管理"
-              title="管理本地 ComfyUI 服务"
-            >
-              <CircuitBoard size={14} />
-              ComfyUI
-            </button>
-          </div>
-          <div
-            className="canvas-more-menu"
-            onBlur={(event) => {
-              if (!event.currentTarget.contains(event.relatedTarget))
-                setShowMore(false);
-            }}
-          >
-            <button
-              className="canvas-icon-button"
-              title="更多"
-              aria-label="更多画布选项"
-              aria-expanded={showMore}
-              onClick={() => setShowMore((value) => !value)}
-            >
-              <Ellipsis size={20} />
-            </button>
+      {projectSlot && createPortal(
+        <CanvasProjectMenu
+          project={project}
+          nodes={workbenchNodes}
+          edgeCount={edges.length}
+          revision={revisionRef.current}
+          onProjectChange={onProjectChange}
+          onNavigate={async id => {
+            if (dirtyRef.current && !conflictRef.current) await flushCanvas();
+            if (dirtyRef.current) persistDraft();
+            window.location.hash = `/canvas/${encodeURIComponent(id)}`;
+          }}
+          onNotice={setNotice}
+        />, projectSlot)}
+      {statusSlot && createPortal(
+        <div className="canvas-status" role="group" aria-label="画布状态与命令">
+          <span className={`save-pill is-${saveState}`} role="status">
+            <i aria-hidden="true" />
+            {{ saved: "已保存到本地", pending: "待保存", saving: "正在写入本地…", error: "保存失败", conflict: "版本冲突" }[saveState]}
+          </span>
+          {saveState === "error" && <button className="chip" onClick={() => void save()}>重试保存</button>}
+          <span className="canvas-status-div" />
+          <button className="chip canvas-action" onClick={() => void flushCanvas().then(() => setShowProduction(true)).catch(error => setNotice(errorText(error)))}><Clapperboard size={14} />分镜成片</button>
+          <button className="chip canvas-action" onClick={() => void flushCanvas().then(() => setShowCanvasRun(true)).catch(error => setNotice(errorText(error)))}><WorkflowIcon size={14} />自动编排</button>
+          <button className="chip canvas-action" onClick={() => void flushCanvas().then(() => { setLipSyncNodeId(selectedVideo?.id); setShowLipSync(true); }).catch(error => setNotice(errorText(error)))}><Mic size={14} />口型同步</button>
+          <div className="canvas-more-menu" ref={moreRef} onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) setShowMore(false); }}>
+            <button className="chip icon" title="更多" aria-label="更多画布选项" aria-expanded={showMore} onClick={() => setShowMore(value => !value)}><Ellipsis size={16} /></button>
             {showMore && (
-              <div className="canvas-more-options">
-                <button
-                  onClick={() => {
-                    exportDraft();
-                    setShowMore(false);
-                  }}
-                >
-                  <Download size={14} />
-                  导出画布
-                </button>
-                <button onClick={()=>{setShowDrafts(true);setShowMore(false);}}><FolderOpen size={14}/>草稿恢复 / 导入 JSON</button>
-                <a href="#/workflows">
-                  工作流库
-                  <ChevronRight size={13} />
-                </a>
-                <a href="#/assets">
-                  全局资产库
-                  <ChevronRight size={13} />
-                </a>
-                <a href="#/settings">
-                  设置
-                  <ChevronRight size={13} />
-                </a>
-                <a href="#/trash">
-                  回收站
-                  <ChevronRight size={13} />
-                </a>
+              <div className="dropdown canvas-more-options">
+                {/* the canvas actions always live here too: inline chips fold away when the top bar is narrow */}
+                <span className="canvas-more-label">画布动作</span>
+                <button onClick={() => { setShowMore(false); (() => void flushCanvas().then(() => setShowProduction(true)).catch(error => setNotice(errorText(error))))(); }}><Clapperboard size={14} />分镜成片</button>
+                <button onClick={() => { setShowMore(false); (() => void flushCanvas().then(() => setShowCanvasRun(true)).catch(error => setNotice(errorText(error))))(); }}><WorkflowIcon size={14} />自动编排</button>
+                <button onClick={() => { setShowMore(false); (() => void flushCanvas().then(() => { setLipSyncNodeId(selectedVideo?.id); setShowLipSync(true); }).catch(error => setNotice(errorText(error))))(); }}><Mic size={14} />口型同步</button>
+                <span className="canvas-more-label">导入导出</span>
+                <button onClick={() => { exportDraft(); setShowMore(false); }}><Download size={14} />导出画布 JSON</button>
+                <button onClick={() => { setShowDrafts(true); setShowMore(false); }}><FolderOpen size={14} />草稿恢复 / 导入 JSON</button>
+                <a href={`/api/projects/${project.id}/export`} onClick={() => setShowMore(false)}><Package size={14} />导出项目包 .manju</a>
+                <button onClick={() => { setShowMore(false); onOpenTasks(); }}><ListChecks size={14} />全部生成任务</button>
+                <button onClick={() => { setShowMore(false); onOpenComfy(); }}><CircuitBoard size={14} />ComfyUI 引擎</button>
               </div>
             )}
           </div>
-        </div>
-      </header>
+        </div>, statusSlot)}
 
       <div className="canvas-main">
-        <aside className="canvas-library" hidden={!showLibrary} inert={!showLibrary}>
+        <aside className="canvas-library" ref={libraryRef} hidden={!showLibrary} inert={!showLibrary}>
           <div className="canvas-panel-heading">
             <h2>素材</h2>
             <div className="canvas-panel-heading-actions">
@@ -4001,7 +3880,8 @@ function CanvasEditor({
               <button
                 className="canvas-icon-button"
                 title="收起素材面板"
-                onClick={() => setShowLibrary(false)}
+                aria-label="收起素材面板"
+                onClick={closeLibrary}
               >
                 <X size={15} />
               </button>
@@ -4188,6 +4068,19 @@ function CanvasEditor({
           className={`canvas-stage ${zoom<0.55?"is-overview":""} ${dragOver ? "is-drag-over" : ""}`}
           ref={stage}
           style={{"--port-size":String(Math.max(22,24/zoom))+"px"} as React.CSSProperties}
+          onPointerMove={event => {
+            const box = event.currentTarget.getBoundingClientRect();
+            event.currentTarget.style.setProperty("--sx", `${event.clientX - box.left}px`);
+            event.currentTarget.style.setProperty("--sy", `${event.clientY - box.top}px`);
+          }}
+          onDoubleClick={event => {
+            if (guideEnabled || loading || loadError) return;
+            if (!(event.target instanceof Element) || !event.target.closest(".react-flow__pane")) return;
+            const box = event.currentTarget.getBoundingClientRect();
+            // Keep the whole ring (radius ~130px with labels) inside the stage.
+            const clamp = (value: number, size: number) => Math.min(Math.max(value, 140), Math.max(140, size - 150));
+            setRadial({ x: clamp(event.clientX - box.left, box.width), y: clamp(event.clientY - box.top, box.height), flow: flow.screenToFlowPosition({ x: event.clientX, y: event.clientY }) });
+          }}
           onDragOver={(event) => {
             if (
               event.dataTransfer.types.includes("Files") ||
@@ -4274,12 +4167,10 @@ function CanvasEditor({
                 }}
                 defaultEdgeOptions={{
                   type: "default",
-                  style: { stroke: "#565d60", strokeWidth: 1.2 },
-                  labelStyle: { fill: "#cbd1ca", fontSize: 12 },
-                  labelBgStyle: { fill: "#202323" },
+                  labelStyle: { fontSize: 11 },
                 }}
                 connectionLineType={ConnectionLineType.Bezier}
-                connectionLineStyle={{ stroke: "#86adff", strokeWidth: 1.5 }}
+                connectionLineStyle={{ stroke: "var(--accent-strong)", strokeWidth: 2 }}
                 connectOnClick
                 connectionRadius={24}
                 onNodeMouseEnter={(_, node) => setHoveredNodeId(node.id)}
@@ -4333,18 +4224,30 @@ function CanvasEditor({
                 zoomOnScroll
                 zoomOnPinch
                 selectionMode={SelectionMode.Partial}
-                multiSelectionKeyCode={["Shift", "Control", "Meta"]}
-                panActivationKeyCode="Space"
-                colorMode={palette === "pale-pink" ? "light" : "dark"}
+                multiSelectionKeyCode={covered ? null : ["Shift", "Control", "Meta"]}
+                panActivationKeyCode={covered ? null : "Space"}
+                selectionKeyCode={covered ? null : undefined}
+                zoomActivationKeyCode={covered ? null : undefined}
+                disableKeyboardA11y={covered}
+                zoomOnDoubleClick={false}
+                colorMode={palette === "pearl" ? "light" : "dark"}
                 proOptions={{ hideAttribution: true }}
                 elevateNodesOnSelect={false}
               >
                 <Background
+                  id="table-major"
+                  variant={BackgroundVariant.Lines}
+                  bgColor="transparent"
+                  color="var(--canvas-grid-major)"
+                  gap={176}
+                  lineWidth={1}
+                />
+                <Background
+                  id="table-dots"
                   variant={BackgroundVariant.Dots}
-                  bgColor="var(--canvas-bg)"
                   color="var(--canvas-grid)"
                   gap={22}
-                  size={0.9}
+                  size={1.1}
                 />
               </ReactFlow>
             </Actions.Provider>
@@ -4532,109 +4435,126 @@ function CanvasEditor({
               ))}
             </div>
           )}
-          {selectedVideo && selectedVideoWorkflow !== "builtin-latentsync15-local" && !loading && (
-            <div ref={composerAnchor} className="video-composer-anchor" style={{ left: composerLeft, top: composerTop, width: composerWidth, maxHeight: composerMaxHeight, visibility: imageVisible ? "visible" : "hidden" }}>
-              <div className="canvas-av-composer">
-                {selectedEnhanceWorkflow && selectedVideo.data.generation ? (
-                  <VideoEnhanceComposer
-                    key={`${selectedVideo.id}:${selectedEnhanceWorkflow}`}
+          {!loading && !loadError && !guideEnabled && (
+            <section ref={composerAnchor} className={`composer-dock ${dockCollapsed ? "is-collapsed" : ""} ${composerNode ? "is-bound" : "is-free"}`}
+              data-kind={composerNode?.data.kind || quickKind} aria-label="创作条"
+              onPointerDown={event => event.stopPropagation()} onDoubleClick={event => event.stopPropagation()}>
+              {composerNode ? (
+                <header className="dock-head" key={composerNode.id}>
+                  <span className="dock-kind">{composerNode.data.kind === "video" ? <Video size={14} /> : composerNode.data.kind === "audio" ? <Music2 size={14} /> : <ImageIcon size={14} />}
+                    {composerNode.data.kind === "video" ? (selectedEnhanceWorkflow ? "视频后期" : "视频") : composerNode.data.kind === "audio" ? "配音" : "图像"}</span>
+                  <button className="dock-target" onClick={() => locateNode(composerNode.id)} title="结果回到这张卡片 · 点击定位">
+                    <span>↩ 结果回到</span><b>画布 › {composerNode.data.title || "未命名卡片"}</b>
+                  </button>
+                  <span className="flex" />
+                  <button className="dock-link" aria-label="结果轮次" title="结果轮次" onClick={() => openRounds(composerNode.id)}><History size={13} /><span className="dock-link-label">结果轮次</span></button>
+                  <button className="dock-link" aria-label="定位节点" title="定位节点" onClick={() => locateNode(composerNode.id)}><Crosshair size={13} /><span className="dock-link-label">定位节点</span></button>
+                  <button className="dock-link icon" aria-label={dockCollapsed ? "展开创作条" : "收起创作条"} title={dockCollapsed ? "展开创作条" : "收起创作条"} onClick={() => setDockCollapsed(value => !value)}>{dockCollapsed ? <ChevronUp size={15} /> : <ChevronDown size={15} />}</button>
+                </header>
+              ) : (
+                <header className="dock-head">
+                  <span className="dock-kind" role="radiogroup" aria-label="创作类型">
+                    <button type="button" role="radio" aria-checked={quickKind === "image"} onClick={() => setQuickKind("image")}><ImageIcon size={14} />图像</button>
+                    <button type="button" role="radio" aria-checked={quickKind === "video"} onClick={() => setQuickKind("video")}><Video size={14} />视频</button>
+                  </span>
+                  <span className="dock-target is-new"><span>↩ 结果回到</span><b>新建一张{quickKind === "image" ? "图片" : "视频"}卡片</b></span>
+                  <span className="flex" />
+                  <span className="dock-hint">选中画布上的生成卡片，创作条就绑定到它</span>
+                </header>
+              )}
+              <div className="dock-body">
+                {!composerNode && (
+                  <form className="dock-quick" aria-label="一句话起草" onSubmit={event => { event.preventDefault(); const text = quickPrompt; setQuickPrompt(""); void startDraft(quickKind, text); }}>
+                    <textarea value={quickPrompt} maxLength={4000} rows={2} aria-label="一句话起草"
+                      placeholder={quickKind === "image" ? "写一句画面：谁、在哪、光线与情绪…（新建卡片并填好描述，不会直接生成）" : "写一句运动：镜头怎么动、谁在动…（新建卡片并填好描述，不会直接生成）"}
+                      onChange={event => setQuickPrompt(event.target.value)}
+                      onKeyDown={event => { if (event.key === "Enter" && (event.ctrlKey || event.metaKey) && !event.nativeEvent.isComposing) { event.preventDefault(); event.currentTarget.form?.requestSubmit(); } }} />
+                    <footer>
+                      <button type="button" className="chip" onClick={() => openFilePicker()}><Upload size={13} />导入素材</button>
+                      <button type="button" className="chip" onClick={() => { setShowLibrary(true); setAssetScope("subjects"); }}><UserRound size={13} />主体库</button>
+                      <span className="flex" />
+                      <span className="dock-hint">Ctrl+Enter 起草</span>
+                      <button className="dock-go" type="submit" disabled={!quickPrompt.trim()}><Sparkles size={15} />起草到画布</button>
+                    </footer>
+                  </form>
+                )}
+                {selectedVideo && selectedVideoWorkflow !== "builtin-latentsync15-local" && (
+                  <div className="canvas-av-composer">
+                    {selectedEnhanceWorkflow && selectedVideo.data.generation ? (
+                      <VideoEnhanceComposer
+                        key={`${selectedVideo.id}:${selectedEnhanceWorkflow}`}
+                        projectId={project.id}
+                        nodeId={selectedVideo.id}
+                        workflowId={selectedEnhanceWorkflow}
+                        draft={selectedVideo.data.generation}
+                        locked={selectedVideo.data.locked}
+                        input={resolveVideoEnhanceInput(nodes, edges, selectedVideo.id)}
+                        getInput={() => resolveVideoEnhanceInput(nodesRef.current, edgesRef.current, selectedVideo.id)}
+                        logo={resolveVideoEnhanceInput(nodes, edges, selectedVideo.id, "image")}
+                        getLogo={() => resolveVideoEnhanceInput(nodesRef.current, edgesRef.current, selectedVideo.id, "image")}
+                        mediaRevisions={mediaRevisions}
+                        onPreview={onPreview}
+                        onChange={patch => {
+                          const current = nodesRef.current.find(node => node.id === selectedVideo.id)?.data.generation;
+                          if (current?.workflow_id === selectedEnhanceWorkflow) updateData(selectedVideo.id, { generation: { ...current, ...patch } });
+                        }}
+                        onBeginEdit={remember}
+                        onBeforeSubmit={flushCanvas}
+                      />
+                    ) : <>
+                      {referenceChanges(selectedVideo)}
+                      <VideoComposer key={selectedVideo.id} projectId={project.id} nodeId={selectedVideo.id} draft={selectedVideo.data.generation} locked={selectedVideo.data.locked} cameraMotionLabel={selectedVideoMotion && cameraMotionLabel(selectedVideoMotion)} canvasReferences={videoReferences} onChange={draft=>updateData(selectedVideo.id,{generation:draft})} onBeginEdit={remember} onBeforeSubmit={flushCanvas} onRemoveConnections={ids=>edit(nodesRef.current,edgesRef.current.filter(edge=>!ids.includes(edge.id)||edgeLocked(edge,nodesRef.current)))} onAssetsChange={onAssetsChange}/>
+                    </>}
+                  </div>
+                )}
+                {selectedVideo?.data.generation?.workflow_id==='builtin-latentsync15-local' && <section className="video-composer dock-lipsync" aria-label="口型节点"><strong>LatentSync · 口型同步</strong><p>此卡片保存视频、配音与人脸定位参数。</p><button className="button secondary" onClick={()=>void flushCanvas().then(()=>{setLipSyncNodeId(selectedVideo.id);setShowLipSync(true);}).catch(error=>setNotice(errorText(error)))}>编辑口型节点</button></section>}
+                {selectedAudio && <div className="canvas-av-composer">{referenceChanges(selectedAudio)}<AudioComposer key={selectedAudio.id} projectId={project.id} nodeId={selectedAudio.id} draft={selectedAudio.data.generation} locked={selectedAudio.data.locked} canvasReferences={videoReferences.filter(r=>r.media_type==="audio"&&r.node_id!==selectedAudio.id)} onChange={draft=>updateData(selectedAudio.id,{generation:draft})} onBeginEdit={remember} onBeforeSubmit={flushCanvas} onRemoveConnections={ids=>edit(nodesRef.current,edgesRef.current.filter(edge=>!ids.includes(edge.id)||edgeLocked(edge,nodesRef.current)))} onAssetsChange={onAssetsChange}/></div>}
+                {selectedImage && (
+                  <GenerationComposer
+                    key={selectedImage.id}
                     projectId={project.id}
-                    nodeId={selectedVideo.id}
-                    workflowId={selectedEnhanceWorkflow}
-                    draft={selectedVideo.data.generation}
-                    locked={selectedVideo.data.locked}
-                    input={resolveVideoEnhanceInput(nodes, edges, selectedVideo.id)}
-                    getInput={() => resolveVideoEnhanceInput(nodesRef.current, edgesRef.current, selectedVideo.id)}
-                    logo={resolveVideoEnhanceInput(nodes, edges, selectedVideo.id, "image")}
-                    getLogo={() => resolveVideoEnhanceInput(nodesRef.current, edgesRef.current, selectedVideo.id, "image")}
-                    mediaRevisions={mediaRevisions}
-                    onPreview={onPreview}
-                    onChange={patch => {
-                      const current = nodesRef.current.find(node => node.id === selectedVideo.id)?.data.generation;
-                      if (current?.workflow_id === selectedEnhanceWorkflow) updateData(selectedVideo.id, { generation: { ...current, ...patch } });
+                    nodeId={selectedImage.id}
+                    title={selectedImage.data.title || "图片创作"}
+                    versionId={(selectedImage.data.generation?.mode==="edit" ? selectedImage.data.generation?.edit_base_version_id : undefined) || selectedImage.data.asset_version_id}
+                    draft={selectedImage.data.generation}
+                    connections={generationConnections}
+                    unresolvedConnections={unresolvedEdges.length}
+                    onConfirmConnections={(role)=>edit(nodesRef.current,edgesRef.current.map(edge=>unresolvedEdges.some(item=>item.id===edge.id) && !edgeLocked(edge,nodesRef.current) ? {...edge,data:{...edge.data,role}}:edge))}
+                    onUpdateReference={(reference)=>{
+                      const source=nodesRef.current.find(node=>node.id===reference.node_id);
+                      if (!source?.data.asset_version_id || !selectedImage) return;
+                      remember();
+                      updateData(selectedImage.id,{generation:{...selectedImage.data.generation!,references:(selectedImage.data.generation?.references||[]).map(ref=>(ref.id || "ref-"+ref.version_id)===(reference.id || "ref-"+reference.version_id) ? {...ref,id:ref.id || "ref-"+ref.version_id,version_id:ref.source!=="connection" && source.data.subject?.image_version_ids.includes(ref.version_id) ? ref.version_id : source.data.asset_version_id!,description:source.data.subject?.description || ref.description}:ref)}});
                     }}
+                    canvasReferences={canvasReferences}
+                    sourceImages={Object.fromEntries(nodes.map(node=>[node.id,node.data.subject?.image_version_ids || [node.data.asset_version_id].filter(Boolean) as string[]]))}
+                    sourceDescriptions={Object.fromEntries(nodes.filter(node=>node.data.subject).map(node=>[node.id,node.data.subject!.description]))}
+                    sourceVersions={Object.fromEntries(nodes.filter(node=>node.data.asset_version_id).map(node=>[node.id,node.data.asset_version_id!]))}
+                    locked={!!selectedImage.data.locked}
+                    position={{
+                      x: imagePosition.x + imageSize.width + 90,
+                      y: imagePosition.y,
+                    }}
+                    onChange={updateGenerationDraft}
                     onBeginEdit={remember}
+                    onRemoveConnections={removeGenerationConnections}
                     onBeforeSubmit={flushCanvas}
+                    onReveal={(id) => {
+                      const node = nodesRef.current.find((item) => item.id === id);
+                      if (!node) {
+                        void synchronizeGeneration().then(() =>
+                          flow.fitView({ nodes: [{ id }], padding: 0.3, maxZoom: 1, duration: 300 }),
+                        );
+                        return;
+                      }
+                      replace(nodesRef.current.map((item) => ({ ...item, selected: item.id === id })));
+                      void flow.fitView({ nodes: [{ id }], padding: 0.4, maxZoom: 1, duration: 300 });
+                    }}
+                    onAssetsChange={onAssetsChange}
                   />
-                ) : <>
-                  {referenceChanges(selectedVideo)}
-                  <VideoComposer key={selectedVideo.id} projectId={project.id} nodeId={selectedVideo.id} draft={selectedVideo.data.generation} locked={selectedVideo.data.locked} cameraMotionLabel={selectedVideoMotion && cameraMotionLabel(selectedVideoMotion)} canvasReferences={videoReferences} onChange={draft=>updateData(selectedVideo.id,{generation:draft})} onBeginEdit={remember} onBeforeSubmit={flushCanvas} onRemoveConnections={ids=>edit(nodesRef.current,edgesRef.current.filter(edge=>!ids.includes(edge.id)||edgeLocked(edge,nodesRef.current)))} onAssetsChange={onAssetsChange}/>
-                </>}
+                )}
               </div>
-            </div>
-          )}
-          {selectedVideo?.data.generation?.workflow_id==='builtin-latentsync15-local' && !loading && <div className="video-composer-anchor" style={{left:composerLeft,top:composerTop,width:composerWidth,visibility:imageVisible?'visible':'hidden'}}><section className="video-composer nodrag nopan nowheel" aria-label="口型节点"><strong>LatentSync · 口型同步</strong><p>此卡片保存视频、配音与人脸定位参数。</p><button className="button secondary" onClick={()=>void flushCanvas().then(()=>{setLipSyncNodeId(selectedVideo.id);setShowLipSync(true);}).catch(error=>setNotice(errorText(error)))}>编辑口型节点</button></section></div>}
-          {selectedAudio && !loading && <div ref={composerAnchor} className="video-composer-anchor" style={{left:composerLeft,top:composerTop,width:composerWidth,maxHeight:composerMaxHeight,visibility:imageVisible?"visible":"hidden"}}><div className="canvas-av-composer">{referenceChanges(selectedAudio)}<AudioComposer key={selectedAudio.id} projectId={project.id} nodeId={selectedAudio.id} draft={selectedAudio.data.generation} locked={selectedAudio.data.locked} canvasReferences={videoReferences.filter(r=>r.media_type==="audio"&&r.node_id!==selectedAudio.id)} onChange={draft=>updateData(selectedAudio.id,{generation:draft})} onBeginEdit={remember} onBeforeSubmit={flushCanvas} onRemoveConnections={ids=>edit(nodesRef.current,edgesRef.current.filter(edge=>!ids.includes(edge.id)||edgeLocked(edge,nodesRef.current)))} onAssetsChange={onAssetsChange}/></div></div>}
-          {selectedImage && !loading && (
-            <div
-              ref={composerAnchor}
-              className="generation-anchor"
-              style={{
-                left: composerLeft,
-                top: composerTop,
-                width: composerWidth,
-                maxHeight: composerMaxHeight,
-                visibility: imageVisible ? "visible" : "hidden",
-              }}
-            >
-              <GenerationComposer
-                key={selectedImage.id}
-                projectId={project.id}
-                nodeId={selectedImage.id}
-                title={selectedImage.data.title || "图片创作"}
-                versionId={(selectedImage.data.generation?.mode==="edit" ? selectedImage.data.generation?.edit_base_version_id : undefined) || selectedImage.data.asset_version_id}
-                draft={selectedImage.data.generation}
-                connections={generationConnections}
-                unresolvedConnections={unresolvedEdges.length}
-                onConfirmConnections={(role)=>edit(nodesRef.current,edgesRef.current.map(edge=>unresolvedEdges.some(item=>item.id===edge.id) && !edgeLocked(edge,nodesRef.current) ? {...edge,data:{...edge.data,role}}:edge))}
-                onUpdateReference={(reference)=>{
-                  const source=nodesRef.current.find(node=>node.id===reference.node_id);
-                  if (!source?.data.asset_version_id || !selectedImage) return;
-                  remember();
-                  updateData(selectedImage.id,{generation:{...selectedImage.data.generation!,references:(selectedImage.data.generation?.references||[]).map(ref=>(ref.id || "ref-"+ref.version_id)===(reference.id || "ref-"+reference.version_id) ? {...ref,id:ref.id || "ref-"+ref.version_id,version_id:ref.source!=="connection" && source.data.subject?.image_version_ids.includes(ref.version_id) ? ref.version_id : source.data.asset_version_id!,description:source.data.subject?.description || ref.description}:ref)}});
-                }}
-                canvasReferences={canvasReferences}
-                sourceImages={Object.fromEntries(nodes.map(node=>[node.id,node.data.subject?.image_version_ids || [node.data.asset_version_id].filter(Boolean) as string[]]))}
-                sourceDescriptions={Object.fromEntries(nodes.filter(node=>node.data.subject).map(node=>[node.id,node.data.subject!.description]))}
-                sourceVersions={Object.fromEntries(nodes.filter(node=>node.data.asset_version_id).map(node=>[node.id,node.data.asset_version_id!]))}
-                locked={!!selectedImage.data.locked}
-                position={{
-                  x: imagePosition.x + imageSize.width + 90,
-                  y: imagePosition.y,
-                }}
-                onChange={updateGenerationDraft}
-                onBeginEdit={remember}
-                onRemoveConnections={removeGenerationConnections}
-                onBeforeSubmit={flushCanvas}
-                onReveal={(id) => {
-                  const node = nodesRef.current.find((item) => item.id === id);
-                  if (!node) {
-                    void synchronizeGeneration().then(() =>
-                      flow.fitView({
-                        nodes: [{ id }],
-                        padding: 0.3,
-                        maxZoom: 1,
-                        duration: 300,
-                      }),
-                    );
-                    return;
-                  }
-                  replace(
-                    nodesRef.current.map((item) => ({
-                      ...item,
-                      selected: item.id === id,
-                    })),
-                  );
-                  void flow.fitView({
-                    nodes: [{ id }],
-                    padding: 0.4,
-                    maxZoom: 1,
-                    duration: 300,
-                  });
-                }}
-                onAssetsChange={onAssetsChange}
-              />
-            </div>
+            </section>
           )}
           {loading && (
             <div className="canvas-loading">
@@ -4660,171 +4580,156 @@ function CanvasEditor({
               <span>松开，将素材放到这里</span>
             </div>
           )}
-          <div className="canvas-toolbar">
-            <button title="导演工具箱 · 运镜" aria-label="导演工具箱 · 运镜" onClick={() => setCameraPicker(centerPosition())}><Crosshair size={19}/></button>
-            <button title="生成视频" onClick={()=>addVideoGeneration()}><Video size={19}/></button>
-            {videoEnhanceTools.map(({ workflowId, Icon }) => (
-              <button key={workflowId} title={videoEnhanceLabels[workflowId]} aria-label={videoEnhanceLabels[workflowId]}
-                onClick={() => addVideoEnhance(workflowId, undefined, canEnhanceSelectedVideo ? selectedVideo?.id : undefined)}><Icon size={19} /></button>
-            ))}
-            <button title="人物配音" onClick={()=>addSpeechGeneration()}><Music2 size={19}/></button>
-            <button
-              className="canvas-generate-tool"
-              title="生成图片"
-              onClick={() => addGeneration()}
-            >
-              <Sparkles size={19} />
-            </button>
-            <button
-              title="选择 V"
-              className={tool === "select" ? "active" : ""}
-              onClick={() => setTool("select")}
-            >
-              <MousePointer2 size={19} />
-            </button>
-            <button
-              title="平移画布，也可按住空格"
-              className={tool === "pan" ? "active" : ""}
-              onClick={() => setTool("pan")}
-            >
-              <Expand size={19} />
-            </button>
-            <span className="toolbar-divider" />
-            <button title="文字 T" onClick={() => addText()}>
-              <Type size={20} />
-            </button>
-            <div className="canvas-frame-menu">
-              <button
-                title="新建主体"
-                aria-label="新建主体"
-                aria-expanded={showSubjects}
-                className={showSubjects ? "active" : ""}
-                onClick={() => {
-                  setShowSubjects(!showSubjects);
-                  setShowFrames(false);
-                }}
-              >
-                <UserRoundPlus size={19} />
-              </button>
+          {/* 工具脊 · the creation spine: everything that puts something on the table */}
+          <div className="canvas-spine nodrag nopan" ref={spineRef} role="toolbar" aria-orientation="vertical" aria-label="画布工具" onPointerDown={event => event.stopPropagation()}>
+            <button className={`spine-btn ${showLibrary ? "is-on" : ""}`} aria-expanded={showLibrary} data-tip="素材与主体抽屉" aria-label="素材与主体抽屉" onClick={() => showLibrary ? closeLibrary() : setShowLibrary(true)}><PanelLeft size={18} /></button>
+            <span className="spine-sep" />
+            <span className="spine-label">放置</span>
+            <button className="spine-btn is-make" data-tip="图片创作卡" aria-label="图片创作卡" onClick={() => addGeneration()}><Sparkles size={18} /></button>
+            <button className="spine-btn is-make" data-tip="视频创作卡" aria-label="视频创作卡" onClick={() => addVideoGeneration()}><Video size={18} /></button>
+            <button className="spine-btn is-make" data-tip="人物配音" aria-label="人物配音" onClick={() => addSpeechGeneration()}><Music2 size={18} /></button>
+            <button className="spine-btn" data-tip="文字 T" aria-label="文字" onClick={() => addText()}><Type size={18} /></button>
+            <div className="spine-fly">
+              <button className={`spine-btn ${showSubjects ? "is-on" : ""}`} data-tip="新建主体" aria-label="新建主体" aria-expanded={showSubjects}
+                onClick={() => { setShowSubjects(!showSubjects); setShowFrames(false); setShowEnhance(false); }}><UserRoundPlus size={18} /></button>
               {showSubjects && (
-                <div className="canvas-frame-options canvas-subject-options">
-                  {(["character", "scene", "prop"] as SubjectKind[]).map(
-                    (kind) => {
-                      const Icon = subjectKindIcons[kind];
-                      return (
-                        <button
-                          key={kind}
-                          onClick={() => addEmptySubject(kind)}
-                        >
-                          <Icon size={15} />
-                          {subjectKindNames[kind]}
-                        </button>
-                      );
-                    },
-                  )}
+                <div className="dropdown spine-flyout" role="menu">
+                  <span className="spine-flyout-title">新建主体</span>
+                  {(["character", "scene", "prop"] as SubjectKind[]).map(kind => {
+                    const Icon = subjectKindIcons[kind];
+                    return <button key={kind} role="menuitem" onClick={() => { addEmptySubject(kind); setShowSubjects(false); }}><Icon size={15} />{subjectKindNames[kind]}</button>;
+                  })}
                 </div>
               )}
             </div>
-            <div className="canvas-frame-menu">
-              <button
-                title="添加画框"
-                className={showFrames ? "active" : ""}
-                onClick={() => {
-                  setShowFrames(!showFrames);
-                  setShowSubjects(false);
-                }}
-              >
-                <Frame size={19} />
-              </button>
+            <div className="spine-fly">
+              <button className={`spine-btn ${showEnhance ? "is-on" : ""}`} data-tip="视频后期 · 运镜" aria-label="视频后期" aria-expanded={showEnhance}
+                onClick={() => { setShowEnhance(!showEnhance); setShowFrames(false); setShowSubjects(false); }}><Scaling size={18} /></button>
+              {showEnhance && (
+                <div className="dropdown spine-flyout" role="menu">
+                  <span className="spine-flyout-title">视频后期</span>
+                  {videoEnhanceTools.map(({ workflowId, Icon }) => (
+                    <button key={workflowId} role="menuitem" onClick={() => { addVideoEnhance(workflowId, undefined, canEnhanceSelectedVideo ? selectedVideo?.id : undefined); setShowEnhance(false); }}><Icon size={15} />{videoEnhanceLabels[workflowId]}</button>
+                  ))}
+                  <button role="menuitem" onClick={() => { setCameraPicker(centerPosition()); setShowEnhance(false); }}><Crosshair size={15} />导演工具箱 · 运镜</button>
+                </div>
+              )}
+            </div>
+            <div className="spine-fly">
+              <button className={`spine-btn ${showFrames ? "is-on" : ""}`} data-tip="添加画框" aria-label="添加画框" aria-expanded={showFrames}
+                onClick={() => { setShowFrames(!showFrames); setShowSubjects(false); setShowEnhance(false); }}><Frame size={18} /></button>
               {showFrames && (
-                <div className="canvas-frame-options">
-                  <button onClick={() => addFrame("16:9")}>横屏 16:9</button>
-                  <button onClick={() => addFrame("9:16")}>竖屏 9:16</button>
+                <div className="dropdown spine-flyout" role="menu">
+                  <span className="spine-flyout-title">画框</span>
+                  <button role="menuitem" onClick={() => { addFrame("16:9"); setShowFrames(false); }}>横屏画框 16:9</button>
+                  <button role="menuitem" onClick={() => { addFrame("9:16"); setShowFrames(false); }}>竖屏画框 9:16</button>
                 </div>
               )}
             </div>
-            <button
-              title="导入素材"
-              onClick={() => openFilePicker()}
-              disabled={uploadProgress !== null}
-            >
-              <ImageIcon size={20} />
-            </button>
+            <button className="spine-btn" data-tip="导入素材" aria-label="导入素材" onClick={() => openFilePicker()} disabled={uploadProgress !== null}><Upload size={18} /></button>
+            <span className="spine-sep" />
+            <div className="spine-seg" data-tool={tool}>
+              <button className={`spine-btn ${tool === "select" ? "is-on" : ""}`} data-tip="选择 V" aria-label="选择" onClick={() => setTool("select")}><MousePointer2 size={17} /></button>
+              <button className={`spine-btn ${tool === "pan" ? "is-on" : ""}`} data-tip="平移 · 也可按住空格" aria-label="平移" onClick={() => setTool("pan")}><Expand size={17} /></button>
+            </div>
             {single?.type === "group" ? (
-              <button
-                title="解散分组 Ctrl+Shift+G"
-                aria-label="解散分组"
-                onClick={ungroupSelection}
-                disabled={!canUngroupSelection}
-              >
-                <Ungroup size={19} />
-              </button>
+              <button className="spine-btn" data-tip="解散分组 Ctrl+Shift+G" aria-label="解散分组" onClick={ungroupSelection} disabled={!canUngroupSelection}><Ungroup size={17} /></button>
             ) : (
-              <button
-                title="创建分组 Ctrl+G"
-                onClick={groupSelection}
-                disabled={!selected.length}
-              >
-                <Group size={19} />
-              </button>
+              <button className="spine-btn" data-tip="创建分组 Ctrl+G" aria-label="创建分组" onClick={groupSelection} disabled={!selected.length}><Group size={17} /></button>
             )}
-            <span className="toolbar-divider" />
-            <button
-              title="撤销 Ctrl+Z"
-              onClick={undo}
-              disabled={!history.current.past.length}
-            >
-              <Undo2 size={18} />
-            </button>
-            <button
-              title="重做 Ctrl+Shift+Z"
-              onClick={redo}
-              disabled={!history.current.future.length}
-            >
-              <Redo2 size={18} />
-            </button>
+            <button className="spine-btn" data-tip="撤销 Ctrl+Z" aria-label="撤销" onClick={undo} disabled={!history.current.past.length}><Undo2 size={17} /></button>
+            <button className="spine-btn" data-tip="重做 Ctrl+Shift+Z" aria-label="重做" onClick={redo} disabled={!history.current.future.length}><Redo2 size={17} /></button>
           </div>
-          <div className="canvas-zoom-controls">
-            <button title="缩小" onClick={() => void flow.zoomOut()}>
-              <Minus size={15} />
-            </button>
-            <span>{Math.round(zoom * 100)}%</span>
-            <button title="放大" onClick={() => void flow.zoomIn()}>
-              <Plus size={15} />
-            </button>
-            <span className="toolbar-divider" />
-            <button
-              title="适应全部内容"
-              onClick={() =>
-                void flow.fitView({
-                  padding: 0.18,
-                  duration: 250,
-                  maxZoom: 1.2,
-                })
-              }
-            >
-              <Maximize size={16} />
-            </button>
+
+          {/* 视窗仪 · view kit: zoom, fit, search, minimap */}
+          <div className="canvas-viewkit nodrag nopan" onPointerDown={event => event.stopPropagation()}>
+            {showMinimap && (
+              <MiniMap className="canvas-minimap" pannable zoomable ariaLabel="画布缩略图" nodeBorderRadius={6}
+                nodeClassName={node => (node.data as CanvasData | undefined)?.kind === "image" || (node.data as CanvasData | undefined)?.kind === "video" ? "is-media" : "is-plain"} />
+            )}
+            <div className="viewkit-bar" role="toolbar" aria-label="视图">
+              <button className="spine-btn" data-tip="搜索画布节点" aria-label="搜索画布节点" aria-expanded={showNavigator} onClick={() => setShowNavigator(value => !value)}><Search size={16} /></button>
+              <button className={`spine-btn ${showMinimap ? "is-on" : ""}`} data-tip="缩略图" aria-label="缩略图" aria-pressed={showMinimap} onClick={() => setShowMinimap(value => !value)}><MapIcon size={16} /></button>
+              <span className="viewkit-sep" />
+              <button className="spine-btn" data-tip="缩小" aria-label="缩小" onClick={() => void flow.zoomOut({ duration: 260 })}><Minus size={16} /></button>
+              <button className="viewkit-zoom" data-tip="适应全部内容" aria-label={`缩放 ${Math.round(zoom * 100)}%，适应全部内容`} onClick={() => void flow.fitView({ padding: 0.18, duration: 520, maxZoom: 1.2 })}>
+                <b>{Math.round(zoom * 100)}</b>%<Maximize size={12} />
+              </button>
+              <button className="spine-btn" data-tip="放大" aria-label="放大" onClick={() => void flow.zoomIn({ duration: 260 })}><Plus size={16} /></button>
+            </div>
           </div>
-          {showNavigator && <section className="canvas-node-navigator nodrag nopan nowheel" aria-label="画布节点导航"><header><Search size={15}/><input autoFocus aria-label="搜索节点名称和内容" placeholder="搜索节点、角色或台词" value={nodeSearch} onChange={event=>setNodeSearch(event.target.value)}/><button title="关闭节点导航" onClick={()=>setShowNavigator(false)}><X size={16}/></button></header><div>{workbenchNodes.filter(node=>!node.data.production_settings && [node.data.title,node.data.text,node.data.subject?.name,node.data.generation?.prompt].some(value=>String(value||"").toLowerCase().includes(nodeSearch.toLowerCase()))).slice(0,100).map(node=><button key={node.id} onClick={()=>locateNode(node.id)}><span>{node.data.title||node.data.subject?.name||node.type||"节点"}</span><small>{node.data.shot?"分镜":node.data.kind||node.type}</small></button>)}</div><footer>选择条目定位节点 · 最多显示 100 个匹配项</footer></section>}
+
+          {/* 环形创作 · double-click empty table to bloom a ring of makers at the cursor */}
+          {radial && (
+            <div className="radial-shade nodrag nopan" onPointerDown={event => { event.stopPropagation(); if (event.target === event.currentTarget) setRadial(null); }}
+              onKeyDown={event => { if (event.key === "Escape") setRadial(null); }}>
+              <div className="radial" ref={radialRef} style={{ left: radial.x, top: radial.y } as React.CSSProperties} role="menu" aria-label="在此处创建">
+                <span className="radial-core" aria-hidden="true"><Plus size={18} /></span>
+                {radialItems.map((item, index) => (
+                  <button key={item.id} role="menuitem" className="radial-item" autoFocus={index === 0}
+                    style={{ "--a": `${(360 / radialItems.length) * index - 90}deg`, "--i": index } as React.CSSProperties}
+                    onClick={() => { const at = radial.flow; setRadial(null); item.run(at); }}>
+                    <span className="radial-icon">{item.icon}</span><span className="radial-label">{item.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          {!showInspector && (
+            <button className="panel-reopen nodrag nopan" onClick={() => setShowInspector(true)} title="打开结果与属性面板"><PanelRight size={15} /><span>结果 · 属性</span></button>
+          )}
+          {showNavigator && <section ref={navigatorRef} className="canvas-node-navigator nodrag nopan nowheel" aria-label="画布节点导航"><header><Search size={15}/><input autoFocus aria-label="搜索节点名称和内容" placeholder="搜索节点、角色或台词" value={nodeSearch} onChange={event=>setNodeSearch(event.target.value)}/><button title="关闭节点导航" onClick={()=>setShowNavigator(false)}><X size={16}/></button></header><div>{workbenchNodes.filter(node=>!node.data.production_settings && [node.data.title,node.data.text,node.data.subject?.name,node.data.generation?.prompt].some(value=>String(value||"").toLowerCase().includes(nodeSearch.toLowerCase()))).slice(0,100).map(node=><button key={node.id} onClick={()=>locateNode(node.id)}><span>{node.data.title||node.data.subject?.name||node.type||"节点"}</span><small>{node.data.shot?"分镜":node.data.kind||node.type}</small></button>)}</div><footer>选择条目定位节点 · 最多显示 100 个匹配项</footer></section>}
           <div className="canvas-stage-status">
             <span className="canvas-status-dot" />
             {workbenchNodes.length} 个元素
-            <span className="canvas-keyboard-hint">空格拖动 · 滚轮缩放</span>
+            <span className="canvas-keyboard-hint">双击空白处 · 环形创作 · 空格拖动 · 滚轮缩放</span>
           </div>
         </main>
 
-        <aside className="canvas-inspector" hidden={!showInspector} inert={!showInspector}>
-          <div className="canvas-panel-heading">
-            <h2>{selected.length ? "属性" : selectedEdge ? "连线" : "画布"}</h2>
-            <button
-              className="canvas-icon-button"
-              title="收起属性面板"
-              onClick={() => setShowInspector(false)}
-            >
-              <X size={15} />
-            </button>
-          </div>
+        <aside className="canvas-panel" ref={panelRef} hidden={!showInspector} inert={!showInspector} data-tab={panelTab} aria-label="结果与属性">
+          <header className="panel-head">
+            <div className="panel-title">
+              <h2 title={resultsNode?.data.title || undefined}>{panelTab === "results" ? (resultsNode?.data.title || "画布") : selected.length ? (single?.data.title || `已选择 ${selected.length} 个元素`) : selectedEdge ? "连线" : "画布"}</h2>
+              {panelTab === "results" && resultsNode && resultsNode.id === composerNode?.id && <span className="tag accent">创作条目标</span>}
+            </div>
+            <button className="icon-button" title="收起面板" aria-label="收起结果与属性面板" onClick={() => setShowInspector(false)}><X size={15} /></button>
+            <div className="panel-tabs" role="tablist" aria-label="面板内容">
+              <button role="tab" aria-selected={panelTab === "results"} onClick={() => setPanelTab("results")}>结果</button>
+              <button role="tab" aria-selected={panelTab === "props"} onClick={() => setPanelTab("props")}>属性{selected.length > 1 ? ` · ${selected.length}` : ""}</button>
+            </div>
+          </header>
+          {panelTab === "results" && (resultsNode ? (
+            <GenerationRounds
+              key={resultsNode.id}
+              embedded
+              projectId={project.id}
+              node={{
+                id: resultsNode.id, title: resultsNode.data.title || "生成卡片", kind: resultsNode.data.kind as "image" | "video" | "audio",
+                locked: !!resultsNode.data.locked, adoptedVersion: resultsNode.data.asset_version_id, history: resultsNode.data.image_history || [],
+                refillOf: resultsNode.data.generation?.refill_of?.job_id, roundLinks: resultsNode.data.generation?.round_links,
+              }}
+              highlightVersion={rounds?.nodeId === resultsNode.id ? rounds.version : undefined}
+              nodeTitles={Object.fromEntries(nodes.map(node => [node.id, node.data.title || "未命名节点"]))}
+              onRefill={(job, seed) => void refillRound(job, seed)}
+              onAdopt={(versionId) => adoptVersion(resultsNode.id, versionId, resultsNode.data.image_history?.find(item => item.version_id === versionId)?.job_id)}
+              onUseAsReference={(versionId) => useVersionAsReference(resultsNode.id, versionId)}
+              onToVideo={(versionId) => void versionToVideo(resultsNode.id, versionId)}
+              onLocate={locateFromRound}
+              onPreview={onPreview}
+              onClose={() => setRounds(null)}
+            />
+          ) : (
+            <div className="panel-empty">
+              <span className="panel-empty-word">Select</span>
+              <p>选中一张生成卡片，<br />这里按轮次列出它每一次提交和候选结果。</p>
+              <div className="panel-empty-list">
+                {workbenchNodes.filter(node => node.type === "media" && ["image", "video", "audio"].includes(node.data.kind || "") && (node.data.generation || node.data.image_history?.length)).slice(0, 12).map(node => (
+                  <button key={node.id} className="chip" onClick={() => { locateNode(node.id); openRounds(node.id); }}>{node.data.title || "未命名卡片"}</button>
+                ))}
+              </div>
+            </div>
+          ))}
+          <div className="panel-props" hidden={panelTab !== "props"}>
           {selected.length > 0 ? (
             <>
               <div className="canvas-inspector-section">
@@ -5180,6 +5085,7 @@ function CanvasEditor({
               </div>
             </>
           )}
+          </div>
         </aside>
       </div>
       {saveState === "conflict" && (
@@ -5277,41 +5183,11 @@ function CanvasEditor({
         />
       )}
       {showDrafts && <DraftRecovery projectId={project.id} draftPrefix={draftPrefix} onClose={()=>setShowDrafts(false)} onRestore={restoreDraft}/>}
-      {!loading && !loadError && !selected.length && !rounds && !guideEnabled && saveState !== "conflict" && (
-        <form className="canvas-quick-draft" aria-label="一句话起草" onSubmit={event => { event.preventDefault(); const text = quickPrompt; setQuickPrompt(""); void startDraft(quickKind, text); }}>
-          <input value={quickPrompt} maxLength={4000} aria-label="一句话起草" placeholder={quickKind === "image" ? "一句话起草一张图…（新建卡片，不会直接生成）" : "一句话起草一段视频…（新建卡片，不会直接生成）"} onChange={event => setQuickPrompt(event.target.value)} />
-          <span className="cs-kind" role="radiogroup" aria-label="创作类型">
-            <button type="button" role="radio" aria-checked={quickKind === "image"} onClick={() => setQuickKind("image")}>图像</button>
-            <button type="button" role="radio" aria-checked={quickKind === "video"} onClick={() => setQuickKind("video")}>视频</button>
-          </span>
-          <button className="cs-go" type="submit" disabled={!quickPrompt.trim()}>起草</button>
-        </form>
-      )}
-      {roundsNode && ["image", "video", "audio"].includes(roundsNode.data.kind || "") && (
-        <GenerationRounds
-          key={roundsNode.id}
-          projectId={project.id}
-          node={{
-            id: roundsNode.id, title: roundsNode.data.title || "生成卡片", kind: roundsNode.data.kind as "image" | "video" | "audio",
-            locked: !!roundsNode.data.locked, adoptedVersion: roundsNode.data.asset_version_id, history: roundsNode.data.image_history || [],
-            refillOf: roundsNode.data.generation?.refill_of?.job_id, roundLinks: roundsNode.data.generation?.round_links,
-          }}
-          highlightVersion={rounds?.version}
-          nodeTitles={Object.fromEntries(nodes.map(node => [node.id, node.data.title || "未命名节点"]))}
-          onRefill={(job, seed) => void refillRound(job, seed)}
-          onAdopt={(versionId) => adoptVersion(roundsNode.id, versionId, roundsNode.data.image_history?.find(item => item.version_id === versionId)?.job_id)}
-          onUseAsReference={(versionId) => useVersionAsReference(roundsNode.id, versionId)}
-          onToVideo={(versionId) => void versionToVideo(roundsNode.id, versionId)}
-          onLocate={locateFromRound}
-          onPreview={onPreview}
-          onClose={() => setRounds(null)}
-        />
-      )}
-      {showScreenplay && <ScreenplayWorkspace projectId={project.id} onClose={() => setShowScreenplay(false)}/>}
+      {view === "script" && <ScreenplayWorkspace projectId={project.id} page onClose={onCloseView}/>}
       {showShare && <SharePanel project={project} onFlush={flushCanvas} getViewport={()=>flow.getViewport()} onClose={()=>setShowShare(false)} onNotice={setNotice}/>}
       {showProduction && <ProductionPanel projectId={project.id} onClose={()=>setShowProduction(false)} onChanged={()=>{void loadCanvas(false);void reloadAssets();onAssetsChange();}} onLocate={(id:string)=>{setShowProduction(false);locateNode(id);}}/>}
       {showCanvasRun && <CanvasRunPanel projectId={project.id} selectedNodeIds={selected.map(node=>node.id)} onClose={()=>setShowCanvasRun(false)} onChanged={()=>{void loadCanvas(false);void reloadAssets();onAssetsChange();}} onLocate={(id:string)=>{setShowCanvasRun(false);locateNode(id);}}/>}
-      {showTimeline && <TimelineEditor projectId={project.id} onClose={()=>setShowTimeline(false)} onChanged={()=>{void loadCanvas(false);void reloadAssets();onAssetsChange();}}/>}
+      {view === "timeline" && <TimelineEditor projectId={project.id} page onClose={onCloseView} onChanged={()=>{void loadCanvas(false);void reloadAssets();onAssetsChange();}}/>}
       {showLipSync && <LipSyncPanel projectId={project.id} initialVideoNodeId={lipSyncNodeId} onClose={()=>setShowLipSync(false)} onChanged={()=>{void loadCanvas(false);void reloadAssets();onAssetsChange();}}/>}
       {subjectDraft && (
         <SaveSubjectDialog

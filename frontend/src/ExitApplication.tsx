@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { LoaderCircle, Power } from "lucide-react";
 import { api, ApiError } from "./api";
 import { Modal } from "./ui";
-import "./exit-application.css";
 
 type ShutdownStatus = {
   supported: boolean;

@@ -1,6 +1,5 @@
 import {useEffect,useState} from "react";
 import {createPortal} from "react-dom";
-import "./workflows.css";
 import {AlertCircle,ArrowDownToLine,CheckCircle2,Film,LoaderCircle,RefreshCw,Save,Settings2} from "lucide-react";
 import {api} from "./api";
 import {Modal} from "./ui";

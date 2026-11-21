@@ -14,8 +14,6 @@ import PromptEditor from "./PromptEditor";
 import type { PromptEditorHandle } from "./PromptEditor";
 import { normalizeVideoReferences, promptParts, referenceId, referencesAfterPromptEdit } from "./referenceModel";
 import VideoParameterPopover, { VideoDuration } from "./VideoParameterPopover";
-import "./video.css";
-import "./creation-composer.css";
 import {GenerationProgress, useGenerationJob} from "./GenerationProgress";
 
 export const defaultVideoDraft=(defaults?:VideoDefaults):GenerationDraft=>({kind:"video",mode:"text_to_image",video_mode:"text",workflow_id:"builtin-h3-local",video_options:{engine:"native",sampler:"res_multistep",scheduler:"simple",ref_image_size:"1024"},prompt:"",references:[],parameters:{width:defaults?.width??864,height:defaults?.height??480,steps:defaults?.steps??20,cfg:defaults?.cfg??1,seed:defaults?.seed??-1},duration:defaults?.duration??4,audio:defaults?.audio??true});

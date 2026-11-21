@@ -1,0 +1,97 @@
+/* View layer · system pages: trash, settings, appearance, about, exit, workflows, ComfyUI engine. */
+@layer view {
+  /* trash */
+  .trash-list { display: grid; gap: 8px; }
+  .trash-row {
+    display: flex; align-items: center; gap: 14px; padding: 10px 14px; border-radius: var(--radius-md);
+    background: var(--surface-raised); border: 1px solid var(--line-soft); animation: rise var(--dur) var(--ease-out) both;
+  }
+  .trash-icon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 6px; overflow: hidden; background: var(--surface-sunk); color: var(--text-muted); flex-shrink: 0; }
+  .trash-icon img { width: 100%; height: 100%; object-fit: cover; }
+  .trash-name { flex: 1; min-width: 0; display: grid; gap: 2px; }
+  .trash-name strong { color: var(--text-strong); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .trash-name small { color: var(--text-faint); }
+
+  /* settings / management two-column layout (also used by the ComfyUI dialog) */
+  .management-layout { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 22px; min-height: 0; }
+  .management-nav { display: grid; gap: 2px; align-content: start; }
+  .management-nav-label { padding: 0 12px 8px; font: 600 11.5px var(--font-mono); letter-spacing: 0.16em; color: var(--text-faint); text-transform: uppercase; }
+  .management-nav button {
+    display: flex; align-items: center; gap: 9px; min-height: 38px; padding: 0 12px; border-radius: 6px; color: var(--text-muted); text-align: left;
+    transition: background var(--dur), color var(--dur);
+  }
+  .management-nav button:hover { background: var(--surface-tint); color: var(--text-strong); }
+  .management-nav button.active { background: var(--accent-soft); color: var(--accent-deep); font-weight: 600; }
+  .settings-stack { display: grid; gap: 16px; align-content: start; }
+  .settings-card {
+    display: grid; grid-template-columns: auto 1fr; gap: 16px; padding: 20px 22px; border-radius: var(--radius-lg);
+    background: var(--surface-raised); border: 1px solid var(--line-soft); box-shadow: var(--shadow-2); animation: rise var(--dur-slow) var(--ease-out) both;
+  }
+  .setting-icon { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 8px; background: var(--accent-soft); color: var(--accent-deep); }
+  .setting-body { display: grid; gap: 12px; min-width: 0; align-content: start; }
+  .setting-body h2 { font-size: 17px; }
+  .path-box { padding: 10px 12px; border-radius: var(--radius-sm); background: var(--surface-sunk); font: 12px var(--font-mono); color: var(--text-strong); word-break: break-all; }
+  .storage-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+  .storage-stats > * { display: grid; gap: 2px; padding: 12px 14px; border-radius: var(--radius-md); background: var(--surface-soft); border: 1px solid var(--line-soft); }
+  .storage-stats strong, .storage-stats b { font: 600 18px var(--font-mono); color: var(--text-strong); }
+  .storage-stats span, .storage-stats small { color: var(--text-faint); font-size: var(--text-sm); }
+  .inline-form { display: flex; gap: 8px; align-items: center; }
+  .migration-status { display: grid; gap: 8px; padding: 12px 14px; border-radius: var(--radius-md); background: var(--surface-soft); }
+  .runtime-details { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; font-size: var(--text-sm); }
+  .runtime-details dt { color: var(--text-faint); }
+  .runtime-details dd { font-family: var(--font-mono); font-size: 12px; word-break: break-all; color: var(--text-strong); }
+
+  .appearance-choices { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+  .appearance-choices legend { grid-column: 1 / -1; margin-bottom: 4px; font-weight: 600; color: var(--text-strong); }
+  .appearance-choice {
+    display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: var(--radius-md); border: 1px solid var(--line);
+    background: var(--surface-raised); cursor: pointer; transition: border-color var(--dur), background var(--dur);
+  }
+  .appearance-choice[data-checked="true"] { border-color: var(--accent-ring); background: var(--surface-tint); }
+  .appearance-choice strong { display: block; color: var(--text-strong); font-size: var(--text-md); }
+  .appearance-choice small { color: var(--text-muted); }
+  .appearance-swatch { display: flex; flex-shrink: 0; }
+  .appearance-swatch i { width: 16px; height: 28px; }
+  .appearance-swatch i:first-child { border-radius: 8px 0 0 8px; }
+  .appearance-swatch i:last-child { border-radius: 0 8px 8px 0; }
+  .palette-pearl .appearance-swatch i:nth-child(1) { background: #f5f1fa; border: 1px solid #dcd1ec; }
+  .palette-pearl .appearance-swatch i:nth-child(2) { background: linear-gradient(135deg, #e2559c, #6a5cff); }
+  .palette-pearl .appearance-swatch i:nth-child(3) { background: #1c1230; }
+  .palette-nocturne .appearance-swatch i:nth-child(1) { background: #07060c; border: 1px solid #2e2844; }
+  .palette-nocturne .appearance-swatch i:nth-child(2) { background: linear-gradient(135deg, var(--accent), var(--accent), var(--accent-deep)); }
+  .palette-nocturne .appearance-swatch i:nth-child(3) { background: #f7f4ff; }
+
+  /* about */
+  .about-page { max-width: 1080px; }
+  .about-overview { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(280px, 1fr); gap: 18px; }
+  .about-identity, .about-update, .about-section, .about-runtime, .about-release, .about-document {
+    display: grid; gap: 12px; align-content: start; padding: 22px; border-radius: var(--radius-lg);
+    background: var(--surface-raised); border: 1px solid var(--line-soft); box-shadow: var(--shadow-2);
+  }
+  .about-wordmark { font: italic 400 46px/1 var(--font-display); color: var(--accent-strong); }
+  .about-version { font: 600 12px var(--font-mono); color: var(--text-muted); }
+  .about-motto { font: 700 18px/1.5 var(--font-serif); color: var(--text-strong); }
+  .about-description { color: var(--text-muted); line-height: 1.75; }
+  .about-principles { display: grid; gap: 6px; }
+  .about-principles li { padding-left: 14px; position: relative; color: var(--text); }
+  .about-principles li::before { content: ""; position: absolute; left: 0; top: 0.65em; width: 6px; height: 6px; border-radius: 50%; background: var(--accent-ring); }
+  .about-section-label, .about-runtime-heading, .about-release-heading { font: 600 11.5px var(--font-mono); letter-spacing: 0.16em; color: var(--accent-strong); text-transform: uppercase; display: flex; align-items: center; gap: 8px; }
+  .about-update-result { display: grid; gap: 4px; padding: 12px 14px; border-radius: var(--radius-md); background: var(--surface-soft); }
+  .about-update-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .about-check-time, .about-small { color: var(--text-faint); font-size: var(--text-sm); }
+  .about-text-link { color: var(--accent-strong); font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
+  .about-release-notes { white-space: pre-wrap; max-height: 260px; overflow: auto; padding: 12px; border-radius: var(--radius-sm); background: var(--surface-sunk); font-size: var(--text-sm); line-height: 1.7; }
+  .about-upgrade-tip { padding: 10px 12px; border-radius: var(--radius-sm); background: var(--state-info-soft); color: var(--state-info); font-size: var(--text-sm); }
+  .about-details-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+  .about-resource { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line-soft); }
+  .about-resource:last-child { border-bottom: 0; }
+  .about-license-text { white-space: pre-wrap; max-height: 320px; overflow: auto; font: 11.5px/1.6 var(--font-mono); color: var(--text-muted); }
+  .about-footer { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; color: var(--text-faint); font-size: var(--text-sm); padding-top: 8px; }
+
+  /* exit dialog */
+  .exit-application-result { display: grid; justify-items: center; gap: 12px; text-align: center; padding: 36px 24px; color: var(--accent-strong); }
+  .exit-application-option { display: flex; align-items: center; gap: 8px; margin-top: 12px; color: var(--text); }
+  .exit-application-warning { margin-top: 12px; padding: 10px 12px; border-radius: var(--radius-sm); background: var(--state-warn-soft); color: var(--state-warn); }
+  .exit-application-error { margin-top: 10px; color: var(--state-bad); }
+  .exit-application-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+}

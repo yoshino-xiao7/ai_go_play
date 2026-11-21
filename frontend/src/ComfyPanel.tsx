@@ -21,7 +21,6 @@ import {
 } from "lucide-react";
 import { api, ApiError } from "./api";
 import { Modal } from "./ui";
-import "./comfy.css";
 
 type ComfyInstallation = {
   path: string;

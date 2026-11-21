@@ -5,7 +5,6 @@ import {
 } from "lucide-react";
 import { api, ApiError } from "./api";
 import { Loading, Modal } from "./ui";
-import "./about.css";
 
 type Update = {
   status: "available" | "up_to_date" | "ahead" | "unavailable";

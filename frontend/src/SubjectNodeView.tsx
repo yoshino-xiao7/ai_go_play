@@ -6,7 +6,6 @@ import type { CanvasMenuItem } from "./CanvasContextMenu";
 import { SubjectEditorDialog } from "./Subjects";
 import SubjectMediaPicker, { useSubjectMediaUrl } from "./SubjectMediaPicker";
 import type { SubjectMediaCandidate, SubjectSnapshot } from "./subjectTypes";
-import "./subject-node.css";
 import SubjectInlineText from "./SubjectInlineText";
 import VoiceDesignDialog from "./VoiceDesignDialog";
 

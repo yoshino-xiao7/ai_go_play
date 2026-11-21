@@ -1,7 +1,6 @@
 import StudioSelect from "./StudioSelect";
 import { AlertCircle, Cloud, ExternalLink, LoaderCircle, RefreshCw } from "lucide-react";
 import type { ImageEstimate, ImageOptions, OpenAIImageCatalog } from "./openaiImages";
-import "./openai-images.css";
 
 type Props = {
   options: ImageOptions;

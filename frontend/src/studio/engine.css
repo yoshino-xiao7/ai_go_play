@@ -1,0 +1,155 @@
+/* View layer · engine: workflow library, workflow editor, capability dialogs, the ComfyUI manager. */
+@layer view {
+  /* workflow library page */
+  .workflows-page .page-heading { align-items: center; }
+  .workflow-heading-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .workflow-intro {
+    display: flex; align-items: center; gap: 14px; padding: 16px 18px; border-radius: var(--radius-lg);
+    background: linear-gradient(120deg, var(--surface-tint), var(--surface-raised)); border: 1px solid var(--line-soft);
+  }
+  .workflow-intro-icon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 8px; background: var(--accent-soft); color: var(--accent-deep); flex-shrink: 0; }
+  .workflow-intro-link { margin-left: auto; color: var(--accent-strong); font-weight: 600; white-space: nowrap; }
+  .workflow-filterbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .workflow-mode-tabs { display: inline-flex; gap: 2px; padding: 3px; border-radius: var(--radius-pill); background: var(--surface-sunk); }
+  .workflow-mode-tabs button { height: 30px; padding: 0 12px; border-radius: var(--radius-pill); font-size: 12.5px; color: var(--text-muted); }
+  .workflow-mode-tabs button.active, .workflow-mode-tabs button[aria-pressed="true"], .workflow-mode-tabs button[aria-selected="true"] { background: var(--surface-raised); color: var(--accent-deep); font-weight: 600; box-shadow: var(--shadow-1); }
+  .workflow-search { margin-left: auto; min-width: 240px; }
+  .workflow-alert { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: var(--radius-md); background: var(--state-warn-soft); color: var(--state-warn); font-size: 12.5px; }
+  .workflow-alert.error { background: var(--state-bad-soft); color: var(--state-bad); }
+  .workflow-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 14px; }
+  .workflow-card {
+    display: grid; gap: 12px; padding: 16px; border-radius: var(--radius-lg); background: var(--surface-raised); border: 1px solid var(--line-soft);
+    box-shadow: var(--shadow-2); animation: rise var(--dur-slow) var(--ease-out) both; transition: transform var(--dur) var(--ease-out), border-color var(--dur);
+  }
+  .workflow-card:hover { transform: translateY(-2px); border-color: var(--line-strong); }
+  .workflow-card-main { display: flex; gap: 12px; align-items: flex-start; }
+  .workflow-card-main > div { flex: 1; min-width: 0; display: grid; gap: 4px; }
+  .workflow-card-main h3 { font: 700 15px var(--font-serif); }
+  .workflow-card-main p { font-size: 12px; color: var(--text-muted); line-height: 1.6; }
+  .workflow-card-icon { display: grid; place-items: center; width: 40px; height: 40px; flex-shrink: 0; border-radius: 6px; background: var(--accent-soft); color: var(--accent-deep); }
+  .workflow-card-icon.edit, .workflow-card-icon.reference { background: var(--state-info-soft); color: var(--state-info); }
+  .workflow-card-tags, .workflow-card-capabilities { display: flex; gap: 5px; flex-wrap: wrap; }
+  .workflow-card-tags span, .workflow-card-capabilities span { font-size: 12px; padding: 1px 8px; border-radius: var(--radius-pill); background: var(--surface-sunk); color: var(--text-muted); }
+  .workflow-card-tags .builtin { background: var(--accent-soft); color: var(--accent-deep); }
+  .workflow-card-tags .cloud { background: var(--state-info-soft); color: var(--state-info); }
+  .workflow-card-tags .ready { background: var(--state-ok-soft); color: var(--state-ok); }
+  .workflow-card-validation { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); }
+  .workflow-status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--state-ok); }
+  .workflow-open { display: inline-flex; align-items: center; gap: 5px; justify-self: start; height: 30px; padding: 0 14px; border-radius: var(--radius-pill); border: 1px solid var(--line-strong); font-size: 12.5px; font-weight: 500; }
+  .workflow-open:hover { border-color: var(--accent-ring); color: var(--accent-deep); }
+  .workflow-library-note { font-size: 12px; color: var(--text-faint); }
+  .workflow-muted { color: var(--text-faint); font-size: 12px; }
+  .workflow-text-button { color: var(--accent-strong); font-weight: 600; font-size: 12px; }
+
+  /* capability dialogs */
+  .capability-modal-body { display: grid; gap: 16px; padding: 20px 24px; overflow: auto; }
+  .capability-modal-hero { display: flex; gap: 16px; align-items: center; }
+  .capability-hero-icon { display: grid; place-items: center; width: 56px; height: 56px; flex-shrink: 0; border-radius: 8px; background: var(--accent-soft); color: var(--accent-deep); }
+  .capability-hero-icon.voice { background: var(--state-ok-soft); color: var(--state-ok); }
+  .capability-hero-icon.lipsync, .capability-hero-icon.screenplay { background: var(--state-info-soft); color: var(--state-info); }
+  .capability-feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+  .feature-item { display: grid; gap: 4px; padding: 12px; border-radius: var(--radius-md); background: var(--surface-soft); border: 1px solid var(--line-soft); font-size: 12.5px; }
+  .feature-item strong { color: var(--text-strong); }
+  .capability-status-bar { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: var(--radius-md); background: var(--surface-sunk); font-size: 12.5px; }
+  .capability-guide-box { padding: 12px 14px; border-radius: var(--radius-md); background: var(--state-info-soft); color: var(--state-info); font-size: 12.5px; line-height: 1.7; }
+  .capability-modal-footer { display: flex; justify-content: flex-end; gap: 8px; padding: 14px 20px; border-top: 1px solid var(--line-soft); }
+
+  /* workflow editor */
+  .workflow-modal { width: min(1100px, calc(100vw - 32px)); height: min(90vh, 900px); max-height: none; }
+  .workflow-editor { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  .workflow-editor-heading { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 12px 24px; border-bottom: 1px solid var(--line-soft); }
+  .workflow-mode-label { padding: 2px 10px; border-radius: var(--radius-pill); background: var(--accent-soft); color: var(--accent-deep); font-size: 12px; font-weight: 600; }
+  .workflow-readonly, .workflow-readonly-note { font-size: 12px; color: var(--text-faint); }
+  .workflow-editor-tabs { display: flex; gap: 18px; padding: 0 24px; border-bottom: 1px solid var(--line-soft); }
+  .workflow-editor-tabs button { position: relative; padding: 10px 0 12px; color: var(--text-muted); }
+  .workflow-editor-tabs button.active, .workflow-editor-tabs button[aria-selected="true"] { color: var(--text-strong); font-weight: 600; }
+  .workflow-editor-tabs button.active::after, .workflow-editor-tabs button[aria-selected="true"]::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; border-radius: 2px; background: var(--accent-ring); }
+  .workflow-editor-body { flex: 1; min-height: 0; overflow: auto; padding: 18px 24px; display: grid; gap: 16px; align-content: start; }
+  .workflow-editor .workflow-editor-footer { position: static; padding: 12px 20px; border-top: 1px solid var(--line-soft); background: var(--surface-soft); }
+  .workflow-settings-grid, .workflow-defaults-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+  .workflow-settings-grid > label, .workflow-defaults-grid > label { display: grid; gap: 5px; }
+  .workflow-checkboxes { display: flex; gap: 14px; flex-wrap: wrap; }
+  .workflow-checkboxes label { display: inline-flex; align-items: center; gap: 6px; color: var(--text); }
+  .workflow-bindings { display: grid; gap: 12px; }
+  .workflow-binding-guide { padding: 10px 12px; border-radius: var(--radius-md); background: var(--state-info-soft); color: var(--state-info); font-size: 12.5px; }
+  .workflow-binding-group { display: grid; gap: 8px; padding: 12px; border-radius: var(--radius-md); background: var(--surface-soft); border: 1px solid var(--line-soft); }
+  .workflow-binding-rows { display: grid; gap: 6px; }
+  .workflow-binding-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 6px; align-items: center; }
+  .workflow-add-binding { justify-self: start; color: var(--accent-strong); font-weight: 600; font-size: 12px; }
+  .workflow-output-options { display: flex; gap: 10px; flex-wrap: wrap; }
+  .workflow-json-panel textarea { min-height: 360px; font: 11.5px/1.5 var(--font-mono); }
+  .workflow-json-pending { font-size: 12px; color: var(--state-warn); }
+  .workflow-validation { display: grid; gap: 8px; }
+  .workflow-validation-hero { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: var(--radius-md); background: var(--state-warn-soft); color: var(--state-warn); }
+  .workflow-validation-hero.valid, .workflow-validation-hero.is-valid { background: var(--state-ok-soft); color: var(--state-ok); }
+  .workflow-validation-issue { padding: 8px 12px; border-radius: var(--radius-sm); background: var(--surface-soft); font-size: 12px; }
+  .workflow-validation-issue.error { background: var(--state-bad-soft); color: var(--state-bad); }
+  .workflow-validation-issue.warning { background: var(--state-warn-soft); color: var(--state-warn); }
+  .workflow-import { display: grid; gap: 14px; padding: 20px 24px; }
+  .workflow-file-drop { display: grid; place-items: center; gap: 8px; padding: 36px; border-radius: var(--radius-lg); border: 2px dashed var(--line-strong); color: var(--text-muted); text-align: center; }
+  .workflow-file-drop:hover { border-color: var(--accent-ring); background: var(--surface-tint); }
+
+  /* H3 video workflow + OpenAI workflow dialogs */
+  .h3-workflow-modal .workflow-editor-body { gap: 14px; }
+  .h3-flow-toolbar, .h3-flow-steps { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .h3-flow-steps > * { padding: 4px 10px; border-radius: var(--radius-pill); background: var(--surface-sunk); font-size: 12px; }
+  .h3-graph { min-height: 200px; border-radius: var(--radius-md); background: var(--canvas-bg); border: 1px solid var(--line-soft); overflow: auto; }
+  .h3-environment, .h3-workflow-note, .h3-feedback { padding: 10px 12px; border-radius: var(--radius-md); background: var(--surface-soft); font-size: 12.5px; }
+  .h3-ready { color: var(--state-ok); font-weight: 600; }
+  .h3-audio-option { display: inline-flex; align-items: center; gap: 6px; }
+  .openai-workflow-modal { width: min(680px, calc(100vw - 32px)); }
+  .openai-workflow-body { display: grid; gap: 14px; padding: 20px 24px; overflow: auto; }
+  .openai-workflow-intro { color: var(--text-muted); line-height: 1.7; }
+  .openai-connection-state, .openai-model-availability { padding: 10px 12px; border-radius: var(--radius-md); background: var(--surface-soft); font-size: 12.5px; }
+
+  /* ComfyUI manager */
+  .comfy-modal { width: min(1040px, calc(100vw - 32px)); height: min(88vh, 860px); max-height: none; }
+  .comfy-modal .management-layout { flex: 1; min-height: 0; padding: 18px 24px 0; }
+  .comfy-panel, .comfy-setup, .comfy-logs { display: grid; gap: 14px; align-content: start; min-height: 0; overflow: auto; padding-bottom: 18px; }
+  .comfy-service-card {
+    display: grid; gap: 12px; padding: 18px; border-radius: var(--radius-lg);
+    background: linear-gradient(135deg, var(--surface-tint), var(--surface-raised)); border: 1px solid var(--line-soft); box-shadow: var(--shadow-2);
+  }
+  .comfy-service-heading { display: flex; align-items: center; gap: 12px; }
+  .comfy-service-icon { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 50%; background: radial-gradient(circle at 38% 34%, #fff, var(--pink-3) 45%, var(--pink-4)); color: var(--text-on-accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+  .comfy-service-name { flex: 1; display: grid; gap: 2px; }
+  .comfy-service-name strong { font: 700 17px var(--font-serif); color: var(--text-strong); }
+  .comfy-state { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: var(--radius-pill); font-size: 12px; font-weight: 600; background: var(--surface-sunk); color: var(--text-muted); }
+  .comfy-state.running, .comfy-state.external { background: var(--state-ok-soft); color: var(--state-ok); }
+  .comfy-state.starting, .comfy-state.stopping { background: var(--state-run-soft); color: var(--state-run); }
+  .comfy-state.error, .comfy-state.port_conflict { background: var(--state-bad-soft); color: var(--state-bad); }
+  .comfy-service-meta { display: flex; gap: 14px; flex-wrap: wrap; font: 11.5px var(--font-mono); color: var(--text-muted); }
+  .comfy-service-controls { display: flex; gap: 8px; flex-wrap: wrap; }
+  .comfy-button { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 14px; border-radius: var(--radius-pill); font-weight: 600; font-size: 12.5px; border: 1px solid var(--line-strong); background: var(--surface-raised); }
+  .comfy-button.primary { background: var(--accent); border-color: transparent; color: var(--text-on-accent); box-shadow: var(--shadow-accent); }
+  .comfy-button.stop { background: var(--state-bad-soft); border-color: transparent; color: var(--state-bad); }
+  .comfy-button.compact { height: 28px; padding: 0 10px; font-size: 12px; }
+  .comfy-button:disabled { opacity: 0.45; }
+  .comfy-stop-confirm { display: grid; gap: 8px; padding: 12px; border-radius: var(--radius-md); background: var(--state-warn-soft); color: var(--state-warn); }
+  .comfy-message { padding: 10px 12px; border-radius: var(--radius-md); background: var(--state-info-soft); color: var(--state-info); font-size: 12.5px; }
+  .comfy-message.error { background: var(--state-bad-soft); color: var(--state-bad); }
+  .comfy-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .comfy-section-heading h3 { font: 700 15px var(--font-serif); }
+  .comfy-refresh { display: inline-flex; align-items: center; gap: 5px; color: var(--accent-strong); font-weight: 600; font-size: 12px; }
+  .comfy-installations { display: grid; gap: 8px; }
+  .comfy-installation { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: var(--radius-md); background: var(--surface-soft); border: 1px solid var(--line-soft); }
+  .comfy-installation.selected, .comfy-installation.is-current { border-color: var(--accent-ring); background: var(--surface-tint); }
+  .comfy-installation-icon { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 6px; background: var(--surface-raised); color: var(--accent-deep); flex-shrink: 0; }
+  .comfy-installation-info { flex: 1; min-width: 0; display: grid; gap: 2px; }
+  .comfy-installation-info strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-strong); }
+  .comfy-python-path, .comfy-scan-path, .comfy-process-id { font: 12px var(--font-mono); color: var(--text-faint); word-break: break-all; }
+  .comfy-installation-check { color: var(--state-ok); }
+  .comfy-scan-empty, .comfy-scanned-roots { font-size: 12px; color: var(--text-muted); }
+  .comfy-scan-path-toggle { color: var(--accent-strong); font-size: 12px; font-weight: 600; }
+  .comfy-settings-form { display: grid; gap: 12px; }
+  .comfy-port-row { display: flex; gap: 8px; align-items: end; }
+  .comfy-port-row input { width: 140px; }
+  .comfy-form-note, .comfy-form-feedback { font-size: 12px; color: var(--text-muted); }
+  .comfy-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .comfy-log-output { min-height: 320px; max-height: 52vh; padding: 12px; border-radius: var(--radius-md); background: var(--plum-9); color: #f4dbe5; font: 11.5px/1.6 var(--font-mono); overflow: auto; white-space: pre-wrap; }
+  .comfy-log-error { color: #ff9fb3; }
+  .comfy-log-empty { padding: 30px; text-align: center; color: var(--text-muted); }
+  .comfy-log-footer, .comfy-panel-footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 12px; color: var(--text-faint); }
+  .comfy-log-copy { color: var(--accent-strong); font-weight: 600; }
+  @media (max-width: 860px) { .management-layout { grid-template-columns: 1fr; } .comfy-columns { grid-template-columns: 1fr; } }
+}

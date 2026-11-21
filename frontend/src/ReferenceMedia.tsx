@@ -5,7 +5,6 @@ import {ArrowLeft,ArrowRight,Film,Music2,X} from "lucide-react";
 import type {ImageReference} from "./generationTypes";
 import {mediaUrl} from "./api";
 import {Modal} from "./ui";
-import "./reference-media.css";
 import ImageViewer from "./ImageViewer";
 
 const VideoViewer=lazy(()=>import("./VideoViewer"));

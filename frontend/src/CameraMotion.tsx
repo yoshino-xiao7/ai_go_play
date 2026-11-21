@@ -1,7 +1,6 @@
 import { useEffect, useRef } from "react";
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ArrowUpRight, Crosshair, Focus, MoveDiagonal, RotateCw, Scan, Video, Waves, X } from "lucide-react";
 import StudioSelect from "./StudioSelect";
-import "./camera-motion.css";
 
 export const cameraPresets = {
   static: { label: "固定机位", Icon: Scan },

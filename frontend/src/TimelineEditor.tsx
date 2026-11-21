@@ -8,7 +8,6 @@ import type { Asset, AssetPage, AssetVersion } from "./types";
 import type { ProductionRender } from "./productionTypes";
 import TimelinePreview from "./TimelinePreview";
 import { defaultTimelineSettings, timelineDuration, timelineTime, type TimelineClip, type TimelineDocument, type TimelineDraft, type TimelineEdit, type TimelineTrack, type TimelineTrackKind } from "./timelineTypes";
-import "./timeline.css";
 
 type Props = { projectId: string; onClose: () => void; onChanged: () => void };
 type Drag = { id: string; mode: "move" | "left" | "right"; x: number; clip: TimelineClip; trackType: TimelineTrackKind; snapshot: TimelineEdit };
@@ -26,7 +25,7 @@ function downloadDraft(value: unknown) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-export default function TimelineEditor({ projectId, onClose, onChanged }: Props) {
+export default function TimelineEditor({ projectId, onClose, onChanged, page = false }: Props & { page?: boolean }) {
   const [server, setServer] = useState<TimelineDocument>(), [edit, setEdit] = useState<TimelineEdit>(empty);
   const [assets, setAssets] = useState<Asset[]>([]), [versions, setVersions] = useState<Record<string, AssetVersion>>({});
   const [loading, setLoading] = useState(true), [dirty, setDirty] = useState(false), [busy, setBusy] = useState("");
@@ -248,7 +247,7 @@ export default function TimelineEditor({ projectId, onClose, onChanged }: Props)
   const clipLabel = (clip: TimelineClip) => clip.name || (edit.tracks.find(track => track.id === clip.track_id)?.type === "text" ? clip.text || "文字" : assets.find(asset => asset.current_version_id === clip.asset_version_id)?.name || (clip.asset_version_id ? versions[clip.asset_version_id]?.filename : "未选择素材") || "素材");
   const numeric = (label: string, value: number, update: (value: number) => void, min = 0, max?: number, step = .1) => <label><span>{label}</span><input aria-label={label} type="number" min={min} max={max} step={step} value={Number(value.toFixed(5))} onChange={event => { const n = Number(event.target.value); if (Number.isFinite(n)) update(Math.max(min, max === undefined ? n : Math.min(max, n))); }}/></label>;
 
-  return <Modal title="多轨剪辑" className="timeline-modal" onClose={onClose} wide>
+  return <Modal title="多轨剪辑" className="timeline-modal" onClose={onClose} wide page={page} backLabel="返回画布">
     <div className="timeline-toolbar"><div><span className="timeline-document-state">{dirty ? "草稿已保留在本机" : "已保存"}</span><button disabled={loading || !!busy} onClick={() => void action("save", async () => { await save(); setNotice("多轨剪辑已保存。"); })}><Save size={15}/>保存</button><button disabled={!!busy || !undo.current.length} title="撤销" aria-label="撤销剪辑" onClick={() => travel(true)}><Undo2 size={15}/></button><button disabled={!!busy || !redo.current.length} title="重做" aria-label="重做剪辑" onClick={() => travel(false)}><Redo2 size={15}/></button><button disabled={loading || !!busy} onClick={() => void importProduction()}><Layers3 size={15}/>从分镜导入</button></div><div><button disabled={loading || !!busy} onClick={() => void action("refresh", async () => { await loadMedia(); if (!current.current.dirty) await load(); setNotice("素材已刷新，未保存剪辑已保留。"); })} aria-label="刷新剪辑素材"><RefreshCw size={15}/></button><button className={settingsOpen ? "active" : ""} onClick={() => setSettingsOpen(!settingsOpen)}>{edit.settings.width} × {edit.settings.height} · {edit.settings.fps} fps</button><button className="timeline-export" disabled={loading || !!busy || running(render) || !edit.clips.length} onClick={() => void startRender()}>{busy === "render" || running(render) ? <LoaderCircle size={15} className="spin"/> : <Film size={15}/>}导出成片</button></div></div>
     {error && <div className="timeline-banner error" role="alert"><span>{error}</span>{dirty && <><button onClick={() => downloadDraft({ ...edit, revision: server?.revision, saved_at: Date.now() })}>下载草稿</button><button disabled={!!busy} onClick={() => void action("reload", async () => { const backup = { ...current.current.edit, revision: current.current.server?.revision || 0, saved_at: Date.now() }; localStorage.setItem(draftKey(projectId), JSON.stringify(backup)); setDraft(backup); await load(); undo.current = []; redo.current = []; setHistoryTick(value => value + 1); setNotice("已读取最新剪辑；本机草稿可恢复为独立轨道副本。"); })}>保留草稿并加载最新</button></>}</div>}
     {notice && <div className="timeline-banner" role="status">{notice}</div>}

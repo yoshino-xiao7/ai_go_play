@@ -1,0 +1,198 @@
+/*
+  Safelight · the final, unlayered word on decoration (imported last in main.tsx).
+  Unlayered rules beat every @layer, so this file is where the calm version is decided:
+    · flat fills: no aurora, no spotlights, no conic sweeps, no rainbow hairlines, no glow halos
+    · one muted accent marks the current object or action; everything else is graphite or paper
+    · compact corners: 4–10px for surfaces, true circles only for dots, avatars and round toggles
+    · motion is practical: things slide 8–16px from where they come from in 160–240ms, nothing
+      bounces, spins or blurs in. Reduced motion turns all of it off (see prism.css).
+  Disabled and pressed states are restated here because an unlayered rule would otherwise win
+  over the layered :disabled rules.
+*/
+
+/* ---------------------------------------------------------------- shell */
+.ambience, .ambience canvas, .ambience-grain { display: none; }
+body { background: var(--surface-app); }
+.boot-iris { display: none !important; }
+.dock { border-radius: 12px; background: var(--surface-raised); backdrop-filter: none; animation-duration: 240ms; }
+.dock::before { display: none; }
+.dock-logo svg { filter: none; }
+.dock-logo-holes { animation: none; }
+.dock-glider { border-radius: 8px; background: var(--accent-soft); box-shadow: inset 2px 0 0 var(--accent); transition: transform 220ms var(--ease-out), height 180ms var(--ease-out), opacity var(--dur); }
+.dock-btn.is-on svg { filter: none; }
+.topbar, .tray-bar { background: var(--surface-raised); backdrop-filter: none; }
+.engine-pill .orb { background: var(--state-ok); box-shadow: none; animation: none; width: 10px; height: 10px; }
+.engine-pill .orb::after { display: none; }
+.tray.is-live .tray-bar::before { background: var(--accent); background-size: 30% 100%; background-repeat: no-repeat; }
+.tray-thumb-kind, .tray-thumb-kind.k-video, .tray-thumb-kind.k-audio { background: var(--surface-tint); }
+.top-tray.is-live .count { animation: none; }
+
+/* ---------------------------------------------------------------- kit */
+.ui-button::before, .button::before, .btn.primary::before, .btn.secondary::before { display: none; }
+.hero-cta::after { display: none; }
+.fx-ripple { background: rgb(var(--accent-rgb) / 0.18); }
+.ui-button--primary, .button.primary, .btn.primary {
+  background: var(--accent); background-size: auto; color: var(--text-on-accent); box-shadow: none; text-shadow: none;
+}
+.ui-button--primary:hover:not(:disabled), .button.primary:hover:not(:disabled), .btn.primary:hover:not(:disabled) { background: var(--accent-hover); box-shadow: none; }
+.ui-button--secondary, .button.secondary, .btn.secondary, .button:not(.primary):not(.danger):not(.ghost) { background: var(--surface-raised); backdrop-filter: none; }
+.ui-button--secondary:hover:not(:disabled), .button.secondary:hover:not(:disabled),
+.button:not(.primary):not(.danger):not(.ghost):hover:not(:disabled) { background: var(--surface-tint); border-color: var(--line-strong); box-shadow: none; }
+.ui-button--danger:hover:not(:disabled), .button.danger:hover:not(:disabled) { box-shadow: none; filter: brightness(1.06); }
+.ui-button:disabled, .button:disabled, .btn:disabled, .button.primary:disabled, .ui-button--primary:disabled, .btn.primary:disabled {
+  background: var(--surface-sunk); color: var(--text-faint); border-color: var(--line-soft); box-shadow: none;
+}
+.ui-button:active:not(:disabled), .button:active:not(:disabled) { transform: translateY(1px); }
+.chip { background: var(--surface-raised); }
+.chip:hover:not(:disabled) { box-shadow: none; background: var(--surface-tint); }
+.modal { background: var(--surface-raised); backdrop-filter: none; box-shadow: var(--shadow-3); animation: sl-rise 200ms var(--ease-out) backwards; }
+.modal::before { display: none; }
+.modal-shade { backdrop-filter: none; }
+.modal.is-page { animation: none; }
+.modal-shade.is-page { animation: sl-fade 180ms var(--ease-out) both; }
+/* page views say where "back" goes */
+.modal-back {
+  display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px 0 8px; margin-right: 4px; border-radius: var(--radius-md);
+  border: 1px solid var(--line); background: var(--surface-raised); color: var(--text-strong); font-weight: 600; font-size: var(--text-sm);
+}
+.modal-back:hover { background: var(--surface-tint); border-color: var(--line-strong); }
+.modal-back:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.modal-heading h2 { flex: 1; min-width: 0; }
+.dropdown, .menu-popover { background: var(--surface-raised); backdrop-filter: none; animation: sl-drop 140ms var(--ease-out) backwards; }
+.card::after, .settings-card::after, .workflow-card::after, .asset-card::after { display: none; }
+.card, .settings-card, .workflow-card { backdrop-filter: none; }
+
+/* ---------------------------------------------------------------- pages */
+.page-heading h1 { animation: none; }
+.reel { background: var(--surface-raised); backdrop-filter: none; transform: none; transform-style: flat; animation: sl-fade 200ms var(--ease-out) backwards; animation-delay: 0ms; }
+.reel:hover { transform: translateY(-2px); box-shadow: var(--shadow-3); border-color: var(--line-strong); }
+.reel-holo { display: none; }
+.reel-cover, .reel-caption { transform: none; }
+.reel:hover .reel-cover img { transform: none; }
+.reel-open { background: var(--accent); box-shadow: none; }
+.reel-blank, .orbit-blank { background: var(--surface-tint); }
+.orbit-halo, .orbit-floor { display: none; }
+.orbit-frame { -webkit-box-reflect: unset; border-radius: 6px; }
+.orbit-film { background:
+  radial-gradient(circle, rgba(0, 0, 0, 0.55) 2.2px, transparent 2.6px) 0 4px / 12px 100% repeat-y,
+  radial-gradient(circle, rgba(0, 0, 0, 0.55) 2.2px, transparent 2.6px) 100% 4px / 12px 100% repeat-y; }
+.kinetic-ch { animation-duration: 260ms !important; animation-delay: 0ms !important; }
+
+/* ---------------------------------------------------------------- canvas */
+.canvas-stage { background: var(--canvas-bg); }
+.canvas-stage::before, .canvas-stage .react-flow::after { display: none; }
+.canvas-stage.is-drag-over::after { background: none; border: 2px dashed var(--accent); padding: 0; border-radius: 8px; animation: none; -webkit-mask: none; mask: none; }
+.radial-shade { background: rgba(0, 0, 0, 0.18); }
+.radial::after { background: var(--line-strong); animation: sl-fade 160ms var(--ease-out) backwards; }
+.radial::before { background: var(--surface-raised); backdrop-filter: none; border: 1px solid var(--line); animation: sl-fade 160ms var(--ease-out) backwards; }
+.radial-core { background: var(--accent); box-shadow: none; animation: none; }
+.canvas-empty-art { background: var(--surface-tint); border-radius: 10px; }
+.canvas-panel::before { display: none; }
+.canvas-panel { background: var(--surface-raised); backdrop-filter: none; box-shadow: var(--shadow-3); animation: sl-from-right 200ms var(--ease-out) backwards; }
+.canvas-library { background: var(--surface-raised); backdrop-filter: none; animation: sl-from-left 200ms var(--ease-out) backwards; }
+.canvas-spine, .viewkit-bar, .canvas-viewkit .react-flow__minimap.canvas-minimap { background: var(--surface-raised); backdrop-filter: none; }
+.composer-dock { animation: sl-rise 220ms var(--ease-out) backwards; }
+.composer-dock::before { display: none; }
+.dock-head { animation: none; }
+.dock-kind { background: var(--surface-sunk); }
+.dock-kind button[aria-checked="true"], .dock-go { background: var(--accent); background-size: auto; box-shadow: none; }
+.dock-go:hover:not(:disabled) { background: var(--accent-hover); box-shadow: none; }
+.dock-go:disabled { background: var(--surface-sunk); color: var(--text-faint); }
+.spine-btn.is-make:hover:not(:disabled) { background: var(--accent); box-shadow: none; }
+/* nodes: flat cards; selection is a clear accent outline, not a rotating rainbow */
+.canvas-node { background: var(--surface-raised); animation: sl-fade 180ms var(--ease-out) backwards; }
+.canvas-node:hover { box-shadow: var(--shadow-3); }
+.canvas-node.is-selected { border-color: var(--accent); box-shadow: var(--shadow-3), 0 0 0 1px var(--accent); }
+.canvas-node.is-selected::before { display: none; }
+.canvas-node:has(.generation-live-overlay, .generation-live-inline) { box-shadow: var(--shadow-3), 0 0 0 1px rgb(var(--accent-rgb) / 0.6); }
+.media-node-poster, .media-node-poster.audio-poster { background: var(--surface-media-2); }
+/* an empty draft is not media: it keeps a light, palette-following plate so its hint stays legible */
+.media-node-poster.generation-draft-poster, .generation-draft-poster { background: var(--surface-tint); }
+.generation-draft-art { color: var(--accent-strong); }
+.generation-live-overlay { background: rgba(10, 10, 12, 0.82); }
+.generation-live-track i, progress::-webkit-progress-value, .setup-job-track > * { background: var(--accent); }
+progress::-moz-progress-bar { background: var(--accent); }
+.subject-image-board, .subject-library-thumb { background: var(--surface-tint); }
+.gr-round.is-active { background: var(--surface-tint); }
+.cmdk-bar { background: var(--accent-soft); box-shadow: inset 2px 0 0 var(--accent); border-radius: 6px; transition: transform 160ms var(--ease-out), height 120ms var(--ease-out), opacity 120ms; }
+.cmdk { backdrop-filter: none; background: var(--surface-raised); }
+
+/* ---------------------------------------------------------------- engine · assets · setup · timeline */
+.engine-hero, .comfy-service { background: var(--surface-raised); }
+.comfy-service-icon { background: var(--accent-soft); color: var(--accent-strong); box-shadow: none; }
+.asset-cover, .asset-cover.audio { background: var(--surface-media-2); }
+.setup-page { background: var(--surface-app); }
+.setup-check-hero, .setup-scene-grid { background: var(--surface-tint); }
+.setup-preview-output { background: var(--accent-soft); }
+/* no big dark brown / green slabs: clips are flat, separated by kind with a left marker */
+.timeline-monitor { background: var(--surface-media); }
+.timeline-clip { background: var(--surface-tint); color: var(--text-strong); border: 1px solid var(--line); box-shadow: inset 3px 0 0 var(--text-faint); border-radius: 4px; }
+.timeline-clip.video { box-shadow: inset 3px 0 0 var(--accent); }
+.timeline-clip.audio { background: var(--surface-tint); color: var(--text-strong); border-color: var(--line); box-shadow: inset 3px 0 0 var(--state-ok); }
+.timeline-clip.text { background: var(--surface-tint); color: var(--text-strong); border-color: var(--line); box-shadow: inset 3px 0 0 var(--state-warn); }
+
+/* appearance swatches show the real palettes */
+.palette-pearl .appearance-swatch i:nth-child(2) { background: #9c3d66; }
+.palette-nocturne .appearance-swatch i:nth-child(2) { background: #e58fae; }
+
+/* ---------------------------------------------------------------- top bar · canvas status
+   No scrolling, no fade: the status group sizes its contents to the room it has (container query).
+   The save state and 更多 never shrink away; the three canvas actions show inline only when they
+   fit whole, and 更多 always lists them, so every action is one ordinary click at any width. */
+.top-status { flex: 1 1 0; min-width: 76px; overflow: visible; mask-image: none; container: topstatus / inline-size; }
+.canvas-status { overflow: visible; min-width: 0; flex-wrap: nowrap; gap: 6px; }
+.canvas-status > * { flex: none; }
+.canvas-status .save-pill { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.canvas-status .canvas-action, .canvas-status .canvas-status-div { display: none; }
+@container topstatus (min-width: 450px) { .canvas-status .canvas-action { display: inline-flex; } .canvas-status .canvas-status-div { display: block; } }
+@container topstatus (max-width: 190px) { .canvas-status .save-pill { font-size: 0; gap: 0; } .canvas-status .save-pill.is-error, .canvas-status .save-pill.is-conflict { font-size: var(--text-sm); } }
+.canvas-more-label { display: block; padding: 8px 10px 4px; font-size: 12px; color: var(--text-faint); }
+.canvas-more-label:first-child { padding-top: 4px; }
+/* On the canvas the top bar is a working bar: the search button is an icon (Ctrl K still works),
+   the engine shows its state without the address (it is in its tooltip and dialog), and the crumb
+   never shrinks below its controls: the project name truncates by viewport width instead, so
+   nothing (the "/" separator included) can ever lie on top of the ID chip. */
+.studio[data-mode="canvas"] .cmdk-trigger { min-width: 0; width: 38px; padding: 0; justify-content: center; }
+.studio[data-mode="canvas"] .cmdk-trigger > span, .studio[data-mode="canvas"] .cmdk-trigger > kbd { display: none; }
+.studio[data-mode="canvas"] .engine-pill > small { display: none; }
+.crumb { flex: none; min-width: 0; }
+.crumb-slot { flex: none; }
+.canvas-project-trigger { max-width: clamp(96px, 12vw, 260px); min-width: 0; }
+.canvas-id-chip, .canvas-project-rename { flex: none; }
+@media (max-width: 1360px) { .studio[data-mode="canvas"] .crumb-sep, .studio[data-mode="canvas"] .crumb-view { display: none; } }
+@media (max-width: 1180px) { .studio[data-mode="canvas"] .top-tray { font-size: 0; gap: 0; } .studio[data-mode="canvas"] .top-tray .count { font-size: 12px; } }
+
+/* ---------------------------------------------------------------- canvas ID chip */
+.canvas-id-chip {
+  display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 8px; margin-left: 2px; border-radius: var(--radius-md);
+  border: 1px solid var(--line); background: var(--surface-sunk); color: var(--text-muted); font-size: 12px; white-space: nowrap;
+  transition: background var(--dur-fast), border-color var(--dur-fast), color var(--dur-fast);
+}
+.canvas-id-chip:hover { background: var(--surface-tint); border-color: var(--line-strong); color: var(--text-strong); }
+.canvas-id-chip:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.canvas-id-label { font: 700 11px/1 var(--font-mono); letter-spacing: 0.06em; color: var(--text-faint); }
+.canvas-id-chip code { font: 12px/1 var(--font-mono); color: var(--text-strong); background: none; padding: 0; }
+.canvas-id-icon { display: inline-grid; place-items: center; color: var(--text-muted); }
+.canvas-id-done { font-weight: 600; color: var(--state-ok); }
+.canvas-id-done:empty { display: none; }
+.canvas-id-chip.is-copied { border-color: var(--state-ok); background: var(--state-ok-soft); }
+.canvas-id-chip.is-copied .canvas-id-icon { color: var(--state-ok); }
+.canvas-project-info-id { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 12px; margin: 12px 0 6px; border-radius: var(--radius-md); background: var(--surface-sunk); border: 1px solid var(--line); font: inherit; color: var(--text-muted); }
+.canvas-project-info-id code { flex: 1; min-width: 200px; font: 13px var(--font-mono); color: var(--text-strong); user-select: all; word-break: break-all; }
+
+/* ---------------------------------------------------------------- motion vocabulary */
+@keyframes sl-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes sl-rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes sl-drop { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+@keyframes sl-from-right { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: none; } }
+@keyframes sl-from-left { from { opacity: 0; transform: translateX(-16px); } to { opacity: 1; transform: none; } }
+/* the composer is centred with translateX(-50%); its rise keeps that */
+.composer-dock { animation-name: sl-rise-centred; }
+@keyframes sl-rise-centred { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translate(-50%, 0); } }
+@media (prefers-reduced-motion: reduce) {
+  .modal, .dropdown, .menu-popover, .reel, .canvas-panel, .canvas-library, .composer-dock, .canvas-node, .modal-shade.is-page { animation: none !important; }
+}
+html[data-motion="off"] :is(.modal, .dropdown, .menu-popover, .reel, .canvas-panel, .canvas-library, .composer-dock, .canvas-node, .modal-shade.is-page) { animation: none !important; }
+
+/* the run dialog takes focus as a whole on open; no outline on the panel itself */
+.canvas-run-panel:focus { outline: none; }

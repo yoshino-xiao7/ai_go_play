@@ -5,7 +5,6 @@ import { api, mediaUrl, uploadAsset } from "./api";
 import type { AssetPage } from "./types";
 import type { SubjectMediaCandidate } from "./subjectTypes";
 import { Modal } from "./ui";
-import "./subject-media-picker.css";
 
 export type { SubjectMediaCandidate } from "./subjectTypes";
 export type SubjectMediaSource = "local" | "library" | "canvas";

@@ -3,7 +3,6 @@ import { createPortal } from "react-dom";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 
 import { mediaUrl } from "./api";
-import "./frame-comparison.css";
 
 export type FrameComparisonLink = {
   original_node_id: string;

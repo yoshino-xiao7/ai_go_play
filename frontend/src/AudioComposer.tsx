@@ -13,8 +13,6 @@ import PromptEditor from './PromptEditor';
 import {promptParts,referenceId,referencesAfterPromptEdit} from './referenceModel';
 import AudioWorkflow,{speechDefaults,SpeechControls} from './AudioWorkflow';
 import type {AudioProfile,EmotionMode} from './AudioWorkflow';
-import './video.css';
-import './speech.css';
 
 export const defaultSpeechDraft=(profile?:AudioProfile):GenerationDraft=>({kind:'audio',mode:'text_to_image',workflow_id:'builtin-indextts25-local',prompt:'',references:[],parameters:{seed:-1},speech_options:{...speechDefaults,...profile?.defaults}});
 type Props={projectId:string;nodeId:string;draft?:GenerationDraft;locked?:boolean;canvasReferences:ImageReference[];onChange:(draft:GenerationDraft)=>void;onBeginEdit:()=>void;onBeforeSubmit:()=>Promise<void>;onRemoveConnections:(ids:string[])=>void;onAssetsChange:()=>void};
