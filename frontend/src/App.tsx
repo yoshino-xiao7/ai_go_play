@@ -1,5 +1,6 @@
 import StudioSelect from "./StudioSelect";
 import ExitApplication from "./ExitApplication";
+import AppearanceSettings from "./AppearanceSettings";
 import {
   lazy,
   Suspense,
@@ -1999,7 +2000,7 @@ function StorageSettings({
   notify: Notify;
 }) {
   const [storage, setStorage] = useState<StorageInfo | null>(null);
-  const [section, setSection] = useState<"library" | "migration" | "media">("library");
+  const [section, setSection] = useState<"library" | "migration" | "media" | "appearance">("library");
   const [target, setTarget] = useState("");
   const [confirm, setConfirm] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -2074,6 +2075,7 @@ function StorageSettings({
             <button aria-current={section === "library" ? "page" : undefined} onClick={() => setSection("library")}><HardDrive size={18} />本地存储</button>
             <button aria-current={section === "migration" ? "page" : undefined} onClick={() => setSection("migration")}><FolderOpen size={18} />资料库迁移</button>
             <button aria-current={section === "media" ? "page" : undefined} onClick={() => setSection("media")}><Clapperboard size={18} />媒体处理</button>
+            <button aria-current={section === "appearance" ? "page" : undefined} onClick={() => setSection("appearance")}><Sparkles size={18} />外观与动效</button>
             <a href="#/about"><Info size={18} />关于与检查更新</a>
             <p>创作数据保存在本机，可随时查看保存位置与处理环境。</p>
           </nav>
@@ -2207,6 +2209,7 @@ function StorageSettings({
               </p>
             </div>
           </section>
+          {section === "appearance" && <AppearanceSettings />}
         </div>
         </div>
       )}

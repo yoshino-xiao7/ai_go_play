@@ -155,6 +155,7 @@ import type {
 // re-inserted the same rules, unlayered, after the global theme whenever this lazy chunk loaded.
 import "./canvas.css";
 import "./review-experience.css";
+import { usePalette } from "./design/appearance";
 import { cameraMotionRole, canConnectCameraMotion, canReference, edgeLocked, edgeRole, reconcileReferences, resolveVideoEnhanceInput } from "./canvasReferences";
 import { CameraMotionFields, CameraMotionPicker, cameraMotionLabel, cameraPresets } from "./CameraMotion";
 import type { CameraMotion } from "./CameraMotion";
@@ -830,6 +831,7 @@ function CanvasEditor({
   onCloseGuide,
 }: CanvasProps) {
   const flow = useReactFlow<CanvasNode>();
+  const palette = usePalette();
   const [liveViewport, setLiveViewport] = useState<Viewport>(initialViewport);
   const [editorSessionId] = useState(() => {
     try {
@@ -4201,12 +4203,13 @@ function CanvasEditor({
                 selectionMode={SelectionMode.Partial}
                 multiSelectionKeyCode={["Shift", "Control", "Meta"]}
                 panActivationKeyCode="Space"
-                colorMode="dark"
+                colorMode={palette === "pale-pink" ? "light" : "dark"}
                 proOptions={{ hideAttribution: true }}
                 elevateNodesOnSelect={false}
               >
                 <Background
                   variant={BackgroundVariant.Dots}
+                  bgColor="var(--canvas-bg)"
                   color="var(--canvas-grid)"
                   gap={22}
                   size={0.9}
