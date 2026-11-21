@@ -163,3 +163,17 @@ html[data-palette="pale-pink"] :is(.timeline-assets, .timeline-inspector) { back
 html[data-palette="pale-pink"] .timeline-monitor { background: #f6e6ed; }
 html[data-palette="pale-pink"] .timeline-lane { background: #fbf2f6; border-color: var(--pp-line); }
 html[data-palette="pale-pink"] .timeline-ruler > span { color: var(--pp-muted); }
+
+/* ------------------------------------------------------------------ prompt editor (contenteditable) */
+html[data-palette="pale-pink"] .prompt-editor { color: var(--pp-ink); caret-color: var(--pp-rose); }
+html[data-palette="pale-pink"] .prompt-editor[data-empty="true"]::before { color: #a88a98; }
+html[data-palette="pale-pink"] :is(.prompt-editor-reference, .generation-prompt-wrap .prompt-editor-reference) { background: var(--pp-blush); border-color: var(--pp-pink-strong); color: var(--pp-rose-deep); }
+html[data-palette="pale-pink"] :is(.prompt-editor-reference, .generation-prompt-wrap .prompt-editor-reference):hover { background: #fbd3e3; border-color: var(--pp-rose); }
+html[data-palette="pale-pink"] .generation-composer .generation-prompt-wrap > textarea { color: var(--pp-ink); }
+/* composer additions keep full-contrast text inside the composer's muted context */
+html[data-palette="pale-pink"] .generation-composer :is(.composer-preflight li.ok, .composer-effective-toggle) { color: var(--pp-ink); }
+html[data-palette="pale-pink"] .generation-composer .composer-preflight li.bad,
+html[data-palette="pale-pink"] .generation-composer .composer-effective-toggle.has-issue { color: var(--color-danger); }
+html[data-palette="pale-pink"] .reference-status { background: #ffffffeb; color: var(--pp-rose-deep); border-color: var(--pp-pink-strong); }
+html[data-palette="pale-pink"] .reference-status.error { color: var(--color-danger); border-color: var(--color-danger-line); }
+html[data-palette="pale-pink"] .studio-reference-image .studio-reference-base { background: #ffffffe6; color: var(--pp-ink); }

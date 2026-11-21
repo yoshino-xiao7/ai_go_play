@@ -1,7 +1,7 @@
 import {GenerationProgress} from "./GenerationProgress";
 import {ReferenceTile,useReferencePreview} from "./ReferenceMedia";
 import StudioSelect from "./StudioSelect";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   AlertCircle,
@@ -45,6 +45,7 @@ import type { PromptEditorHandle } from "./PromptEditor";
 import type { SubjectPage } from "./subjectTypes";
 import "./generation.css";
 import "./studio-composer.css";
+import "./creation-composer.css";
 import { promptParts, referenceId } from "./referenceModel";
 import OpenAIImageControls from "./OpenAIImageControls";
 import { useOpenAIImages } from "./openaiImages";
@@ -137,6 +138,7 @@ export default function GenerationComposer({
   const [jobAction, setJobAction] = useState(false);
   const [confirmCancellation, setConfirmCancellation] = useState(false);
   const [showParameters, setShowParameters] = useState(false);
+  const [showEffective, setShowEffective] = useState(false);
   const [showMaskTools, setShowMaskTools] = useState(false);
   const [showJobDetails, setShowJobDetails] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -600,12 +602,8 @@ export default function GenerationComposer({
     requestAnimationFrame(() => { textarea.current?.focus(); textarea.current?.setSelection(prompt.length); });
   };
 
-  const submit = async () => {
-    if (!canSubmit || (!selectedWorkflow && !pendingSubmission)) return;
-    setSubmitting(true);
-    setError("");
-    setPickerOpen(false); setSizeOpen(false); setPresetOpen(null); setReferencePreview(null);
-    const request: GenerationRequest = pendingSubmission || {
+  /** The exact body POST /api/generations receives. “实际提交” shows this same object. */
+  const buildRequest = (): GenerationRequest => ({
       project_id: projectId,
       ...(isOpenAI ? { provider: "openai" as const, model: openaiOptions.model, quality: openaiOptions.quality } : {}),
       source_node_id: nodeId,
@@ -640,7 +638,13 @@ export default function GenerationComposer({
       },
       placement: position,
       request_id: crypto.randomUUID(),
-    };
+  });
+  const submit = async () => {
+    if (!canSubmit || (!selectedWorkflow && !pendingSubmission)) return;
+    setSubmitting(true);
+    setError("");
+    setPickerOpen(false); setSizeOpen(false); setPresetOpen(null); setReferencePreview(null); setShowEffective(false);
+    const request: GenerationRequest = pendingSubmission || buildRequest();
     try {
       updateDraft({
         workflow_id: request.workflow_id,
@@ -658,7 +662,10 @@ export default function GenerationComposer({
       jobSequence.current += 1;
       activeJob.current = result;
       setJob(result);
-      updateDraft({ pending_submission: undefined, last_job_id: result.id });
+      // A refilled draft became a new round: keep the lineage locally, clear the refill marker.
+      const refilled = draftRef.current.refill_of;
+      updateDraft({ pending_submission: undefined, last_job_id: result.id, refill_of: undefined,
+        ...(refilled ? { round_links: { ...(draftRef.current.round_links || {}), [result.id]: refilled.job_id } } : {}) });
     } catch (caught) {
       if (!alive.current) return;
       if (caught instanceof ApiError && caught.status < 500)
@@ -768,6 +775,25 @@ export default function GenerationComposer({
   });
   const jobError =
     typeof job?.error === "string" ? job.error : job?.error?.message;
+  // Preflight list for “实际提交”. Submission itself is still gated by capabilityError / canSubmit.
+  const limits = selectedWorkflow?.capabilities;
+  const seedValue = draft.parameters.seed;
+  const preflight: { ok: boolean; label: string; detail?: string }[] = [
+    { ok: !!selectedWorkflow && selectedWorkflow.ready !== false, label: "工作流可用", detail: selectedWorkflow ? `${selectedWorkflow.name}${selectedWorkflow.ready === false ? " · " + (selectedWorkflow.validation?.errors.map(issue => issue.message).join("；") || "校验未通过") : ""}` : workflowLoading ? "正在读取" : "未选择" },
+    { ok: !!draft.prompt.trim(), label: "已写描述" },
+    { ok: !unresolvedConnections, label: "连线用途已确认" },
+    { ok: !missingVersions.length, label: "参考原件可读取", detail: missingVersions.length ? `${missingVersions.length} 个版本缺失` : undefined },
+    { ok: !limits || (references.length >= limits.min_images && references.length <= limits.max_images), label: `参考数量 ${references.length}`, detail: limits ? `此工作流接收 ${limits.min_images}–${limits.max_images} 张` : undefined },
+    { ok: !limits || (!(limits.requires_mask && !draft.mask_version_id) && !(draft.mask_version_id && !limits.supports_mask)), label: "蒙版要求", detail: limits?.requires_mask ? "需要蒙版" : draft.mask_version_id ? "已附蒙版" : "无需蒙版" },
+    { ok: isOpenAI || seedValue === undefined || (Number.isSafeInteger(seedValue) && Number(seedValue) >= -1), label: "种子有效" },
+    { ok: !active && job?.status !== "unknown", label: "此卡片没有进行中的一轮", detail: active || job?.status === "unknown" ? "本机服务对同一节点一次只运行一轮：等它结束、核对或取消后再提交" : undefined },
+  ];
+  const unsentParameters = selectedWorkflow ? Object.keys(draft.parameters).filter(key => ["seed", "width", "height", "steps", "cfg", "denoise"].includes(key) && !selectedWorkflow.bindings[key as "seed"]?.length) : [];
+  const advancedCount = selectedWorkflow && !isOpenAI ? (["steps", "cfg", "denoise"] as const).filter(key => draft.parameters[key] !== undefined && Number(draft.parameters[key]) !== Number(selectedWorkflow.defaults[key] ?? NaN)).length
+    + (draft.parameters.negative_prompt !== undefined && draft.parameters.negative_prompt !== (selectedWorkflow.defaults.negative_prompt ?? "") ? 1 : 0)
+    + (seedValue !== undefined && Number(seedValue) !== -1 ? 1 : 0) : 0;
+  const effectiveRequest = showEffective ? (pendingSubmission || (selectedWorkflow ? buildRequest() : null)) : null;
+  const parameterNames: Record<string, string> = { seed: "种子", width: "宽", height: "高", steps: "步数", cfg: "提示强度", denoise: "重绘幅度" };
   const composerRect = composerRoot.current?.getBoundingClientRect();
   const pickerPosition = {
     left: Math.max(12, Math.min((composerRect?.left || 12) + 20, window.innerWidth - Math.min(560, window.innerWidth - 24) - 12)),
@@ -783,7 +809,17 @@ export default function GenerationComposer({
       onPointerDown={(event) => event.stopPropagation()}
       onDoubleClick={(event) => event.stopPropagation()}
     >
-      <div className="composer-compact-toolbar"><span>图片创作</span><button onClick={()=>setExpanded(value=>!value)} aria-expanded={expanded}>创作预设</button><button aria-label={collapsed?"展开创作面板":"收起创作面板"} onClick={()=>setCollapsed(value=>!value)}>{collapsed?"展开":"收起"}</button></div>
+      <div className="composer-compact-toolbar"><span>图片创作</span><button className="composer-rounds-link" onClick={()=>window.dispatchEvent(new CustomEvent("manju:open-rounds",{detail:{nodeId}}))} title="查看这张卡片每一轮提交与结果">结果轮次</button><button onClick={()=>setExpanded(value=>!value)} aria-expanded={expanded}>创作预设</button><button aria-label={collapsed?"展开创作面板":"收起创作面板"} onClick={()=>setCollapsed(value=>!value)}>{collapsed?"展开":"收起"}</button></div>
+      {draft.refill_of && (
+        <div className="composer-refill" role="status">
+          <span className="composer-refill-tag">回填</span>
+          <span>来自 {new Date(draft.refill_of.created_at).toLocaleString("zh-CN",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"})} 的一轮。修改后点生成会成为新的一轮，原记录不变。</span>
+          {draft.refill_of.seed !== undefined && selectedWorkflow?.bindings.seed.length ? (draft.parameters.seed === -1
+            ? <button disabled={disabledEditing} onClick={()=>{onBeginEdit();updateDraft({parameters:{...draftRef.current.parameters,seed:draft.refill_of!.seed!}});}}>沿用原种子 {draft.refill_of.seed}</button>
+            : <button disabled={disabledEditing} onClick={()=>{onBeginEdit();updateDraft({parameters:{...draftRef.current.parameters,seed:-1}});}}>改用随机种子</button>) : null}
+          <button aria-label="清除回填标记" title="清除回填标记（草稿内容保留）" disabled={disabledEditing} onClick={()=>updateDraft({refill_of:undefined})}><X size={12} /></button>
+        </div>
+      )}
       {isOpenAI && <OpenAIImageControls options={openaiOptions} catalog={openai.catalog} estimate={openai.estimate} issue={openai.issue} loading={openai.catalogLoading} disabled={disabledEditing} referenceCount={references.length} onRefresh={openai.refresh} onChange={options=>{onBeginEdit();updateDraft({model:options.model,quality:options.quality,parameters:{...draftRef.current.parameters,width:options.width,height:options.height}});}}/>}
       {!!unresolvedConnections && <div className="reference-notice" role="alert">旧连线用途待确认 <button onClick={()=>onConfirmConnections?.("relation")}>作为故事关系</button><button onClick={()=>onConfirmConnections?.("reference")}>作为图片参考</button></div>}
       {references.length>0 && draft.mode==="text_to_image" && <div className="reference-notice">已添加固定参考图。<button onClick={()=>changeMode("reference")}>切换到参考生图</button></div>}
@@ -1050,6 +1086,30 @@ export default function GenerationComposer({
           {confirmCancellation && <div className="generation-cancel-confirm"><p>{job.request?.provider==="openai"?"结束跟踪不会撤回云端请求，原请求可能已计费。":job.status==="unknown"?"结束本地跟踪不会撤回 ComfyUI 原任务，原任务可能仍在运行。":"取消会中断当前生成。"}</p><button disabled={jobAction} onClick={() => void jobOperation("cancel", true)}>{job.status==="unknown"?"已核对，结束跟踪":"确认取消本次生成"}</button><button disabled={jobAction} onClick={() => setConfirmCancellation(false)}>继续等待</button></div>}
         </div>
       )}
+      {showEffective && (
+        <section className="composer-effective" aria-label="提交前检查与实际提交">
+          <h4>提交前检查</h4>
+          <ul className="composer-preflight">
+            {preflight.map(item => <li key={item.label} className={item.ok ? "ok" : "bad"}>{item.ok ? <Check size={12} /> : <AlertCircle size={12} />}<span>{item.label}{item.detail && <small>{item.detail}</small>}</span></li>)}
+          </ul>
+          {capabilityError && <p className="composer-effective-block">暂不能提交：{capabilityError}</p>}
+          {effectiveRequest ? <>
+            <h4>实际提交{pendingSubmission ? "（重试沿用上次的同一个请求）" : ""}</h4>
+            <dl className="composer-effective-list">
+              <dt>去向</dt><dd>{effectiveRequest.provider === "openai" ? "云端 OpenAI · 会计费，描述与参考图会离开本机" : "本机 ComfyUI"}</dd>
+              <dt>工作流</dt><dd>{selectedWorkflow?.name || effectiveRequest.workflow_id} <code>{effectiveRequest.workflow_id}</code></dd>
+              <dt>方式</dt><dd>{workflowModeNames[draft.mode]}</dd>
+              <dt>描述</dt><dd className="composer-effective-prompt">{effectiveRequest.prompt || "（空）"}</dd>
+              {effectiveRequest.negative_prompt ? <><dt>负面</dt><dd>{effectiveRequest.negative_prompt}</dd></> : null}
+              {Object.entries(effectiveRequest.parameters).map(([key, value]) => <Fragment key={key}><dt>{parameterNames[key] || key}</dt><dd>{key === "seed" && Number(value) === -1 ? "随机（提交时由本机服务生成，并写入这一轮的记录）" : String(value)}</dd></Fragment>)}
+              {unsentParameters.length ? <><dt>不送出</dt><dd>{unsentParameters.map(key => parameterNames[key] || key).join("、")}（当前工作流没有对应输入）</dd></> : null}
+              <dt>参考</dt><dd>{effectiveRequest.references.length ? <ol>{effectiveRequest.references.map((ref, index) => <li key={ref.version_id}>@{index + 1} {ref.title || "参考"} · 版本 <code>{ref.version_id.slice(0, 8)}</code>{draft.mode === "edit" && index === 0 ? " · 编辑底图" : ""}</li>)}</ol> : "无"}</dd>
+              {effectiveRequest.mask_version_id ? <><dt>蒙版</dt><dd><code>{effectiveRequest.mask_version_id.slice(0, 8)}</code></dd></> : null}
+            </dl>
+            <details className="composer-effective-raw"><summary>查看完整请求</summary><pre>{JSON.stringify({ ...effectiveRequest, request_id: pendingSubmission ? effectiveRequest.request_id : "（提交时生成）" }, null, 2)}</pre></details>
+          </> : <p className="composer-effective-block">选择可用工作流后显示将要提交的内容。</p>}
+        </section>
+      )}
       <footer className="generation-footer">
         <label className="generation-mode-select" title="创作方式">
           <StudioSelect
@@ -1081,7 +1141,8 @@ export default function GenerationComposer({
         </label>
         {!isOpenAI && <button className="studio-size-toggle" aria-label="画幅与尺寸" aria-expanded={sizeOpen} title={canSetSize ? `${currentWidth} × ${currentHeight} 像素` : "输出尺寸由当前工作流决定"} disabled={disabledEditing || !canSetSize} onClick={() => { setSizeOpen(value => !value); setShowParameters(false); setPresetOpen(null); setPickerOpen(false); }}><span>{canSetSize ? currentRatio?.label || "自定义" : "原始尺寸"}</span><span className="studio-dot">·</span><span>{canSetSize ? currentLongEdge === 1024 ? "1K" : currentLongEdge === 2048 ? "2K" : `${currentLongEdge}px` : "工作流"}</span><ChevronDown size={13} /></button>}
         <button className="studio-mention-toggle" aria-label="引用图片" title="引用图片 · @" disabled={disabledEditing} aria-expanded={pickerOpen} onClick={openPicker}><AtSign size={19} /></button>
-        {!isOpenAI && <button className="generation-parameters-toggle" title="生成参数" aria-expanded={showParameters} onClick={() => setShowParameters(value => !value)}><Settings2 size={15} /></button>}
+        {!isOpenAI && <button className="generation-parameters-toggle" title={advancedCount ? `高级参数 · 已调整 ${advancedCount} 项` : "高级参数"} aria-label={advancedCount ? `高级参数，已调整 ${advancedCount} 项` : "高级参数"} aria-expanded={showParameters} onClick={() => setShowParameters(value => !value)}><Settings2 size={15} />{advancedCount > 0 && <b className="composer-adv-count">{advancedCount}</b>}</button>}
+        <button className={"composer-effective-toggle" + (capabilityError ? " has-issue" : "")} aria-expanded={showEffective} title="提交前检查与实际提交内容" onClick={() => { setShowEffective(value => !value); setSizeOpen(false); setPickerOpen(false); setPresetOpen(null); }}>{capabilityError ? <AlertCircle size={13} /> : <Check size={13} />}<span>实际提交</span></button>
         <span className="studio-output-count" title={isOpenAI ? "每次生成 1 张，费用预估见上方" : selectedWorkflow?.builtin ? "当前工作流每次生成 1 张图片" : "出图数量由工作流决定"}><Sparkles size={13} />{isOpenAI&&openai.estimate?`≈ $${openai.estimate.output_usd.toFixed(4)} + 输入`:selectedWorkflow?.builtin ? "1 张" : "按工作流输出"}</span>
         <button
           className="generation-submit"

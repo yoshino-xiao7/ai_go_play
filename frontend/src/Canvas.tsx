@@ -147,10 +147,14 @@ import {GenerationProgress, useGenerationJob} from "./GenerationProgress";
 import { isVideoEnhanceWorkflow, VIDEO_INTERPOLATE_WORKFLOW, VIDEO_UPSCALE_WORKFLOW, VIDEO_WATERMARK_WORKFLOW } from "./generationTypes";
 import type {
   GenerationDraft,
+  GenerationJob,
   ImageHistoryItem,
   ImageReference,
   VideoEnhanceWorkflow,
 } from "./generationTypes";
+import GenerationRounds from "./GenerationRounds";
+import { draftFromRound } from "./roundSnapshots";
+import type { Workflow, WorkflowMode } from "./workflowTypes";
 // React Flow's base CSS is loaded once by styles.css in @layer vendor (D8). A second import here
 // re-inserted the same rules, unlayered, after the global theme whenever this lazy chunk loaded.
 import "./canvas.css";
@@ -918,6 +922,7 @@ function CanvasEditor({
   const [showInspector, setShowInspector] = useState(false);
   const [showMore, setShowMore] = useState(false);
   const [showScreenplay, setShowScreenplay] = useState(false);
+  const [rounds, setRounds] = useState<{ nodeId: string; version?: string } | null>(null);
   const [showShare, setShowShare] = useState(false);
   const [showProduction, setShowProduction] = useState(false);
   const [showCanvasRun, setShowCanvasRun] = useState(false);
@@ -2677,7 +2682,8 @@ function CanvasEditor({
     y: imagePosition.y * liveViewport.zoom + liveViewport.y,
   };
   const leftInset = stageDimensions.width > 620 ? 88 : 16;
-  const rightInset = stageDimensions.width > 620 ? 24 : 16;
+  // The docked rounds drawer (380px + 12px gap) owns the right edge while open on wide stages.
+  const rightInset = rounds && stageDimensions.width > 760 ? 404 : stageDimensions.width > 620 ? 24 : 16;
   const availableOverlayWidth = Math.max(
     1,
     stageDimensions.width - leftInset - rightInset,
@@ -2694,7 +2700,9 @@ function CanvasEditor({
   );
   const imagePixelHeight = imageSize.height * liveViewport.zoom;
   const belowImage = imageScreen.y + imagePixelHeight + 22 + (selectedPlayback && videoShelfHeight ? (videoShelfHeight + 12) * liveViewport.zoom : 0);
-  const belowSpace = stageDimensions.height - belowImage - 24;
+  // The bottom canvas toolbar (~72px) floats above the stage; keep composer controls clear of it.
+  const bottomReserve = 84;
+  const belowSpace = stageDimensions.height - belowImage - bottomReserve;
   const aboveBottom =
     imageScreen.y - imageHeadingHeight - (selectedImage || showVideoEnhanceActions ? imageToolsSize.height : 0) - 36;
   const minimumComposerHeight = Math.min(
@@ -2716,7 +2724,7 @@ function CanvasEditor({
         Math.max(minimumComposerHeight, stageDimensions.height * 0.5),
       );
       const visibleImageBottom = Math.min(
-        stageDimensions.height - minimumComposerHeight - 24,
+        stageDimensions.height - minimumComposerHeight - bottomReserve,
         imageScreen.y +
           Math.min(
             imagePixelHeight,
@@ -2725,12 +2733,12 @@ function CanvasEditor({
       );
       composerTop = Math.max(
         16,
-        stageDimensions.height - panelHeight - 24,
+        stageDimensions.height - panelHeight - bottomReserve,
         visibleImageBottom,
       );
       composerMaxHeight = Math.max(
         1,
-        stageDimensions.height - composerTop - 24,
+        stageDimensions.height - composerTop - bottomReserve,
       );
     }
   }
@@ -3315,6 +3323,90 @@ function CanvasEditor({
     suppressSelectionPan.current=id;
     const point=absolutePosition(node,nodesRef.current),size=dimensions(node);
     void flow.setCenter(point.x+size.width/2,point.y+size.height/2,{zoom:Math.min(1,stageDimensions.width/(size.width+180),stageDimensions.height/(size.height+180)),duration:250});
+  };
+  // ---------------------------------------------------------------- results by round (GenerationRounds)
+  useEffect(() => {
+    const open = (event: Event) => {
+      const detail = (event as CustomEvent<{ nodeId: string; version?: string }>).detail;
+      if (detail?.nodeId) setRounds({ nodeId: detail.nodeId, version: detail.version });
+    };
+    window.addEventListener("manju:open-rounds", open);
+    return () => window.removeEventListener("manju:open-rounds", open);
+  }, []);
+  const roundsNode = rounds ? nodes.find(node => node.id === rounds.nodeId) : undefined;
+  /** Same write as the node card's own "采用": undoable, keeps history and the job link. */
+  const adoptVersion = (nodeId: string, versionId: string, jobId?: string) => {
+    const node = nodesRef.current.find(item => item.id === nodeId);
+    if (!node || node.data.locked || node.data.asset_version_id === versionId) return;
+    const history = (node.data.image_history || []).filter((item, index, items) => items.findIndex(other => other.version_id === item.version_id) === index);
+    if (node.data.asset_version_id && !history.some(item => item.version_id === node.data.asset_version_id)) history.push({ version_id: node.data.asset_version_id, job_id: node.data.generation_id });
+    if (!history.some(item => item.version_id === versionId)) history.push({ version_id: versionId, job_id: jobId });
+    remember();
+    updateData(nodeId, {
+      asset_version_id: versionId,
+      ...(node.data.kind === "image" && { previous_image_version_id: node.data.asset_version_id }),
+      generation_id: history.find(item => item.version_id === versionId)?.job_id || jobId,
+      image_history: history.map(item => item.version_id === versionId ? { ...item, candidate: false } : item),
+    });
+    setNotice("已采用该轮结果，可撤销（Ctrl+Z）。");
+  };
+  /** Copy a round's server snapshot into the card draft. The job record itself is never touched. */
+  const refillRound = async (job: GenerationJob, seed: "same" | "random") => {
+    const node = nodesRef.current.find(item => item.id === job.source_node_id);
+    if (!node || node.data.locked) return;
+    let workflowMode: WorkflowMode | undefined;
+    const workflowId = (job.request as { workflow_id?: string } | undefined)?.workflow_id;
+    if (node.data.kind === "image" && workflowId) {
+      try { workflowMode = (await api<{ items: Workflow[] }>("/api/workflows")).items.find(item => item.id === workflowId)?.mode; } catch { /* mode falls back to the snapshot */ }
+    }
+    const latest = nodesRef.current.find(item => item.id === node.id);
+    if (!latest || latest.data.locked) return;
+    const draft = draftFromRound(job, latest.data.generation, latest.id, { seed, workflowMode });
+    // A connection now carrying another version would change the round: exclude it, the snapshot version is pinned instead.
+    const pinned = new Set(draft.references.map(ref => ref.version_id).concat(draft.edit_base_version_id || []));
+    const drift = edgesRef.current.filter(edge => edge.target === latest.id && edgeRole(edge) === "reference" && !pinned.has(nodesRef.current.find(item => item.id === edge.source)?.data.asset_version_id || "")).map(edge => edge.id);
+    draft.excluded_edge_ids = [...new Set([...(latest.data.generation?.excluded_edge_ids || []), ...drift])];
+    remember();
+    updateData(latest.id, { generation: draft });
+    locateNode(latest.id);
+    setNotice(seed === "same" ? "已把这一轮回填到卡片草稿：描述、参数和参考版本与当时一致。修改后点“生成”才会产生新的一轮，原记录不变。" : "已按这一轮准备好同样的参数，种子改为随机。点“生成”才会提交。");
+  };
+  const useVersionAsReference = (nodeId: string, versionId: string) => {
+    const node = nodesRef.current.find(item => item.id === nodeId);
+    if (!node || node.data.locked) return;
+    const current = node.data.generation || defaultGenerationDraft(!!node.data.asset_version_id);
+    if (current.references?.some(ref => ref.version_id === versionId)) { locateNode(nodeId); return; }
+    const reference: ImageReference = { id: uid(), version_id: versionId, node_id: nodeId, title: `${node.data.title || "图片"} · ${versionId.slice(0, 4)}`, source: "mention", media_type: "image" };
+    remember();
+    updateData(nodeId, { generation: { ...current, ...(current.mode === "text_to_image" ? { mode: "reference" as const, workflow_id: undefined, use_current_image: false } : {}), references: [...(current.references || []), reference], pending_submission: undefined } });
+    locateNode(nodeId);
+    setNotice("已把这个版本固定为参考（之后采用其他版本也不会改变它）。");
+  };
+  /** A new video card whose first frame is pinned to this exact image version (no live connection). */
+  const versionToVideo = async (nodeId: string, versionId: string) => {
+    const source = nodesRef.current.find(item => item.id === nodeId);
+    if (!source) return;
+    const projectId = project.id;
+    let profile: import("./videoProfile").VideoProfile;
+    try { profile = await api<import("./videoProfile").VideoProfile>("/api/video/settings"); }
+    catch (error) { setNotice("无法读取视频工作流默认配置：" + errorText(error)); return; }
+    if (activeProjectRef.current !== projectId || !nodesRef.current.some(item => item.id === nodeId)) return;
+    const draft = defaultVideoDraft(profile.defaults);
+    draft.video_mode = "frames";
+    draft.references = [{ id: uid(), version_id: versionId, node_id: nodeId, title: `${source.data.title || "图片"} · 首帧`, source: "mention", media_type: "image", role: "first_frame", use_description: false }];
+    draft.reference_order = [versionId];
+    const at = absolutePosition(source, nodesRef.current), size = dimensions(source);
+    const id = uid();
+    edit([...nodesRef.current.map(item => ({ ...item, selected: false })),
+      { id, type: "media", position: { x: at.x + size.width + 120, y: at.y }, style: { width: 380, height: 240 }, selected: true, data: { title: "视频创作", kind: "video", generation: draft } }]);
+    setRounds(null);
+    setNotice(`已新建视频卡片：首帧固定为版本 ${versionId.slice(0, 6)}（尾帧可选）。写好运动描述后点“生成”。`);
+  };
+  const locateFromRound = (nodeId: string, versionId?: string) => {
+    if (!nodesRef.current.some(item => item.id === nodeId)) { setNotice("来源节点已不在画布上。"); return; }
+    locateNode(nodeId);
+    const target = nodesRef.current.find(item => item.id === nodeId);
+    if (versionId && target && ["image", "video", "audio"].includes(target.data.kind || "")) setRounds({ nodeId, version: versionId });
   };
   const guideImage = guideEnabled ? nodes.find(node => node.id === guideProgress.imageId) : undefined;
   const guideVideo = guideEnabled ? nodes.find(node => node.id === guideProgress.videoId) : undefined;
@@ -5145,6 +5237,26 @@ function CanvasEditor({
         />
       )}
       {showDrafts && <DraftRecovery projectId={project.id} draftPrefix={draftPrefix} onClose={()=>setShowDrafts(false)} onRestore={restoreDraft}/>}
+      {roundsNode && ["image", "video", "audio"].includes(roundsNode.data.kind || "") && (
+        <GenerationRounds
+          key={roundsNode.id}
+          projectId={project.id}
+          node={{
+            id: roundsNode.id, title: roundsNode.data.title || "生成卡片", kind: roundsNode.data.kind as "image" | "video" | "audio",
+            locked: !!roundsNode.data.locked, adoptedVersion: roundsNode.data.asset_version_id, history: roundsNode.data.image_history || [],
+            refillOf: roundsNode.data.generation?.refill_of?.job_id, roundLinks: roundsNode.data.generation?.round_links,
+          }}
+          highlightVersion={rounds?.version}
+          nodeTitles={Object.fromEntries(nodes.map(node => [node.id, node.data.title || "未命名节点"]))}
+          onRefill={(job, seed) => void refillRound(job, seed)}
+          onAdopt={(versionId) => adoptVersion(roundsNode.id, versionId, roundsNode.data.image_history?.find(item => item.version_id === versionId)?.job_id)}
+          onUseAsReference={(versionId) => useVersionAsReference(roundsNode.id, versionId)}
+          onToVideo={(versionId) => void versionToVideo(roundsNode.id, versionId)}
+          onLocate={locateFromRound}
+          onPreview={onPreview}
+          onClose={() => setRounds(null)}
+        />
+      )}
       {showScreenplay && <ScreenplayWorkspace projectId={project.id} onClose={() => setShowScreenplay(false)}/>}
       {showShare && <SharePanel project={project} onFlush={flushCanvas} getViewport={()=>flow.getViewport()} onClose={()=>setShowShare(false)} onNotice={setNotice}/>}
       {showProduction && <ProductionPanel projectId={project.id} onClose={()=>setShowProduction(false)} onChanged={()=>{void loadCanvas(false);void reloadAssets();onAssetsChange();}} onLocate={(id:string)=>{setShowProduction(false);locateNode(id);}}/>}

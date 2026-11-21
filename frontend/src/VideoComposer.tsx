@@ -15,6 +15,7 @@ import type { PromptEditorHandle } from "./PromptEditor";
 import { normalizeVideoReferences, promptParts, referenceId, referencesAfterPromptEdit } from "./referenceModel";
 import VideoParameterPopover, { VideoDuration } from "./VideoParameterPopover";
 import "./video.css";
+import "./creation-composer.css";
 import {GenerationProgress, useGenerationJob} from "./GenerationProgress";
 
 export const defaultVideoDraft=(defaults?:VideoDefaults):GenerationDraft=>({kind:"video",mode:"text_to_image",video_mode:"text",workflow_id:"builtin-h3-local",video_options:{engine:"native",sampler:"res_multistep",scheduler:"simple",ref_image_size:"1024"},prompt:"",references:[],parameters:{width:defaults?.width??864,height:defaults?.height??480,steps:defaults?.steps??20,cfg:defaults?.cfg??1,seed:defaults?.seed??-1},duration:defaults?.duration??4,audio:defaults?.audio??true});
@@ -181,7 +182,9 @@ export default function VideoComposer(props:Props){
       }
       await props.onBeforeSubmit();
       const result=await api<GenerationJob>("/api/generations",{method:"POST",body:JSON.stringify(request)});
-      change({last_job_id:result.id,pending_request_id:undefined,pending_submission:undefined});setJob(result);await props.onBeforeSubmit();
+      // A refilled draft became a new round: keep the lineage locally, clear the refill marker.
+      const refilled=latest.current.refill_of;
+      change({last_job_id:result.id,pending_request_id:undefined,pending_submission:undefined,refill_of:undefined,...(refilled?{round_links:{...(latest.current.round_links||{}),[result.id]:refilled.job_id}}:{})});setJob(result);await props.onBeforeSubmit();
     }catch(e){setError(message(e));if(e instanceof ApiError){change({pending_request_id:undefined,pending_submission:undefined});}}
     finally{setBusy(false);}
   }
@@ -192,7 +195,8 @@ export default function VideoComposer(props:Props){
     ...guide, title:guide.title ?? `${guideKind[guide.media_type]}引导 ${index+1}`, source:"mention",
   }));
   return <section className="video-composer nodrag nopan nowheel" aria-label="视频创作" onPointerDown={e=>e.stopPropagation()} onWheel={e=>e.stopPropagation()}>
-    <header className="video-composer-tools"><span className="video-composer-label">视频创作</span><div><button title="刷新本地模型状态" onClick={()=>void refresh()}><RefreshCw size={14}/></button><button title="视频工作流设置" aria-expanded={advanced} onClick={()=>{setMenu(null);setAdvanced(!advanced);}}><Settings2 size={16}/></button></div></header>
+    <header className="video-composer-tools"><span className="video-composer-label">视频创作</span><div><button className="composer-rounds-link" title="查看这张卡片每一轮提交与结果" onClick={()=>window.dispatchEvent(new CustomEvent("manju:open-rounds",{detail:{nodeId:props.nodeId}}))}>结果轮次</button><button title="刷新本地模型状态" onClick={()=>void refresh()}><RefreshCw size={14}/></button><button title="视频工作流设置" aria-expanded={advanced} onClick={()=>{setMenu(null);setAdvanced(!advanced);}}><Settings2 size={16}/></button></div></header>
+    {draft.refill_of && <div className="composer-refill" role="status"><span className="composer-refill-tag">回填</span><span>来自 {new Date(draft.refill_of.created_at).toLocaleString("zh-CN",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"})} 的一轮：描述、参数和素材版本与当时一致。点生成会成为新的一轮，原记录不变。</span>{draft.refill_of.seed!==undefined&&(draft.parameters.seed===-1?<button disabled={blocked} onClick={()=>{props.onBeginEdit();change({parameters:{...latest.current.parameters,seed:draft.refill_of!.seed!}});}}>沿用原种子 {draft.refill_of.seed}</button>:<button disabled={blocked} onClick={()=>{props.onBeginEdit();change({parameters:{...latest.current.parameters,seed:-1}});}}>改用随机种子</button>)}<button aria-label="清除回填标记" disabled={blocked} onClick={()=>change({refill_of:undefined})}><X size={12}/></button></div>}
     {props.cameraMotionLabel && <div className="video-camera-motion" title="连接的运镜会在生成时加入 H3 的提示词"><Crosshair size={14} />运镜 · {props.cameraMotionLabel}</div>}
     <div className="video-reference-strip">
       {refs.map((ref,index)=><div className="video-reference-slot" key={referenceId(ref)}>

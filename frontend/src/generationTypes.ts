@@ -59,6 +59,10 @@ export type GenerationDraft = {
   pending_request_id?: string;
   use_current_image?: boolean;
   pending_submission?: GenerationRequest;
+  /** Draft was refilled from this round's server snapshot (editing it never touches the job). */
+  refill_of?: { job_id: string; created_at: string; seed?: number };
+  /** job id -> the job whose snapshot was refilled before that submission (local lineage note). */
+  round_links?: Record<string, string>;
 };
 
 export type GenerationRequest = {
@@ -151,6 +155,10 @@ export type GenerationJob = {
   can_cancel?: boolean;
   can_retry?: boolean;
   request?: Record<string, unknown>;
+  /** Set when this job is a retry of another job. */
+  parent_job_id?: string | null;
+  /** Where the job runs: the local ComfyUI URL, or the cloud API base for OpenAI requests. */
+  backend_url?: string;
   outputs: { asset_id: string; version_id: string; node_id: string | null }[];
   created_at: string;
   updated_at: string;

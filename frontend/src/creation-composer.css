@@ -1,0 +1,35 @@
+/* Composer additions: rounds link, refill banner, advanced count, preflight + effective request. */
+.composer-compact-toolbar .composer-rounds-link { color: var(--color-accent); font-weight: 600; }
+.composer-refill { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 6px 10px 2px; padding: 7px 10px; border-radius: 12px; font-size: 12px; line-height: 1.5;
+  color: var(--color-text-muted); background: linear-gradient(90deg, var(--color-accent-soft), transparent); border: 1px solid var(--color-accent-line); animation: composer-rise .35s ease-out; }
+.composer-refill > span:nth-child(2) { flex: 1 1 200px; }
+.composer-refill-tag { font-size: 10.5px; font-weight: 700; color: var(--color-on-accent); background: var(--color-accent); border-radius: 999px; padding: 1px 8px; }
+.composer-refill button { height: 24px; padding: 0 9px; border-radius: 999px; border: 1px solid var(--color-border-strong); background: var(--color-surface-panel); color: var(--color-text); font-size: 11.5px; }
+.composer-refill button:hover:not(:disabled) { border-color: var(--color-accent); }
+.generation-parameters-toggle { position: relative; }
+.composer-adv-count { position: absolute; top: -5px; right: -6px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; font: 700 10px/16px var(--font-mono); color: var(--color-on-accent); background: var(--color-accent); }
+.composer-effective-toggle { display: inline-flex; align-items: center; gap: 4px; height: 30px; padding: 0 9px; border-radius: 999px; border: 1px solid var(--color-border-strong); background: transparent; color: var(--color-text); font-size: 12px; white-space: nowrap; }
+.composer-effective-toggle.has-issue { color: var(--color-danger); border-color: var(--color-danger-line); }
+.composer-effective-toggle[aria-expanded="true"] { background: var(--color-accent-soft); border-color: var(--color-accent-line); }
+.composer-effective { margin: 6px 10px 4px; padding: 10px 12px; border-radius: 14px; border: 1px solid var(--color-border-strong); background: var(--color-surface-raised); font-size: 12px; animation: composer-rise .3s ease-out; }
+.composer-effective h4 { margin: 2px 0 6px; font: 600 10.5px var(--font-mono); letter-spacing: .12em; color: var(--color-accent); }
+.composer-preflight { list-style: none; margin: 0 0 8px; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 4px 10px; }
+.composer-preflight li { display: flex; gap: 5px; align-items: flex-start; line-height: 1.45; }
+.composer-preflight li.ok svg { color: var(--color-success); flex: none; margin-top: 2px; }
+.composer-preflight li.bad { color: var(--color-danger); }
+.composer-preflight li.bad svg { flex: none; margin-top: 2px; }
+.composer-preflight small { display: block; color: var(--color-text-muted); font-size: 11px; }
+.composer-effective-block { margin: 4px 0 8px; padding: 6px 9px; border-radius: 9px; background: var(--color-danger-soft); color: var(--color-danger); }
+/* The submitted request reads like a darkroom slip. */
+.composer-effective-list { margin: 0; padding: 9px 11px; display: grid; grid-template-columns: 64px 1fr; gap: 4px 10px; border-radius: 10px; background: #25131c; color: #f6e6ee; font-size: 11.5px; }
+.composer-effective-list dt { color: #c9a3b4; }
+.composer-effective-list dd { margin: 0; word-break: break-word; }
+.composer-effective-list code { font: 10.5px var(--font-mono); color: #ffc6dd; }
+.composer-effective-list ol { margin: 0; padding-left: 16px; }
+.composer-effective-prompt { max-height: 6em; overflow: auto; white-space: pre-wrap; }
+.composer-effective-raw { margin-top: 6px; }
+.composer-effective-raw summary { cursor: pointer; color: var(--color-text-muted); font-size: 11.5px; }
+.composer-effective-raw pre { max-height: 220px; overflow: auto; margin: 6px 0 0; padding: 8px 10px; border-radius: 9px; background: #1a0c13; color: #ffc6dd; font: 10.5px/1.6 var(--font-mono); }
+@keyframes composer-rise { from { opacity: 0; transform: translateY(-4px); } }
+html[data-motion="off"] :is(.composer-refill, .composer-effective) { animation: none; }
+@media (prefers-reduced-motion: reduce) { :is(.composer-refill, .composer-effective) { animation: none; } }
