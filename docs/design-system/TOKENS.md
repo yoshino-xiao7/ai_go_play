@@ -173,3 +173,16 @@
 - 已删除只起装饰作用的上浮、阴影、放大和焦点环动画，焦点环直接出现。
 - `prefers-reduced-motion: reduce` 时，所有动效都直接到达同一终态。
 - 用 `hidden` 开关的面板，通过 `display` 的离散过渡加 `@starting-style` 实现过渡；关闭时同时设为 `inert`，淡出过程中不可点击、不可聚焦。
+
+## 创作回路（淡粉轮次）
+
+这些 Token 供“按轮次结果”“实际提交”和起草入口使用。默认值让暗房深色保持原样，`design/pale-pink.css` 在淡粉配色下重新定义。说明见 [淡粉亮色与创作回路](PALE-PINK.md)。
+
+| Token | 默认值（暗房） | 淡粉 | 用途 |
+| --- | --- | --- | --- |
+| `--color-brand-fill` / `-hover` | 同 accent / accent-hover | `#f7b6cd` / `#f4a3c0` | 每个界面唯一主操作的填充色 |
+| `--color-on-brand-fill` | 同 on-accent | 墨色 `#3a1e2b` | 主操作上的文字 |
+| `--color-darkroom` | `--ink-0` | `#25131c` | 判断画面与请求的深色台面：结果缩略图底、实际提交清单 |
+| `--color-darkroom-text` / `-muted` / `-code` | ink-900 / ink-700 / rose-300 | `#f6e6ee` / `#c9a3b4` / `#ffc6dd` | 深色台面上的文字、标签和代码 |
+| `--color-media-badge` / `--color-on-media-badge` | `#ffffffe6` / rose-950 | 同 / 墨色 | 叠在媒体缩略图上的标签 |
+| `--shadow-float` | `0 18px 44px -24px #0009` | 粉调长阴影 | 停靠抽屉与浮动条 |

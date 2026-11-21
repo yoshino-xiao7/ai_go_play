@@ -61,20 +61,29 @@ html[data-palette="pale-pink"] {
   --color-disabled-surface: #f6eaef;
   --color-disabled-border: var(--pp-line);
   --color-disabled-text: #8d7480;
+  --color-brand-fill: var(--pp-pink);
+  --color-brand-fill-hover: #f4a3c0;
+  --color-on-brand-fill: var(--pp-ink);
+  --color-darkroom: var(--pp-darkroom);
+  --color-darkroom-text: #f6e6ee;
+  --color-darkroom-muted: #c9a3b4;
+  --color-darkroom-code: #ffc6dd;
+  --color-on-media-badge: var(--pp-ink);
+  --shadow-float: var(--pp-shadow-lg);
 }
 html[data-palette="pale-pink"] body { background: var(--color-bg-app); color: var(--color-text); }
 html[data-palette="pale-pink"] ::selection { background: #f7b6cd80; color: var(--pp-ink); }
 html[data-palette="pale-pink"] * { scrollbar-color: #e3c2d0 transparent; }
 
-/* Primary actions: pale-pink fill with ink text (brand), deep rose on hover. */
+/* Primary actions: pale-pink fill with ink text (brand), deeper pink on hover. Specificity of the
+   html[data-palette] prefix outranks the studio/composer rules, so no !important is needed. */
 html[data-palette="pale-pink"] :is(.btn.primary, .button.primary, .setup-primary, .generation-composer .generation-submit:not(:disabled), .video-composer .video-submit:not(:disabled), .cs-go:not(:disabled)) {
-  background: var(--pp-pink) !important; color: var(--pp-ink) !important; border-color: transparent !important;
-  box-shadow: 0 8px 20px -12px #ee8fb3e6, inset 0 -2px 0 #a8335f1f !important;
+  background: var(--color-brand-fill); color: var(--color-on-brand-fill); border-color: transparent;
+  box-shadow: 0 8px 20px -12px #ee8fb3e6, inset 0 -2px 0 #a8335f1f;
 }
 html[data-palette="pale-pink"] :is(.btn.primary, .button.primary, .setup-primary, .generation-composer .generation-submit:not(:disabled), .video-composer .video-submit:not(:disabled), .cs-go:not(:disabled)):hover {
-  background: #f4a3c0 !important;
+  background: var(--color-brand-fill-hover);
 }
-
 /* Film-publication accents: serif display titles, mono metadata. */
 html[data-palette="pale-pink"] :is(.page-heading h1, .projects-hero h1, .settings-card h2, .gr-head h3, .cs-title) {
   font-family: var(--pp-serif); letter-spacing: .01em;
@@ -131,7 +140,7 @@ html[data-palette="pale-pink"] :is(.workflow-card-validation > button, .workflow
 html[data-palette="pale-pink"] .canvas-workspace .subject-voice-strip > span { color: var(--pp-muted); }
 
 /* ------------------------------------------------------------------ form fields (not checkbox / radio / range / colour) */
-html[data-palette="pale-pink"] :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=file]), select) {
+html[data-palette="pale-pink"] :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=file]):not(.canvas-quick-draft input), select) {
   background-color: #fff; color: var(--pp-ink); border-color: var(--pp-line-strong);
 }
 html[data-palette="pale-pink"] :is(input, select, textarea)::placeholder { color: #a88a98; }

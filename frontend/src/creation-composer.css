@@ -21,15 +21,15 @@
 .composer-preflight small { display: block; color: var(--color-text-muted); font-size: 11px; }
 .composer-effective-block { margin: 4px 0 8px; padding: 6px 9px; border-radius: 9px; background: var(--color-danger-soft); color: var(--color-danger); }
 /* The submitted request reads like a darkroom slip. */
-.composer-effective-list { margin: 0; padding: 9px 11px; display: grid; grid-template-columns: 64px 1fr; gap: 4px 10px; border-radius: 10px; background: #25131c; color: #f6e6ee; font-size: 11.5px; }
-.composer-effective-list dt { color: #c9a3b4; }
+.composer-effective-list { margin: 0; padding: 9px 11px; display: grid; grid-template-columns: 64px 1fr; gap: 4px 10px; border-radius: 10px; background: var(--color-darkroom); color: var(--color-darkroom-text); font-size: 11.5px; }
+.composer-effective-list dt { color: var(--color-darkroom-muted); }
 .composer-effective-list dd { margin: 0; word-break: break-word; }
-.composer-effective-list code { font: 10.5px var(--font-mono); color: #ffc6dd; }
+.composer-effective-list code { font: 10.5px var(--font-mono); color: var(--color-darkroom-code); }
 .composer-effective-list ol { margin: 0; padding-left: 16px; }
 .composer-effective-prompt { max-height: 6em; overflow: auto; white-space: pre-wrap; }
 .composer-effective-raw { margin-top: 6px; }
 .composer-effective-raw summary { cursor: pointer; color: var(--color-text-muted); font-size: 11.5px; }
-.composer-effective-raw pre { max-height: 220px; overflow: auto; margin: 6px 0 0; padding: 8px 10px; border-radius: 9px; background: #1a0c13; color: #ffc6dd; font: 10.5px/1.6 var(--font-mono); }
+.composer-effective-raw pre { max-height: 220px; overflow: auto; margin: 6px 0 0; padding: 8px 10px; border-radius: 9px; background: var(--color-darkroom); color: var(--color-darkroom-code); font: 10.5px/1.6 var(--font-mono); }
 @keyframes composer-rise { from { opacity: 0; transform: translateY(-4px); } }
 html[data-motion="off"] :is(.composer-refill, .composer-effective) { animation: none; }
 @media (prefers-reduced-motion: reduce) { :is(.composer-refill, .composer-effective) { animation: none; } }

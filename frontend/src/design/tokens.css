@@ -193,5 +193,18 @@
   --duration-fast: 140ms;
   --duration-base: 200ms;
   --ease-out: cubic-bezier(.2, .8, .2, 1);
+
+  /* ------------------------------------------------------------------ creation loop (PALE-PINK.md) */
+  /* Defaults keep the darkroom palette as it was; design/pale-pink.css redefines them. */
+  --color-brand-fill: var(--color-accent);          /* fill of the one primary action per surface */
+  --color-brand-fill-hover: var(--color-accent-hover);
+  --color-on-brand-fill: var(--color-on-accent);
+  --color-darkroom: var(--ink-0);                   /* stage where media and the submitted request are judged */
+  --color-darkroom-text: var(--ink-900);
+  --color-darkroom-muted: var(--ink-700);
+  --color-darkroom-code: var(--rose-300);
+  --color-media-badge: #ffffffe6;                   /* label chip laid over media thumbnails */
+  --color-on-media-badge: var(--rose-950);
+  --shadow-float: 0 18px 44px -24px #0009;          /* docked drawers and floating bars */
 }
 }

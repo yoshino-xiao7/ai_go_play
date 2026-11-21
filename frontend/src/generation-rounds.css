@@ -2,7 +2,7 @@
 .gr-panel {
   position: absolute; top: 12px; right: 12px; bottom: 12px; z-index: 30; width: min(380px, calc(100% - 24px));
   display: flex; flex-direction: column; background: var(--color-surface-panel); color: var(--color-text);
-  border: 1px solid var(--color-border-strong); border-radius: 20px; box-shadow: 0 30px 70px -30px #a03c6473, 0 6px 16px -8px #0000002e;
+  border: 1px solid var(--color-border-strong); border-radius: 20px; box-shadow: var(--shadow-float);
   animation: gr-in .32s cubic-bezier(.2,.8,.2,1);
 }
 @keyframes gr-in { from { opacity: 0; transform: translateX(24px); } }
@@ -22,7 +22,7 @@
 .gr-round-head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .gr-take { font: italic 600 18px/1 "Instrument Serif", Georgia, var(--font-ui); color: var(--color-accent); margin-right: 2px; }
 .gr-status { display: inline-flex; gap: 4px; align-items: center; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--color-surface-hover); color: var(--color-text); }
-.gr-status.s-succeeded { background: #2f8a661f; color: var(--color-success); }
+.gr-status.s-succeeded { background: var(--color-surface-hover); color: var(--color-success); }
 .gr-status.s-failed, .gr-status.s-unknown { background: var(--color-danger-soft); color: var(--color-danger); }
 .gr-status.s-cancelled { color: var(--color-text-muted); }
 .gr-where { display: inline-flex; gap: 3px; align-items: center; font-size: 10.5px; color: var(--color-text-muted); border: 1px solid var(--color-border); border-radius: 999px; padding: 1px 7px; }
@@ -31,7 +31,7 @@
 .gr-lineage { margin: 6px 0 0; font-size: 11px; color: var(--color-text-muted); display: flex; gap: 8px; flex-wrap: wrap; }
 .gr-draft-tag { color: var(--color-accent); font-weight: 600; }
 .gr-prompt { margin: 8px 0 6px; padding: 7px 10px; border-left: 2px solid var(--color-accent-line); background: var(--color-surface-panel); border-radius: 0 10px 10px 0; font-size: 13px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; max-height: 7.5em; overflow: auto; }
-.gr-prompt mark { background: #f7b6cd66; color: inherit; border-radius: 3px; padding: 0 2px; }
+.gr-prompt mark { background: var(--color-accent-soft); color: inherit; border-radius: 3px; padding: 0 2px; }
 .gr-meta { display: flex; gap: 4px; flex-wrap: wrap; }
 .gr-meta span { font: 10.5px var(--font-mono); color: var(--color-text-muted); background: var(--color-surface-panel); border: 1px solid var(--color-border); border-radius: 999px; padding: 1px 7px; }
 .gr-meta .gr-change { color: var(--color-accent); border-color: var(--color-accent-line); font-weight: 600; }
@@ -47,22 +47,22 @@
 .gr-output { margin: 0; border-radius: 12px; overflow: hidden; border: 1px solid var(--color-border); background: var(--color-surface-panel); }
 .gr-output.is-adopted { border-color: var(--color-accent); }
 .gr-output.is-highlight { box-shadow: 0 0 0 3px var(--color-accent-soft); }
-.gr-thumb { position: relative; display: block; width: 100%; padding: 0; border: 0; background: #25131c; aspect-ratio: 16 / 10; }
+.gr-thumb { position: relative; display: block; width: 100%; padding: 0; border: 0; background: var(--color-darkroom); aspect-ratio: 16 / 10; }
 .gr-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; animation: gr-develop 1.6s cubic-bezier(.2,.8,.2,1); }
 @keyframes gr-develop { from { filter: brightness(2.2) contrast(.4) saturate(0) blur(6px); opacity: .4; } }
-.gr-audio { color: #f6e6ee; font-size: 12px; display: grid; place-items: center; height: 100%; }
-.gr-badge { position: absolute; left: 6px; top: 6px; display: inline-flex; gap: 3px; align-items: center; font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 999px; background: #ffffffe6; color: #3a1e2b; }
-.gr-output.is-adopted .gr-badge { background: #f7b6cd; }
+.gr-audio { color: var(--color-darkroom-text); font-size: 12px; display: grid; place-items: center; height: 100%; }
+.gr-badge { position: absolute; left: 6px; top: 6px; display: inline-flex; gap: 3px; align-items: center; font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 999px; background: var(--color-media-badge); color: var(--color-on-media-badge); }
+.gr-output.is-adopted .gr-badge { background: var(--color-brand-fill); color: var(--color-on-brand-fill); }
 .gr-output figcaption { display: flex; flex-wrap: wrap; gap: 3px; padding: 5px; }
 .gr-output figcaption button { display: inline-flex; gap: 3px; align-items: center; height: 24px; padding: 0 7px; border-radius: 999px; border: 1px solid var(--color-border); background: var(--color-surface-raised); color: var(--color-text); font-size: 11px; }
 .gr-output figcaption button:hover:not(:disabled) { border-color: var(--color-accent-line); color: var(--color-accent); }
 .gr-actions { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 9px; }
 .gr-actions button { display: inline-flex; gap: 4px; align-items: center; height: 27px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--color-border-strong); background: var(--color-surface-panel); color: var(--color-text); font-size: 12px; font-weight: 600; }
 .gr-actions button:hover:not(:disabled) { border-color: var(--color-accent-line); }
-.gr-actions .gr-primary { background: #f7b6cd; border-color: transparent; color: #3a1e2b; }
-.gr-actions .gr-primary:hover:not(:disabled) { background: #f4a3c0; }
+.gr-actions .gr-primary { background: var(--color-brand-fill); border-color: transparent; color: var(--color-on-brand-fill); }
+.gr-actions .gr-primary:hover:not(:disabled) { background: var(--color-brand-fill-hover); }
 .spin { animation: gr-spin 1s linear infinite; }
 @keyframes gr-spin { to { transform: rotate(360deg); } }
-html[data-motion="off"] :is(.gr-panel, .gr-thumb img, .gr-round .spin) { animation: none !important; }
-@media (prefers-reduced-motion: reduce) { :is(.gr-panel, .gr-thumb img, .gr-round .spin) { animation: none !important; } }
+html[data-motion="off"] :is(.gr-panel, .gr-thumb img, .gr-round .spin) { animation: none; }
+@media (prefers-reduced-motion: reduce) { :is(.gr-panel, .gr-thumb img, .gr-round .spin) { animation: none; } }
 @media (max-width: 760px) { .gr-panel { top: auto; left: 8px; right: 8px; bottom: 8px; width: auto; height: min(70vh, 620px); } }

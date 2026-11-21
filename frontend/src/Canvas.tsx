@@ -3433,7 +3433,7 @@ function CanvasEditor({
     if (activeProjectRef.current !== projectId || !nodesRef.current.some(item => item.id === nodeId)) return;
     const draft = defaultVideoDraft(profile.defaults);
     draft.video_mode = "frames";
-    draft.references = [{ id: uid(), version_id: versionId, node_id: nodeId, title: `${source.data.title || "图片"} · 首帧`, source: "mention", media_type: "image", role: "first_frame", use_description: false }];
+    draft.references = [{ id: uid(), version_id: versionId, node_id: nodeId, title: `${source.data.title || "图片"} · ${versionId.slice(0, 4)}`, source: "mention", media_type: "image", role: "first_frame", use_description: false }];
     draft.reference_order = [versionId];
     const at = absolutePosition(source, nodesRef.current), size = dimensions(source);
     const id = uid();
