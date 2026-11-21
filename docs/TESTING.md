@@ -15,10 +15,13 @@
 npm --prefix frontend ci
 npm --prefix frontend run build
 node --test tests/governance.test.cjs
+node --experimental-strip-types --test tests/round-snapshots.test.ts
 .\.venv\Scripts\python scripts/check_docs.py
 .\.venv\Scripts\python scripts/check_agent_skills.py
 .\.venv\Scripts\python scripts/check_release.py
 ```
+
+`tests/round-snapshots.test.ts` 直接导入前端 `roundSnapshots.ts`，用于检查“结果轮次”回填是否只从服务端快照恢复：包括 H3 精确帧数、参考的 fit/purpose/use_audio/crop/clip、深拷贝，以及清除未确认的提交。它需要 Node 22 的类型擦除，目前尚未接入 CI，需要在本地执行。
 
 CI quality 在 Windows、Python 3.12、Node 22 上执行，准备 FFmpeg，不持有用户资料库、模型或云端账户，不把模拟调用算作 GPU 验收。
 

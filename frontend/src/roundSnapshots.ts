@@ -7,16 +7,24 @@ type SnapshotReference = {
   id?: string; version_id: string; node_id?: string | null; title?: string; description?: string;
   use_description?: boolean; role?: ImageReference["role"]; media_type?: ImageReference["media_type"];
   source?: ImageReference["source"]; edge_id?: string;
+  // Frozen per reference by backend/manju/video_inputs.py normalize_inputs (H3 video rounds).
+  fit?: ImageReference["fit"]; purpose?: ImageReference["purpose"]; use_audio?: boolean;
+  crop?: ImageReference["crop"]; clip_start?: number; clip_end?: number | null;
 };
 type Snapshot = {
   kind?: "video" | "audio"; provider?: string; model?: string; quality?: string;
   workflow_id?: string; mode?: WorkflowMode; prompt?: string; negative_prompt?: string;
   prompt_parts?: GenerationDraft["prompt_parts"]; references?: SnapshotReference[];
   mask_version_id?: string | null; parameters?: Record<string, number | string>;
-  video_mode?: GenerationDraft["video_mode"]; duration?: number; audio?: boolean;
+  video_mode?: GenerationDraft["video_mode"]; duration?: number; frame_count?: number; audio?: boolean;
   video_options?: GenerationDraft["video_options"]; h3_guides?: GenerationDraft["h3_guides"];
   speech_options?: GenerationDraft["speech_options"]; subject_node_id?: string;
 };
+
+/** Deep copy so the refilled draft never shares objects with the job record it came from. */
+const copy = <T,>(value: T): T => value === undefined || value === null ? value : structuredClone(value);
+/** Reference fields restored verbatim when the snapshot carries them (never taken from elsewhere). */
+const FROZEN_REFERENCE_FIELDS = ["fit", "purpose", "use_audio", "crop", "clip_start", "clip_end"] as const;
 
 export const snapshotOf = (job: GenerationJob) => (job.request || {}) as Snapshot;
 
@@ -43,17 +51,24 @@ const SCALAR_PARAMETERS = ["width", "height", "steps", "cfg", "denoise", "seed"]
 export function draftFromRound(job: GenerationJob, current: GenerationDraft | undefined, nodeId: string,
   options: { seed: "same" | "random"; workflowMode?: WorkflowMode }): GenerationDraft {
   const request = snapshotOf(job);
-  const references: ImageReference[] = (request.references || []).map((ref, index) => ({
-    id: ref.id || `ref-${index + 1}-${ref.version_id.slice(0, 6)}`,
-    version_id: ref.version_id,
-    node_id: ref.node_id || undefined,
-    title: ref.title || `参考 ${index + 1}`,
-    description: ref.description,
-    use_description: ref.use_description,
-    role: ref.role,
-    media_type: ref.media_type,
-    source: "mention",
-  }));
+  const references: ImageReference[] = (request.references || []).map((ref, index) => {
+    const restored: ImageReference = {
+      id: ref.id || `ref-${index + 1}-${ref.version_id.slice(0, 6)}`,
+      version_id: ref.version_id,
+      node_id: ref.node_id || undefined,
+      title: ref.title || `参考 ${index + 1}`,
+      description: ref.description,
+      use_description: ref.use_description,
+      role: ref.role,
+      media_type: ref.media_type,
+      source: "mention",
+    };
+    for (const key of FROZEN_REFERENCE_FIELDS)
+      if (ref[key] !== undefined) (restored as Record<string, unknown>)[key] = copy(ref[key]);
+    return restored;
+  });
+  // Parameters come only from the snapshot: a key the snapshot lacks is left to the composer's
+  // defaults, never inherited from the current draft (that would pass another round off as this one).
   const parameters: Record<string, number | string> = {};
   for (const key of SCALAR_PARAMETERS) {
     const value = request.parameters?.[key];
@@ -64,27 +79,32 @@ export function draftFromRound(job: GenerationJob, current: GenerationDraft | un
   const base: GenerationDraft = {
     ...(current || { mode: "text_to_image", prompt: "", references: [], parameters: {} }),
     prompt: request.prompt || "",
-    prompt_parts: request.prompt_parts,
+    prompt_parts: copy(request.prompt_parts),
     workflow_id: request.workflow_id,
+    // A refilled draft is a new request: drop both halves of any earlier unconfirmed submission.
     pending_submission: undefined,
+    pending_request_id: undefined,
     refill_of,
   };
   if (request.kind === "video") {
+    // Every field below is set explicitly, so an older snapshot without (say) frame_count clears the
+    // draft's own value instead of reusing another round's exact frame count.
     return {
       ...base,
       kind: "video",
       video_mode: request.video_mode,
       duration: request.duration,
+      frame_count: request.frame_count,
       audio: request.audio,
-      video_options: request.video_options,
-      h3_guides: request.h3_guides,
+      video_options: copy(request.video_options),
+      h3_guides: copy(request.h3_guides),
       references,
       reference_order: references.map(ref => ref.version_id),
-      parameters: { ...(current?.parameters || {}), ...parameters },
+      parameters,
     };
   }
   if (request.kind === "audio") {
-    return { ...base, kind: "audio", speech_options: request.speech_options, subject_node_id: request.subject_node_id, references, parameters: { ...(current?.parameters || {}), ...parameters } };
+    return { ...base, kind: "audio", speech_options: copy(request.speech_options), subject_node_id: request.subject_node_id, references, parameters };
   }
   // Image: an edit round's first input is the node's own base image, not an extra reference.
   const mode: WorkflowMode = options.workflowMode || request.mode || current?.mode || "text_to_image";
