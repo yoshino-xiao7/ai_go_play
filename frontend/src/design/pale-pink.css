@@ -189,3 +189,12 @@ html[data-palette="pale-pink"] .studio-reference-image .studio-reference-base { 
 html[data-palette="pale-pink"] .canvas-notice { background: #fffafc; color: var(--pp-ink); border: 1px solid var(--pp-pink-strong); box-shadow: var(--pp-shadow-lg); }
 html[data-palette="pale-pink"] .canvas-notice svg { color: var(--pp-rose); }
 html[data-palette="pale-pink"] .canvas-notice button { color: var(--pp-muted); }
+
+/* ------------------------------------------------------------------ selected-media toolbar and the version badge over media */
+html[data-palette="pale-pink"] .canvas-image-tools { border-color: var(--pp-line-strong); box-shadow: var(--pp-shadow-lg); }
+html[data-palette="pale-pink"] .canvas-stage .canvas-image-tools > :is(button, a) { color: var(--pp-ink); }
+html[data-palette="pale-pink"] .canvas-stage .canvas-image-tools > :is(button:hover:not(:disabled), a:hover) { background: var(--pp-blush); color: var(--pp-rose-deep); }
+html[data-palette="pale-pink"] .canvas-stage .canvas-image-tools > button.is-active { color: var(--pp-rose-deep); }
+html[data-palette="pale-pink"] .media-open-image { background: var(--color-media-badge); color: var(--color-on-media-badge); border-color: var(--pp-pink-strong); }
+html[data-palette="pale-pink"] .studio-reference-empty strong { color: var(--pp-ink); }
+html[data-palette="pale-pink"] .studio-reference-empty span { color: var(--pp-muted); }
